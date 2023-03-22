@@ -1,0 +1,18 @@
+[package]
+name = "terminal-arcade"
+version = "0.1.0"
+authors = ["Ramen Developer <ramendev2009@gmail.com>"]
+edition = "2021"
+rust-version = "1.68.0"
+description = "Terminal-based arcade games for when you're bored out of your mind."
+documentation = "documentation? what documentation?"
+readme = "README.md"
+homepage = "homepage? what homepage?"
+repository = "https://github.com/developer-ramen/terminal-arcade"
+license = "MIT"
+keywords = ["arcade", "terminal", "games"]
+categories = ["arcade", "terminal", "games"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
