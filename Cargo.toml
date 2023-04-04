@@ -16,4 +16,4 @@ categories = ["arcade", "terminal", "games"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-crossterm = "0.26.1"
+crossterm = { version = "0.26.1", features = ["event-stream"] }
