@@ -11,8 +11,10 @@
 #![deny(unused_must_use, unused_imports, rust_2018_idioms)]
 #![warn(clippy::all, clippy::pedantic, missing_docs)]
 
+use terminal_arcade::core::TerminalArcade;
+
 /// Entry point of a program! What, you expected a `main` function to be
 /// documented well?
 fn main() {
-	println!("Hello, world!");
+	TerminalArcade::startup();
 }
