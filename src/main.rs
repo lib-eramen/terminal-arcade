@@ -11,10 +11,14 @@
 #![deny(unused_must_use, unused_imports, rust_2018_idioms)]
 #![warn(clippy::all, clippy::pedantic, missing_docs)]
 
-use terminal_arcade::core::TerminalArcade;
+use terminal_arcade::core::{
+	Outcome,
+	TerminalArcade,
+};
 
 /// Entry point of a program! What, you expected a `main` function to be
 /// documented well?
-fn main() {
-	TerminalArcade::startup();
+fn main() -> Outcome<()> {
+	TerminalArcade::startup()?;
+	Ok(())
 }

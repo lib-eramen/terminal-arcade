@@ -20,13 +20,15 @@ use crossterm::{
 	},
 };
 
+pub mod outcomes;
+
 /// The core struct to all inner workings in Terminal Arcade.
 /// For now, this struct is a unit struct.
 pub struct TerminalArcade;
 
 impl TerminalArcade {
 	/// Prints a stylized version of the name "Terminal Arcade".
-	pub fn print_stylized_title() {
+	pub fn print_stylized_title() -> Outcome<()> {
 		let title = r#"
 				/‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾////‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\
 				‾‾‾‾‾/  /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾////‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\  \
@@ -49,10 +51,13 @@ impl TerminalArcade {
 			Print(title.to_string()),
 			SetAttribute(Attribute::Reset),
 		);
+		Ok(())
 	}
 
 	/// The function to be called when Terminal Arcade starts up.
-	pub fn startup() {
-		Self::print_stylized_title();
+	pub fn startup() -> Outcome<()> {
+		Self::print_stylized_title()
 	}
 }
+
+pub use outcomes::Outcome;
