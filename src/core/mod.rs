@@ -67,7 +67,7 @@ impl TerminalArcade {
 				Attribute::Reset,
 				format!(", v{version}"),
 				SetAttribute(Attribute::Reset)
-			)),
+			).gradient(Gradient::Rainbow)),
 		)?;
 		Ok(())
 	}
