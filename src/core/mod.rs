@@ -17,7 +17,6 @@ use crossterm::{
 		Attribute,
 		Print,
 		SetAttribute,
-		SetAttributes,
 	},
 };
 
@@ -52,22 +51,8 @@ impl TerminalArcade {
 			stdout(),
 			SetAttribute(Attribute::Bold),
 			Print(BANNER.to_string().gradient(Gradient::Rainbow)),
-			SetAttributes(
-				[
-					Attribute::Reset,
-					Attribute::Underlined,
-					Attribute::Bold,
-					Attribute::Italic
-				]
-				.as_slice()
-				.into()
-			),
-			Print(format!(
-				"Terminal Arcade{}{}{}",
-				Attribute::Reset,
-				format!(", v{version}"),
-				SetAttribute(Attribute::Reset)
-			).gradient(Gradient::Rainbow)),
+			SetAttribute(Attribute::Reset),
+			Print(format!("Terminal Arcade, v{version}").gradient(Gradient::Rainbow)),
 		)?;
 		Ok(())
 	}
