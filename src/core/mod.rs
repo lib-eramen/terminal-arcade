@@ -27,11 +27,7 @@ pub mod outcomes;
 /// For now, this struct is a unit struct.
 pub struct TerminalArcade;
 
-impl TerminalArcade {
-	/// Prints a stylized version of the name "Terminal Arcade".
-	pub fn print_stylized_title() -> Outcome<()> {
-		let version = std::env::var("CARGO_PKG_VERSION")?;
-		let title = r#"
+pub const BANNER: &'static str = r#"
         /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾////‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\
         ‾‾‾‾‾/  /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾////‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\  \
             /  /  /‾‾‾‾‾/  /‾‾‾‾‾‾‾/  /‾‾‾‾‾‾‾‾‾/  /‾‾/  /‾‾‾‾‾‾/  /‾‾‾‾\  \  \
@@ -46,11 +42,16 @@ impl TerminalArcade {
          /      /‾‾      /      /      /  / / / / / / / / / /     / /  \ \ \ \/ / / /‾‾
         /                             /  / / / / / / / / /  ‾‾‾/ / /‾‾‾‾\ \ \  / /  ‾‾/
         ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾   ‾‾  ‾‾  ‾‾  ‾‾  ‾‾‾‾‾‾  ‾‾      ‾‾  ‾‾  ‾‾‾‾‾
-        "#;
+        "#; // These 8 spaces are added to keep up with the 8-space indentation of the banner.
+
+impl TerminalArcade {
+	/// Prints a stylized version of the name "Terminal Arcade".
+	pub fn print_stylized_title() -> Outcome<()> {
+		let version = std::env::var("CARGO_PKG_VERSION")?;
 		execute!(
 			stdout(),
 			SetAttribute(Attribute::Bold),
-			Print(title.to_string()),
+			Print(BANNER.to_string().gradient(Gradient::Rainbow)),
 			SetAttributes(
 				[
 					Attribute::Reset,
@@ -78,3 +79,4 @@ impl TerminalArcade {
 }
 
 pub use outcomes::Outcome;
+use tiny_gradient::{GradientStr, Gradient};

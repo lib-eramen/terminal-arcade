@@ -19,3 +19,4 @@ categories = ["arcade", "terminal", "games"]
 anyhow = "1.0.70"
 crossterm = { version = "0.26.1", features = ["event-stream"] }
 thiserror = "1.0.40"
+tiny-gradient = "0.1.0"
