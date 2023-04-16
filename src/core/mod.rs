@@ -17,14 +17,22 @@ use crossterm::{
 		Attribute,
 		Print,
 		SetAttribute,
-	},
+	}, terminal::{Clear, ClearType},
 };
+use tiny_gradient::{
+	Gradient,
+	GradientStr,
+};
+
+pub use outcomes::Outcome;
 
 pub mod outcomes;
 
 /// The core struct to all inner workings in Terminal Arcade.
 /// For now, this struct is a unit struct.
 pub struct TerminalArcade;
+
+pub static INDENT: &str = r#"        "#;
 
 pub const BANNER: &'static str = r#"
         /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾////‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\
@@ -41,7 +49,8 @@ pub const BANNER: &'static str = r#"
          /      /‾‾      /      /      /  / / / / / / / / / /     / /  \ \ \ \/ / / /‾‾
         /                             /  / / / / / / / / /  ‾‾‾/ / /‾‾‾‾\ \ \  / /  ‾‾/
         ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾   ‾‾  ‾‾  ‾‾  ‾‾  ‾‾‾‾‾‾  ‾‾      ‾‾  ‾‾  ‾‾‾‾‾
-        "#; // These 8 spaces are added to keep up with the 8-space indentation of the banner.
+        "#; // These 8 spaces are added to keep up with the 8-space indentation of the
+			// banner.
 
 impl TerminalArcade {
 	/// Prints a stylized version of the name "Terminal Arcade".
@@ -49,6 +58,7 @@ impl TerminalArcade {
 		let version = std::env::var("CARGO_PKG_VERSION")?;
 		execute!(
 			stdout(),
+			Clear(ClearType::All),
 			SetAttribute(Attribute::Bold),
 			Print(BANNER.to_string().gradient(Gradient::Rainbow)),
 			SetAttribute(Attribute::Reset),
@@ -62,6 +72,3 @@ impl TerminalArcade {
 		Self::print_stylized_title()
 	}
 }
-
-pub use outcomes::Outcome;
-use tiny_gradient::{GradientStr, Gradient};

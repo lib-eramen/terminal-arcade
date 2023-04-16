@@ -18,5 +18,9 @@ categories = ["arcade", "terminal", "games"]
 [dependencies]
 anyhow = "1.0.70"
 crossterm = { version = "0.26.1", features = ["event-stream"] }
+derive-new = "0.5.9"
+new = "0.0.0"
+serde = { version = "1.0.160", features = ["derive"] }
+serde_json = "1.0.96"
 thiserror = "1.0.40"
 tiny-gradient = "0.1.0"
