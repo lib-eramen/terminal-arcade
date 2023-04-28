@@ -18,9 +18,10 @@ use crate::core::{
 };
 
 pub mod core;
+pub mod screens;
 
 /// Entry point of a program! What, you expected a `main` function to be
 /// documented well?
 fn main() -> Outcome<()> {
-	TerminalArcade::startup()
+	TerminalArcade::new().startup()
 }
