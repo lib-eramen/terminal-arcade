@@ -19,7 +19,7 @@ use tiny_gradient::{
 };
 
 use super::{
-	highlight,
+	util::highlight,
 	Screen,
 	INDENT,
 };
@@ -88,9 +88,9 @@ impl WelcomeScreen {
 			highlight("[Ctrl-P]"),
 			highlight("[2]"),
 			highlight("settings"),
-			highlight("[Ctrl-,]"),
+			highlight("[Ctrl-Alt-S]"),
 			highlight("[0]"),
-			highlight("[Q]"),
+			highlight("[Ctrl-Q]"),
 			highlight("[Ctrl-C]"),
 			highlight("[Esc]")
 		);

@@ -3,46 +3,17 @@
 //! started. It also contains the various screens that the game uses to present
 //! itself on the terminal.
 
-use crossterm::{
-	event::Event,
-	style::Attribute,
-};
-use tiny_gradient::{
-	Gradient,
-	GradientStr,
-};
+use crossterm::event::Event;
 
 use crate::core::Outcome;
 
+pub mod util;
 pub mod welcome;
 
 /// The level of indentation to be used for printing. This is 8 spaces.
 /// This static variable is intended to be replaced with a configurable
 /// indentation option. TODO: Configuration option for indent.
 pub static INDENT: &str = r#"        "#;
-
-/// Highlights text as bold and colors them with a gradient.
-/// Note that you might need to reset the text after applying the bold
-/// attribute.
-fn highlight(text: &str) -> String {
-	format!("{}{}", Attribute::Bold, text.gradient(Gradient::Fruit))
-}
-
-/// [Disables raw mode](crossterm::terminal::disable_raw_mode), executes the
-/// statements provided, and [enable raw
-/// mode](crossterm::terminal::enable_raw_mode).
-///
-/// Note that this macro does make use of the `?`
-/// operator to propagate errors in functions that expect a [Result] or a
-/// [Result] equivalent.
-#[macro_export]
-macro_rules! disable_raw_mode {
-	($($p:expr),*) => {
-		crossterm::terminal::disable_raw_mode()?;
-		$($p)*;
-		crossterm::terminal::enable_raw_mode()?;
-	};
-}
 
 /// The trait for handling drawing on the terminal and receiving events from the
 /// user.

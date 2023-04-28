@@ -42,6 +42,7 @@ use self::terminal::get_terminal;
 use crate::{
 	core::terminal::get_mut_terminal,
 	screens::{
+		util::clear_terminal,
 		Screen,
 		WelcomeScreen,
 	},
@@ -109,6 +110,7 @@ impl TerminalArcade {
 	/// In detail, this function pushes the screen to the top of the screen
 	/// hierarchy in Terminal Arcade, and calls its [`Screen::spawn`] function.
 	pub fn spawn_screen(&mut self, mut screen: Box<dyn Screen>) -> Outcome<()> {
+		clear_terminal()?;
 		screen.on_spawn()?;
 		self.screens.push(screen);
 		Ok(())
@@ -118,6 +120,7 @@ impl TerminalArcade {
 	/// In detail, this function pops the screen from the screen hierarchy in
 	/// Terminal Arcade, and calls its [`Screen::close`] function.
 	pub fn close_screen(&mut self) -> Outcome<()> {
+		clear_terminal()?;
 		self.get_mut_active_screen().on_close()?;
 		let _ = self.screens.pop();
 		Ok(())
