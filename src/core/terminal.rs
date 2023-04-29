@@ -3,13 +3,16 @@
 use std::io::Stdout;
 
 use once_cell::sync::OnceCell;
-use tui::{
+use ratatui::{
 	backend::CrosstermBackend,
 	Terminal,
 };
 
+/// The type of [`ratatui`] backend used in Terminal Arcade.
+pub type BackendType = CrosstermBackend<Stdout>;
+
 /// The type of the terminal used in Terminal Arcade.
-pub type TerminalType = Terminal<CrosstermBackend<Stdout>>;
+pub type TerminalType = Terminal<BackendType>;
 
 /// The global terminal instance, shared by all mechanisms in Terminal Arcade.
 /// See [`get_terminal`] for a more convenient way to access this static

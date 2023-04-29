@@ -13,7 +13,9 @@ use crossterm::{
 	cursor::{
 		DisableBlinking,
 		EnableBlinking,
+		Hide,
 		MoveTo,
+		Show,
 	},
 	event::{
 		read,
@@ -30,6 +32,8 @@ use crossterm::{
 	terminal::{
 		disable_raw_mode,
 		enable_raw_mode,
+		EnterAlternateScreen,
+		LeaveAlternateScreen,
 	},
 };
 pub use outcomes::Outcome;
@@ -131,6 +135,8 @@ impl TerminalArcade {
 			DisableFocusChange,
 			DisableMouseCapture,
 			DisableBlinking,
+			EnterAlternateScreen,
+			Hide,
 			MoveTo(0, 0),
 		)?)
 	}
@@ -142,6 +148,8 @@ impl TerminalArcade {
 			get_mut_terminal().backend_mut(),
 			EnableBracketedPaste,
 			EnableBlinking,
+			LeaveAlternateScreen,
+			Show,
 		)?)
 	}
 
