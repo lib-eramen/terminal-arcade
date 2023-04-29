@@ -27,10 +27,6 @@ use crossterm::{
 		KeyModifiers,
 	},
 	execute,
-	style::{
-		Color,
-		SetBackgroundColor,
-	},
 	terminal::{
 		disable_raw_mode,
 		enable_raw_mode,
@@ -136,7 +132,6 @@ impl TerminalArcade {
 			DisableMouseCapture,
 			DisableBlinking,
 			MoveTo(0, 0),
-			SetBackgroundColor(Color::Black)
 		)?)
 	}
 

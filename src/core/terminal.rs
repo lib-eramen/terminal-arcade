@@ -1,10 +1,8 @@
 //! Helper module for easier handling of the terminal.
 
-use std::{
-	cell::OnceCell,
-	io::Stdout,
-};
+use std::io::Stdout;
 
+use once_cell::sync::OnceCell;
 use tui::{
 	backend::CrosstermBackend,
 	Terminal,
