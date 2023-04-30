@@ -10,17 +10,9 @@ use crossterm::{
 		ClearType,
 	},
 };
-use ratatui::{
-	layout::Alignment,
-	text::{
-		Spans,
-		Text,
-	},
-	widgets::{
-		Block,
-		BorderType,
-		Borders,
-	},
+use ratatui::text::{
+	Spans,
+	Text,
 };
 use tiny_gradient::{
 	Gradient,
@@ -75,11 +67,9 @@ pub fn clear_terminal() -> Outcome<()> {
 	)?)
 }
 
-/// The default [`ratatui`] block template.
-pub fn ui_block<'a, T: ToString>(title: T) -> Block<'a> {
-	Block::default()
-		.borders(Borders::ALL)
-		.border_type(BorderType::Rounded)
-		.title_alignment(Alignment::Center)
-		.title(stylize_first(title.to_string().as_str()))
+/// ANSI-parses a [`Vec`] of [String] lines into individual [Text] objects.
+/// This function is useful when making a list or a muliple blocks of text,
+/// and you want stylizing done in those text.
+pub fn ansi_parse_lines(lines: Vec<String>) -> Vec<Text<'static>> {
+	lines.iter().map(String::into_text).map(Result::unwrap).collect()
 }

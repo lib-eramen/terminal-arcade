@@ -195,10 +195,10 @@ impl TerminalArcade {
 					self.quit()?;
 					break;
 				},
-				Event::Resize(_, _) => {
+				Event::Resize(..) => {
 					self.draw_active_screen_ui()?;
 				},
-				_ => {}
+				_ => {},
 			}
 		}
 		Ok(())

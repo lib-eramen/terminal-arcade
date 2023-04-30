@@ -1,7 +1,5 @@
 //! A module for containing the welcome screen in Terminal Arcade.
 
-use ansi_to_tui::IntoText;
-use crossterm::style::Attribute;
 use ratatui::{
 	layout::{
 		Alignment,
@@ -9,19 +7,24 @@ use ratatui::{
 		Direction,
 		Layout,
 	},
-	text::Text,
-	widgets::Paragraph,
+	widgets::{
+		Borders,
+		Paragraph,
+	},
 	Frame,
 };
 
 use crate::{
 	core::terminal::BackendType,
 	ui::{
-		util::{
-			stylize,
-			stylize_raw,
-			ui_block,
+		components::{
+			presets::{
+				titled_ui_block,
+				untitled_ui_block,
+			},
+			wcl::render_wcl_block,
 		},
+		util::stylize,
 		Screen,
 	},
 };
@@ -59,60 +62,33 @@ impl WelcomeScreen {
 	/// Renders the welcome UI to the screen.
 	fn welcome_ui(frame: &mut Frame<'_, BackendType>) {
 		let size = frame.size();
-		let surrounding_block = ui_block("Terminal Arcade");
 		let chunks = Layout::default()
 			.direction(Direction::Vertical)
 			.margin(1)
 			.constraints(
 				[
-					Constraint::Max(17),
-					Constraint::Max(3),
-					Constraint::Percentage(30),
+					Constraint::Max(15),
+					Constraint::Max(2),
+					Constraint::Max(11),
+					Constraint::Min(0),
 				]
 				.as_ref(),
 			)
 			.split(size);
-		frame.render_widget(surrounding_block, size);
+		frame.render_widget(titled_ui_block("Welcome to Terminal Arcade!"), size);
 
-		let banner =
-			Paragraph::new(stylize(BANNER)).block(ui_block("Banner")).alignment(Alignment::Center);
+		let banner = Paragraph::new(stylize(BANNER))
+			.block(untitled_ui_block().borders(Borders::NONE))
+			.alignment(Alignment::Center);
 		frame.render_widget(banner, chunks[0]);
 
 		let version = std::env::var("CARGO_PKG_VERSION")
 			.unwrap_or_else(|_| "ersion... not found :(".to_string());
 		let version_info = Paragraph::new(stylize(format!("Terminal Arcade, v{version}")))
-			.block(ui_block("Version Info"))
+			.block(untitled_ui_block().borders(Borders::NONE))
 			.alignment(Alignment::Center);
 		frame.render_widget(version_info, chunks[1]);
 
-		let controls_list = Paragraph::new(Self::controls_list())
-			.block(ui_block("Controls"))
-			.alignment(Alignment::Center);
-		frame.render_widget(controls_list, chunks[2]);
-	}
-
-	/// Returns a stylized controls list string.
-	#[must_use]
-	fn controls_list() -> Text<'static> {
-		let reset = Attribute::Reset;
-		format!(
-			r#"
-{}: Choose a game to {}! ({}){reset}
-{}: View your {} ({})!{reset}
-{}: {}uit...{reset} ({} and {} also work!)
-"#,
-			stylize_raw("[1]"),
-			stylize_raw("play"),
-			stylize_raw("[Ctrl-P]"),
-			stylize_raw("[2]"),
-			stylize_raw("settings"),
-			stylize_raw("[Ctrl-Alt-S]"),
-			stylize_raw("[0]"),
-			stylize_raw("[Ctrl-Q]"),
-			stylize_raw("[Ctrl-C]"),
-			stylize_raw("[Esc]")
-		)
-		.into_text()
-		.unwrap()
+		render_wcl_block(chunks[2], frame);
 	}
 }
