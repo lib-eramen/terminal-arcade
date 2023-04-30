@@ -18,7 +18,7 @@ use crate::core::{
 };
 
 pub mod core;
-pub mod screens;
+pub mod ui;
 
 /// Entry point of a program! What, you expected a `main` function to be
 /// documented well?

@@ -69,7 +69,10 @@ pub fn stylize_first<T: ToString>(text: T) -> Spans<'static> {
 
 /// Clears the terminal.
 pub fn clear_terminal() -> Outcome<()> {
-	Ok(execute!(get_mut_terminal().backend_mut(), Clear(ClearType::All),)?)
+	Ok(execute!(
+		get_mut_terminal().backend_mut(),
+		Clear(ClearType::All),
+	)?)
 }
 
 /// The default [`ratatui`] block template.

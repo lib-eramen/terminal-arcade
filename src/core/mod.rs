@@ -41,7 +41,7 @@ pub use outcomes::Outcome;
 use self::terminal::get_terminal;
 use crate::{
 	core::terminal::get_mut_terminal,
-	screens::{
+	ui::{
 		util::clear_terminal,
 		Screen,
 		WelcomeScreen,
@@ -165,6 +165,12 @@ impl TerminalArcade {
 		quit_controls.contains(key_event)
 	}
 
+	/// Draws the UI of the active screen.
+	pub fn draw_active_screen_ui(&mut self) -> Outcome<()> {
+		get_mut_terminal().draw(|frame| self.get_active_screen().draw_ui(frame))?;
+		Ok(())
+	}
+
 	/// The function to be called when Terminal Arcade starts up.
 	pub fn startup(&mut self) -> Outcome<()> {
 		let _ = get_terminal(); // This call will initialize the global TERMINAL static variable.
@@ -181,15 +187,19 @@ impl TerminalArcade {
 	/// shortcuts), are passed to the last screen (which is the only active
 	/// screen anyways, see the struct documentation for more information).
 	pub fn run(&mut self) -> Outcome<()> {
+		self.draw_active_screen_ui()?;
 		loop {
 			let event = read()?;
-			if let Event::Key(ref key_event) = event {
-				if Self::check_quit_controls(key_event) {
-					Self::quit(self)?;
+			match event {
+				Event::Key(ref key_event) if Self::check_quit_controls(key_event) => {
+					self.quit()?;
 					break;
-				}
+				},
+				Event::Resize(_, _) => {
+					self.draw_active_screen_ui()?;
+				},
+				_ => {}
 			}
-			self.get_mut_active_screen().on_event(&event)?;
 		}
 		Ok(())
 	}
