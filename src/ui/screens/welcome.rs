@@ -53,15 +53,24 @@ pub const BANNER: &str = r#"/‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 /                             /  / / / / / / / / /  ‾‾‾/ / /‾‾‾‾\ \ \  / /  ‾‾/  
 ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾   ‾‾  ‾‾  ‾‾  ‾‾  ‾‾‾‾‾‾  ‾‾      ‾‾  ‾‾  ‾‾‾‾‾   "#;
 
+/// Screens that can be created by the welcome screen.
+#[derive(PartialEq, Eq, Clone, Copy)]
+enum ScreenCreated {
+	/// The game selection screen.
+	GameSelection,
+
+	/// The settings screen.
+	Screen,
+}
+
 /// The struct that welcomes the user to Terminal Arcade. To be presented every
 /// time Terminal Arcade is started.
 #[derive(Default)]
 pub struct WelcomeScreen {
 	closing: bool,
-	screen_created: Option<Box<dyn Screen>>,
+	screen_created: Option<ScreenCreated>,
 }
 
-/// TODO: Implement the event handler for the welcome screen
 impl Screen for WelcomeScreen {
 	fn is_closing(&self) -> bool {
 		self.closing
@@ -82,8 +91,8 @@ impl Screen for WelcomeScreen {
 					return Ok(());
 				}
 				match character {
-					'1' | 'p' => self.create_game_selection_screen(),
-					'2' | 's' => self.create_settings_screen(),
+					'1' | 'p' => self.set_screen_created(ScreenCreated::GameSelection),
+					'2' | 's' => self.set_screen_created(ScreenCreated::Screen),
 					'0' | 'q' => self.mark_closed(),
 					_ => {},
 				}
@@ -93,7 +102,10 @@ impl Screen for WelcomeScreen {
 	}
 
 	fn screen_created(&self) -> Option<Box<dyn Screen>> {
-		None
+		self.screen_created.map(|screen| match screen {
+			ScreenCreated::GameSelection => Self::create_game_selection_screen(),
+			ScreenCreated::Screen => Self::create_settings_screen(),
+		})
 	}
 }
 
@@ -103,15 +115,20 @@ impl WelcomeScreen {
 		self.closing = true;
 	}
 
+	/// Sets the screen to be created from this welcome screen.
+	fn set_screen_created(&mut self, screen_created: ScreenCreated) {
+		self.screen_created = Some(screen_created);
+	}
+
 	// TODO: Game selection screen.
 	/// Creates the game selection screen to switch to from this screen.
-	fn create_game_selection_screen(&mut self) {
+	fn create_game_selection_screen() -> Box<dyn Screen> {
 		todo!()
 	}
 
 	// TODO: Game selection screen.
 	/// Creates the settings screen to switch to from this screen.
-	fn create_settings_screen(&mut self) {
+	fn create_settings_screen() -> Box<dyn Screen> {
 		todo!()
 	}
 
