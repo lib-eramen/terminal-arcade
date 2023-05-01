@@ -73,3 +73,13 @@ pub fn clear_terminal() -> Outcome<()> {
 pub fn ansi_parse_lines(lines: Vec<String>) -> Vec<Text<'static>> {
 	lines.iter().map(String::into_text).map(Result::unwrap).collect()
 }
+
+/// Gets the version of the crate, or returns "version... not found :(" if one
+/// was unable to be retrieved.
+#[must_use]
+pub fn get_crate_version() -> String {
+	format!(
+		"v{}",
+		std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "ersion... not found :(".to_string())
+	)
+}

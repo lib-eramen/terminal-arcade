@@ -7,10 +7,7 @@ use ratatui::{
 		Direction,
 		Layout,
 	},
-	widgets::{
-		Borders,
-		Paragraph,
-	},
+	widgets::Paragraph,
 	Frame,
 };
 
@@ -24,14 +21,16 @@ use crate::{
 			},
 			wcl::render_wcl_block,
 		},
-		util::stylize,
+		util::{
+			get_crate_version,
+			stylize,
+		},
 		Screen,
 	},
 };
 
 /// Terminal Arcade's ASCII banner.
-pub const BANNER: &str = r#"
-/‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾/‾‾/‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\            
+pub const BANNER: &str = r#"/‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾/‾‾/‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\            
 ‾‾‾‾‾/  /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\  \           
     /  /  /‾‾‾‾‾/  /‾‾‾‾‾‾‾/  /‾‾‾‾‾‾‾‾‾/  /‾‾/  /‾‾‾‾‾‾/  /‾‾‾‾\  \  \          
    /  /  /  /‾‾‾  /  /‾/  /  / /‾/ /‾/ /  /  /  /  /‾/ /  /  /\  \  \  \         
@@ -44,8 +43,7 @@ pub const BANNER: &str = r#"
   /  /‾‾     /‾‾  /‾‾‾‾  /‾‾‾‾  /  / / / / / /‾/ / / /     / /\ \ \ \ \ \ \  ‾‾/ 
  /      /‾‾      /      /      /  / / / / / / / / / /     / /  \ \ \ \/ / / /‾‾  
 /                             /  / / / / / / / / /  ‾‾‾/ / /‾‾‾‾\ \ \  / /  ‾‾/  
-‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾   ‾‾  ‾‾  ‾‾  ‾‾  ‾‾‾‾‾‾  ‾‾      ‾‾  ‾‾  ‾‾‾‾‾   
-"#;
+‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾   ‾‾  ‾‾  ‾‾  ‾‾  ‾‾‾‾‾‾  ‾‾      ‾‾  ‾‾  ‾‾‾‾‾   "#;
 
 /// The struct that welcomes the user to Terminal Arcade. To be presented every
 /// time Terminal Arcade is started.
@@ -65,30 +63,17 @@ impl WelcomeScreen {
 		let chunks = Layout::default()
 			.direction(Direction::Vertical)
 			.margin(1)
-			.constraints(
-				[
-					Constraint::Max(15),
-					Constraint::Max(2),
-					Constraint::Max(11),
-					Constraint::Min(0),
-				]
-				.as_ref(),
-			)
+			.constraints([Constraint::Max(17), Constraint::Max(11), Constraint::Min(0)].as_ref())
 			.split(size);
 		frame.render_widget(titled_ui_block("Welcome to Terminal Arcade!"), size);
-
-		let banner = Paragraph::new(stylize(BANNER))
-			.block(untitled_ui_block().borders(Borders::NONE))
-			.alignment(Alignment::Center);
+		let banner_text = stylize(format!(
+			"{}\nTerminal Arcade, {}",
+			BANNER,
+			get_crate_version()
+		));
+		let banner =
+			Paragraph::new(banner_text).block(untitled_ui_block()).alignment(Alignment::Center);
 		frame.render_widget(banner, chunks[0]);
-
-		let version = std::env::var("CARGO_PKG_VERSION")
-			.unwrap_or_else(|_| "ersion... not found :(".to_string());
-		let version_info = Paragraph::new(stylize(format!("Terminal Arcade, v{version}")))
-			.block(untitled_ui_block().borders(Borders::NONE))
-			.alignment(Alignment::Center);
-		frame.render_widget(version_info, chunks[1]);
-
-		render_wcl_block(chunks[2], frame);
+		render_wcl_block(chunks[1], frame);
 	}
 }
