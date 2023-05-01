@@ -91,7 +91,7 @@ pub fn wcl_paragraphs(selected: Option<u8>) -> Vec<Paragraph<'static>> {
 		.into_iter()
 		.enumerate()
 		.map(|(index, text)| {
-			let matches = selected.is_some_and(|selected_index| index == selected_index.into());
+			let matches = selected.is_some_and(|selected_index| index == usize::from(selected_index));
 			Paragraph::new(text)
 				.block(
 					if matches {
