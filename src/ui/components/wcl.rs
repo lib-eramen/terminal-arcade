@@ -17,6 +17,7 @@ use ratatui::{
 	},
 	text::Text,
 	widgets::{
+		BorderType,
 		Borders,
 		Paragraph,
 	},
@@ -92,9 +93,16 @@ pub fn wcl_paragraphs(selected: Option<u8>) -> Vec<Paragraph<'static>> {
 		.map(|(index, text)| {
 			let matches = selected.is_some_and(|selected_index| index == selected_index.into());
 			Paragraph::new(text)
-				.block(untitled_ui_block())
+				.block(
+					if matches {
+						untitled_ui_block()
+							.border_type(BorderType::Thick)
+							.border_style(Style::default().fg(Color::LightRed))
+					} else {
+						untitled_ui_block()
+					},
+				)
 				.alignment(Alignment::Center)
-				.style(if matches { Style::default().bg(Color::White) } else { Style::default() })
 		})
 		.collect()
 }
