@@ -10,7 +10,12 @@
 
 #![deny(unused_must_use, unused_imports, rust_2018_idioms)]
 #![warn(clippy::all, clippy::pedantic, missing_docs)]
-#![allow(clippy::missing_errors_doc, clippy::missing_panics_doc, clippy::module_name_repetitions)]
+#![allow(
+	clippy::missing_errors_doc,
+	clippy::missing_panics_doc,
+	clippy::module_name_repetitions,
+	unused_imports
+)]
 
 use crate::core::{
 	Handler,

@@ -16,6 +16,7 @@ use ratatui::{
 	Frame,
 };
 
+use super::config::ConfigScreen;
 use crate::{
 	core::{
 		terminal::BackendType,
@@ -90,10 +91,6 @@ impl Screen for WelcomeScreen {
 		self.welcome_ui(frame);
 	}
 
-	fn title(&self) -> &str {
-		"Welcome to Terminal Arcade!"
-	}
-
 	fn event(&mut self, event: &Event) -> Outcome<()> {
 		if let Event::Key(key) = event {
 			match key.code {
@@ -112,11 +109,17 @@ impl Screen for WelcomeScreen {
 		Ok(())
 	}
 
-	fn screen_created(&self) -> Option<Box<dyn Screen>> {
-		self.screen_created.map(|screen| match screen {
-			ScreenCreated::GameSelection => Self::create_game_selection_screen(),
-			ScreenCreated::Settings => Self::create_settings_screen(),
-		})
+	fn screen_created(&mut self) -> Option<Box<dyn Screen>> {
+		if let Some(screen) = self.screen_created {
+			let screen_created = match screen {
+				ScreenCreated::GameSelection => Self::create_game_selection_screen(),
+				ScreenCreated::Settings => Self::create_settings_screen(),
+			};
+			self.screen_created = None;
+			Some(screen_created)
+		} else {
+			None
+		}
 	}
 }
 
@@ -140,14 +143,14 @@ impl WelcomeScreen {
 	// TODO: Game selection screen.
 	/// Creates the settings screen to switch to from this screen.
 	fn create_settings_screen() -> Box<dyn Screen> {
-		todo!()
+		Box::<ConfigScreen>::default()
 	}
 
 	/// Handles the shortcut associated with the character inputted.
 	fn handle_char_shortcut(&mut self, character: char) {
 		match character {
 			'1' | 'p' => self.set_screen_created(ScreenCreated::GameSelection),
-			'2' | 's' => self.set_screen_created(ScreenCreated::Settings),
+			'2' | 'c' => self.set_screen_created(ScreenCreated::Settings),
 			'0' | 'q' => self.mark_closed(),
 			_ => {},
 		}

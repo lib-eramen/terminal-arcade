@@ -61,10 +61,8 @@ pub fn stylize_first<T: ToString>(text: T) -> Spans<'static> {
 
 /// Clears the terminal.
 pub fn clear_terminal() -> Outcome<()> {
-	Ok(execute!(
-		get_mut_terminal().backend_mut(),
-		Clear(ClearType::All),
-	)?)
+	get_mut_terminal().clear()?;
+	Ok(())
 }
 
 /// ANSI-parses a [`Vec`] of [String] lines into individual [Text] objects.

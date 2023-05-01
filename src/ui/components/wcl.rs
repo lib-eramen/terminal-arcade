@@ -54,11 +54,10 @@ pub fn wcl_lines() -> Vec<String> {
 			stylize_raw("[C]"),
 		),
 		format!(
-			"{}: {}uit...{reset} ({} and {} also work!)",
+			"{}: {}uit...{reset} ({} also works!)",
 			stylize_raw("[0]"),
 			stylize_raw("[Q]"),
 			stylize_raw("[Ctrl-C]"),
-			stylize_raw("[Esc]")
 		),
 	]
 }
@@ -91,7 +90,8 @@ pub fn wcl_paragraphs(selected: Option<u8>) -> Vec<Paragraph<'static>> {
 		.into_iter()
 		.enumerate()
 		.map(|(index, text)| {
-			let matches = selected.is_some_and(|selected_index| index == usize::from(selected_index));
+			let matches =
+				selected.is_some_and(|selected_index| index == usize::from(selected_index));
 			Paragraph::new(text)
 				.block(
 					if matches {

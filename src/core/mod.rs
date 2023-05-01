@@ -34,9 +34,15 @@ use crossterm::{
 	},
 };
 pub use outcomes::Outcome;
-use ratatui::layout::{
-	Constraint,
-	Layout,
+use ratatui::{
+	layout::{
+		Constraint,
+		Layout,
+	},
+	style::{
+		Color,
+		Style,
+	},
 };
 
 use self::terminal::get_terminal;
@@ -72,41 +78,15 @@ pub struct Handler {
 	/// it will be the only screen visible on the terminal, aside from its
 	/// nesting root block that is globally visible.
 	screens: Vec<Box<dyn Screen>>,
-
-	/// The root block's (the window instantiated first hand that nests all UI
-	/// components and child screens) title.
-	root_block_title: String,
 }
 
 /// The level of indentation to be used for printing.
 pub static INDENT: &str = r#"        "#;
 
-/// Terminal Arcade's ASCII banner.
-pub const BANNER: &str = r#"
-        /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾////‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\
-        ‾‾‾‾‾/  /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾////‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\  \
-            /  /  /‾‾‾‾‾/  /‾‾‾‾‾‾‾/  /‾‾‾‾‾‾‾‾‾/  /‾‾/  /‾‾‾‾‾‾/  /‾‾‾‾\  \  \
-           /  /  /  /‾‾‾  /  /‾/  /  / /‾/ /‾/ /  /  /  /  /‾/ /  /  /\  \  \  \
-          /  /  /  ‾‾‾/  /  / /  /  / / / / / /  /  /  /  / / /  /   ‾‾   \  \  \
-         /  /  /  /‾‾‾  /  /  \  \  \ \ \ \ \ \  \  \  \  \ \ \  \  \‾‾‾\  \  \  \
-        /  /  /  ‾‾‾/  /  /    \  \  \ \ \ \ \ \  \  \  \  \ \ \  \  \   \  \  \  ‾‾‾‾‾\
-        ‾‾‾   ‾‾‾‾‾‾   ‾‾‾      ‾‾‾   ‾‾  ‾‾  ‾‾   ‾‾‾   ‾‾‾  ‾‾   ‾‾‾    ‾‾‾   ‾‾‾‾‾‾‾‾
-            /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾/  /‾‾\ \‾‾‾‾‾\ \‾‾‾‾‾‾‾‾/ /\ \‾‾‾‾‾\ \‾‾‾‾‾‾\
-           /      /‾‾                    /  / /\ \ \ \‾\ \ \ \‾‾‾‾  /  \ \ \‾\ \ \  \‾‾‾
-          /  /‾‾     /‾‾  /‾‾‾‾  /‾‾‾‾  /  / / / / / /‾/ / / /     / /\ \ \ \ \ \ \  ‾‾/
-         /      /‾‾      /      /      /  / / / / / / / / / /     / /  \ \ \ \/ / / /‾‾
-        /                             /  / / / / / / / / /  ‾‾‾/ / /‾‾‾‾\ \ \  / /  ‾‾/
-        ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾   ‾‾  ‾‾  ‾‾  ‾‾  ‾‾‾‾‾‾  ‾‾      ‾‾  ‾‾  ‾‾‾‾‾
-        "#; // These 8 spaces are added to keep up with the 8-space indentation of the
-			// banner.
-
 impl Handler {
 	/// Constructs a new Terminal Arcade object.
 	pub fn new() -> Self {
-		Self {
-			screens: vec![],
-			root_block_title: "Terminal Arcade".to_string(),
-		}
+		Self { screens: vec![] }
 	}
 
 	/// Gets the current active screen.
@@ -119,34 +99,15 @@ impl Handler {
 		self.screens.last_mut().unwrap().as_mut()
 	}
 
-	/// Updates the title of the root block to the active screen's.
-	fn update_root_block_title(&mut self) {
-		self.root_block_title = self.get_active_screen().title().to_string();
-	}
-
-	/// Clears the screen, updates the root block title and redraws the root
-	/// block. This is an operation always done when changing screens, like in
-	/// [`Self::spawn_screen`] and [`Self::close_screen`].
-	fn clear_and_update_title(&mut self) -> Outcome<()> {
-		clear_terminal()?;
-		self.update_root_block_title();
-		self.draw_root_block()
-	}
-
-	/// Spawns an active screen.
-	/// In detail, this function pushes the screen to the top of the screen
-	/// hierarchy in Terminal Arcade, and calls its [`Screen::spawn`] function.
-	pub fn spawn_screen(&mut self, screen: Box<dyn Screen>) -> Outcome<()> {
+	/// Spawns a screen as active.
+	pub fn spawn_screen(&mut self, screen: Box<dyn Screen>) {
 		self.screens.push(screen);
-		self.clear_and_update_title()?;
-		Ok(())
 	}
 
 	/// Closes the active screen.
 	/// In detail, this function pops the screen from the screen hierarchy in
 	/// Terminal Arcade, and calls its [`Screen::close`] function.
 	pub fn close_screen(&mut self) -> Outcome<()> {
-		self.clear_and_update_title()?;
 		self.get_mut_active_screen().close()?;
 		let _ = self.screens.pop();
 		Ok(())
@@ -185,7 +146,6 @@ impl Handler {
 		let quit_controls = vec![
 			KeyEvent::new(KeyCode::Char('q'), KeyModifiers::CONTROL),
 			KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
-			KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
 			KeyEvent::new(KeyCode::F(4), KeyModifiers::ALT),
 		];
 		quit_controls.contains(key)
@@ -194,20 +154,6 @@ impl Handler {
 	/// Draws the UI of the active screen.
 	fn draw_active_screen_ui(&mut self) -> Outcome<()> {
 		get_mut_terminal().draw(|frame| self.get_active_screen().draw_ui(frame))?;
-		Ok(())
-	}
-
-	/// Draws the root block. This root block is always visible on screen, and
-	/// it nests all the child components of a [Screen], so that it does not
-	/// need to draw its own block nesting its own compomnents.
-	fn draw_root_block(&mut self) -> Outcome<()> {
-		get_mut_terminal().draw(|frame| {
-			let layout = Layout::default()
-				.margin(0)
-				.constraints([Constraint::Percentage(100)].as_ref())
-				.split(frame.size());
-			frame.render_widget(titled_ui_block(&self.root_block_title), layout[0]);
-		})?;
 		Ok(())
 	}
 
@@ -227,7 +173,7 @@ impl Handler {
 	pub fn startup(&mut self) -> Outcome<()> {
 		let _ = get_terminal(); // This call will initialize the global TERMINAL static variable.
 		Self::set_global_terminal_rules()?;
-		self.spawn_screen(Box::<WelcomeScreen>::default())?;
+		self.spawn_screen(Box::<WelcomeScreen>::default());
 		self.run()?;
 		Ok(())
 	}
@@ -238,14 +184,14 @@ impl Handler {
 		if self.quit_when_no_screens()? {
 			return Ok(true);
 		}
-		let active_screen = self.get_active_screen();
+		let active_screen = self.get_mut_active_screen();
 		let created_screen: Option<Box<dyn Screen>> = active_screen.screen_created();
 		if active_screen.is_closing() {
 			self.close_screen()?;
 			return self.quit_when_no_screens();
 		}
 		if let Some(screen) = created_screen {
-			self.spawn_screen(screen)?;
+			self.spawn_screen(screen);
 		}
 		Ok(false)
 	}
@@ -267,10 +213,9 @@ impl Handler {
 		Ok(false)
 	}
 
-	/// Runs the event loop, also returning whether the loop should continue
-	/// running.
+	/// Runs the event loop, also returning whether the loop should break.
 	fn event_loop(&mut self, event: &Event) -> Outcome<bool> {
-		Ok(self.handle_active_screen()? || self.handle_terminal_event(event)?)
+		Ok(self.handle_terminal_event(event)? || self.handle_active_screen()?)
 	}
 
 	/// The function to be called when Terminal Arcade is done starting and
@@ -280,16 +225,11 @@ impl Handler {
 	/// shortcuts), are passed to the last screen (which is the only active
 	/// screen anyways, see the struct documentation for more information).
 	fn run(&mut self) -> Outcome<()> {
-		self.draw_root_block()?;
 		self.draw_active_screen_ui()?;
 		loop {
 			self.draw_active_screen_ui()?;
 			let event = read()?;
 			if self.event_loop(&event)? {
-				break;
-			}
-			self.draw_active_screen_ui()?;
-			if self.handle_active_screen()? {
 				break;
 			}
 		}

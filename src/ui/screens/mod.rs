@@ -11,6 +11,7 @@ use crate::core::{
 	Outcome,
 };
 
+pub mod config;
 pub mod welcome;
 
 /// The trait for handling drawing on the terminal and receiving events from the
@@ -40,14 +41,13 @@ pub trait Screen {
 	/// Indicates the screen that this screen itself is trying to create.
 	/// If the window wants to create another screen, this function should
 	/// return [Some], with the window inside it. Otherwise, return [None].
-	fn screen_created(&self) -> Option<Box<dyn Screen>>;
+	fn screen_created(&mut self) -> Option<Box<dyn Screen>> {
+		None
+	}
 
 	/// Paints the UI that the screen represent.
 	/// This method is also called when a resize event is triggered.
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>);
-
-	/// The title for the [Handler] to change to.
-	fn title(&self) -> &str;
 }
 
 pub use welcome::WelcomeScreen;
