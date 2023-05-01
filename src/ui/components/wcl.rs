@@ -90,16 +90,11 @@ pub fn wcl_paragraphs(selected: Option<u8>) -> Vec<Paragraph<'static>> {
 		.into_iter()
 		.enumerate()
 		.map(|(index, text)| {
-			let block = if let Some(selected_index) = selected {
-				if index == selected_index.into() {
-					untitled_ui_block().style(Style::default().bg(Color::White))
-				} else {
-					untitled_ui_block()
-				}
-			} else {
-				untitled_ui_block()
-			};
-			Paragraph::new(text).block(block).alignment(Alignment::Center)
+			let matches = selected.is_some_and(|selected_index| index == selected_index.into());
+			Paragraph::new(text)
+				.block(untitled_ui_block())
+				.alignment(Alignment::Center)
+				.style(if matches { Style::default().bg(Color::White) } else { Style::default() })
 		})
 		.collect()
 }
