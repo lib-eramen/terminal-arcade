@@ -251,8 +251,7 @@ impl Handler {
 
 	/// Handles an event read from the terminal.
 	/// also returning if the event loop calling this function should quit.
-	fn handle_terminal_event(&mut self) -> Outcome<bool> {
-		let event = read()?;
+	fn handle_terminal_event(&mut self, event: &Event) -> Outcome<bool> {
 		match event {
 			Event::Key(ref key) if Self::check_quit_controls(key) => {
 				self.quit()?;
@@ -263,8 +262,12 @@ impl Handler {
 			},
 			_ => {},
 		}
-		self.get_mut_active_screen().event(&event)?;
 		Ok(false)
+	}
+
+	/// Checks whether the event loop should break.
+	fn event_loop_should_break(&mut self, event: &Event) -> Outcome<bool> {
+		Ok(self.handle_active_screen()? || self.handle_terminal_event(event)?)
 	}
 
 	/// The function to be called when Terminal Arcade is done starting and
@@ -277,7 +280,15 @@ impl Handler {
 		self.draw_root_block()?;
 		self.draw_active_screen_ui()?;
 		loop {
-			if self.handle_active_screen()? || self.handle_terminal_event()? {
+			let event = read()?;
+			if self.event_loop_should_break(&event)? {
+				break;
+			}
+
+			self.get_mut_active_screen().event(&event)?;
+			self.draw_active_screen_ui()?;
+
+			if self.handle_active_screen()? {
 				break;
 			}
 		}

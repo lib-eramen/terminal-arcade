@@ -11,6 +11,10 @@ use ratatui::{
 		Layout,
 		Rect,
 	},
+	style::{
+		Color,
+		Style,
+	},
 	text::Text,
 	widgets::{
 		Borders,
@@ -81,18 +85,30 @@ pub fn wcl_layout() -> Layout {
 
 /// Returns a controls list's individual control entry paragraphs.
 #[must_use]
-pub fn wcl_paragraphs() -> Vec<Paragraph<'static>> {
+pub fn wcl_paragraphs(selected: Option<u8>) -> Vec<Paragraph<'static>> {
 	wcl_texts()
 		.into_iter()
-		.map(|text| Paragraph::new(text).block(untitled_ui_block()).alignment(Alignment::Center))
+		.enumerate()
+		.map(|(index, text)| {
+			let block = if let Some(selected_index) = selected {
+				if index == selected_index.into() {
+					untitled_ui_block().style(Style::default().bg(Color::White))
+				} else {
+					untitled_ui_block()
+				}
+			} else {
+				untitled_ui_block()
+			};
+			Paragraph::new(text).block(block).alignment(Alignment::Center)
+		})
 		.collect()
 }
 
 /// Renders a controls list block.
-pub fn render_wcl_block(size: Rect, frame: &mut Frame<'_, BackendType>) {
+pub fn render_wcl_block(size: Rect, frame: &mut Frame<'_, BackendType>, selected: Option<u8>) {
 	frame.render_widget(titled_ui_block("Controls").borders(Borders::NONE), size);
 	let chunks = wcl_layout().split(size);
-	let widget_config = wcl_paragraphs().into_iter().zip(chunks.iter());
+	let widget_config = wcl_paragraphs(selected).into_iter().zip(chunks.iter());
 	for (paragraph, chunk) in widget_config {
 		frame.render_widget(paragraph, *chunk);
 	}
