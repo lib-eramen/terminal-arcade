@@ -54,6 +54,10 @@ impl Screen for WelcomeScreen {
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
 		Self::welcome_ui(frame);
 	}
+
+	fn title(&self) -> &str {
+		"Welcome to Terminal Arcade!"
+	}
 }
 
 impl WelcomeScreen {

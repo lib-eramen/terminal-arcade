@@ -1,10 +1,7 @@
 //! # The `core` module
 //!
-//! This module contains all of the inner workings and mechanisms for Terminal
-//! Arcade - including its UI, text, game loading, and custom game engine.
-//!
-//! Okay, "custom game engine" sounds a bit overblown. It's just an event
-//! handling trait.
+//! This module contains some core functionality that all other functionalities
+//! depend on.
 //!
 //! To get started, take a look at the [`TerminalArcade`] struct, the struct
 //! that all mechanics in this crate is based on.
@@ -37,11 +34,16 @@ use crossterm::{
 	},
 };
 pub use outcomes::Outcome;
+use ratatui::layout::{
+	Constraint,
+	Layout,
+};
 
 use self::terminal::get_terminal;
 use crate::{
 	core::terminal::get_mut_terminal,
 	ui::{
+		components::presets::titled_ui_block,
 		util::clear_terminal,
 		Screen,
 		WelcomeScreen,
@@ -52,9 +54,12 @@ pub mod outcomes;
 pub mod terminal;
 
 /// The core struct to all inner workings in Terminal Arcade.
+/// Terminal Arcade has one encompassing UI construct - the root block. It is
+/// instantiated first hand, and it nests all UI components and child screens.
+/// This struct mostly handles rendering that and managing screens.
 #[derive(Default)]
 #[must_use]
-pub struct TerminalArcade {
+pub struct Handler {
 	/// The screens hierarchy in which Terminal Arcade manages windows.
 	///
 	/// The hierarchy is linear - there is always the root window which is the
@@ -62,10 +67,15 @@ pub struct TerminalArcade {
 	/// yet), and it moves on to game screens, setting screens, etc. Simple,
 	/// one-time popups can also take advantage of this structure.
 	///
-	/// According to how this should be implemented, the window with the highest
-	/// index in this hierarchy will be painted - in particular, it will be the
-	/// only screen visible on the terminal.
+	/// According to how this should be implemented, the screen with the highest
+	/// index in this hierarchy will be the only screen painted - in particular,
+	/// it will be the only screen visible on the terminal, aside from its
+	/// nesting root block that is globally visible.
 	screens: Vec<Box<dyn Screen>>,
+
+	/// The root block's (the window instantiated first hand that nests all UI
+	/// components and child screens) title.
+	root_block_title: String,
 }
 
 /// The level of indentation to be used for printing.
@@ -90,44 +100,60 @@ pub const BANNER: &str = r#"
         "#; // These 8 spaces are added to keep up with the 8-space indentation of the
 			// banner.
 
-impl TerminalArcade {
+impl Handler {
 	/// Constructs a new Terminal Arcade object.
 	pub fn new() -> Self {
-		Self { screens: vec![] }
+		Self {
+			screens: vec![],
+			root_block_title: "Terminal Arcade".to_string(),
+		}
 	}
 
 	/// Gets the current active screen.
-	pub fn get_active_screen(&self) -> &dyn Screen {
+	fn get_active_screen(&self) -> &dyn Screen {
 		self.screens.last().unwrap().as_ref()
 	}
 
 	/// Gets the current active screen ***mutably***.
-	pub fn get_mut_active_screen(&mut self) -> &mut dyn Screen {
+	fn get_mut_active_screen(&mut self) -> &mut dyn Screen {
 		self.screens.last_mut().unwrap().as_mut()
+	}
+
+	/// Updates the title of the root block to the active screen's.
+	fn update_root_block_title(&mut self) {
+		self.root_block_title = self.get_active_screen().title().to_string();
+	}
+
+	/// Clears the screen and updates the root block title.
+	/// This is an operation always done when changing screens, like in
+	/// [`Self::spawn_screen`] and [`Self::close_screen`].
+	fn clear_and_update_title(&mut self) -> Outcome<()> {
+		self.update_root_block_title();
+		clear_terminal()
 	}
 
 	/// Spawns an active screen.
 	/// In detail, this function pushes the screen to the top of the screen
 	/// hierarchy in Terminal Arcade, and calls its [`Screen::spawn`] function.
-	pub fn spawn_screen(&mut self, mut screen: Box<dyn Screen>) -> Outcome<()> {
-		clear_terminal()?;
+	fn spawn_screen(&mut self, mut screen: Box<dyn Screen>) -> Outcome<()> {
 		screen.on_spawn()?;
 		self.screens.push(screen);
+		self.clear_and_update_title()?;
 		Ok(())
 	}
 
 	/// Closes the active screen.
 	/// In detail, this function pops the screen from the screen hierarchy in
 	/// Terminal Arcade, and calls its [`Screen::close`] function.
-	pub fn close_screen(&mut self) -> Outcome<()> {
-		clear_terminal()?;
+	fn close_screen(&mut self) -> Outcome<()> {
+		self.clear_and_update_title()?;
 		self.get_mut_active_screen().on_close()?;
 		let _ = self.screens.pop();
 		Ok(())
 	}
 
 	/// Sets global terminal rules.
-	pub fn set_global_terminal_rules() -> Outcome<()> {
+	fn set_global_terminal_rules() -> Outcome<()> {
 		enable_raw_mode()?;
 		Ok(execute!(
 			get_mut_terminal().backend_mut(),
@@ -142,7 +168,7 @@ impl TerminalArcade {
 	}
 
 	/// Unsets the global terminal rules set in [`set_global_terminal_rules`].
-	pub fn unset_global_terminal_rules() -> Outcome<()> {
+	fn unset_global_terminal_rules() -> Outcome<()> {
 		disable_raw_mode()?;
 		Ok(execute!(
 			get_mut_terminal().backend_mut(),
@@ -155,7 +181,7 @@ impl TerminalArcade {
 
 	/// Checks for whether a key event matches the quit controls.
 	#[must_use]
-	pub fn check_quit_controls(key_event: &KeyEvent) -> bool {
+	fn check_quit_controls(key_event: &KeyEvent) -> bool {
 		let quit_controls = vec![
 			KeyEvent::new(KeyCode::Char('q'), KeyModifiers::CONTROL),
 			KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
@@ -166,17 +192,31 @@ impl TerminalArcade {
 	}
 
 	/// Draws the UI of the active screen.
-	pub fn draw_active_screen_ui(&mut self) -> Outcome<()> {
+	fn draw_active_screen_ui(&mut self) -> Outcome<()> {
 		get_mut_terminal().draw(|frame| self.get_active_screen().draw_ui(frame))?;
 		Ok(())
 	}
 
+	/// Draws the root block. This root block is always visible on screen, and
+	/// it nests all the child components of a [Screen], so that it does not
+	/// need to draw its own block nesting its own compomnents.
+	fn draw_root_block(&mut self) -> Outcome<()> {
+		get_mut_terminal().draw(|frame| {
+			let layout = Layout::default()
+				.margin(0)
+				.constraints([Constraint::Percentage(100)].as_ref())
+				.split(frame.size());
+			frame.render_widget(titled_ui_block(&self.root_block_title), layout[0]);
+		})?;
+		Ok(())
+	}
+
 	/// The function to be called when Terminal Arcade starts up.
-	pub fn startup(&mut self) -> Outcome<()> {
+	pub(super) fn startup(&mut self) -> Outcome<()> {
 		let _ = get_terminal(); // This call will initialize the global TERMINAL static variable.
 		Self::set_global_terminal_rules()?;
-		Self::spawn_screen(self, Box::new(WelcomeScreen))?;
-		Self::run(self)?;
+		self.spawn_screen(Box::new(WelcomeScreen))?;
+		self.run()?;
 		Ok(())
 	}
 
@@ -186,7 +226,8 @@ impl TerminalArcade {
 	/// Events, once handled by Terminal Arcade (for things like global
 	/// shortcuts), are passed to the last screen (which is the only active
 	/// screen anyways, see the struct documentation for more information).
-	pub fn run(&mut self) -> Outcome<()> {
+	fn run(&mut self) -> Outcome<()> {
+		self.draw_root_block()?;
 		self.draw_active_screen_ui()?;
 		loop {
 			let event = read()?;
@@ -205,7 +246,7 @@ impl TerminalArcade {
 	}
 
 	/// The function to be called when Terminal Arcade is being quitted.
-	pub fn quit(&mut self) -> Outcome<()> {
+	fn quit(&mut self) -> Outcome<()> {
 		while !self.screens.is_empty() {
 			self.close_screen()?;
 		}

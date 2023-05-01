@@ -13,8 +13,8 @@
 #![allow(clippy::missing_errors_doc, clippy::missing_panics_doc, clippy::module_name_repetitions)]
 
 use crate::core::{
+	Handler,
 	Outcome,
-	TerminalArcade,
 };
 
 pub mod core;
@@ -23,5 +23,5 @@ pub mod ui;
 /// Entry point of a program! What, you expected a `main` function to be
 /// documented well?
 fn main() -> Outcome<()> {
-	TerminalArcade::new().startup()
+	Handler::new().startup()
 }

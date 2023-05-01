@@ -41,6 +41,9 @@ pub trait Screen {
 	/// Paints the UI that the screen represent.
 	/// This method is also called when a resize event is triggered.
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>);
+
+	/// The title for the [Handler] to change to.
+	fn title(&self) -> &str;
 }
 
 pub use welcome::WelcomeScreen;
