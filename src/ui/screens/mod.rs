@@ -18,25 +18,29 @@ pub mod welcome;
 /// One should always start here when making a game/screen.
 #[must_use]
 pub trait Screen {
-	/// Called when the screen is first constructed, or "spawned". All
-	/// initialization should go here.
-	fn on_spawn(&mut self) -> Outcome<()> {
-		Ok(())
-	}
-
 	/// Called when an event is passed along to the screen,
 	/// possibly from [`crate::TerminalArcade`], but also from whatever screen
 	/// spawned this screen.
-	fn on_event(&mut self, _event: &Event) -> Outcome<()> {
+	fn event(&mut self, _event: &Event) -> Outcome<()> {
 		Ok(())
 	}
 
 	/// Called when the screen is being closed.
 	/// This can be called when the entire application is being quitted (in the
 	/// proper manner, of course, not through a crash or a panic).
-	fn on_close(&mut self) -> Outcome<()> {
+	fn close(&mut self) -> Outcome<()> {
 		Ok(())
 	}
+
+	/// Indicates that the screen is ready to be closed.
+	/// If the screen is ready to be closed, the implementation of this function
+	/// should return true. Otherwise, it should return false.
+	fn is_closing(&self) -> bool;
+
+	/// Indicates the screen that this screen itself is trying to create.
+	/// If the window wants to create another screen, this function should
+	/// return [Some], with the window inside it. Otherwise, return [None].
+	fn screen_created(&self) -> Option<Box<dyn Screen>>;
 
 	/// Paints the UI that the screen represent.
 	/// This method is also called when a resize event is triggered.

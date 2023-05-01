@@ -135,8 +135,7 @@ impl Handler {
 	/// Spawns an active screen.
 	/// In detail, this function pushes the screen to the top of the screen
 	/// hierarchy in Terminal Arcade, and calls its [`Screen::spawn`] function.
-	fn spawn_screen(&mut self, mut screen: Box<dyn Screen>) -> Outcome<()> {
-		screen.on_spawn()?;
+	pub fn spawn_screen(&mut self, screen: Box<dyn Screen>) -> Outcome<()> {
 		self.screens.push(screen);
 		self.clear_and_update_title()?;
 		Ok(())
@@ -145,9 +144,9 @@ impl Handler {
 	/// Closes the active screen.
 	/// In detail, this function pops the screen from the screen hierarchy in
 	/// Terminal Arcade, and calls its [`Screen::close`] function.
-	fn close_screen(&mut self) -> Outcome<()> {
+	pub fn close_screen(&mut self) -> Outcome<()> {
 		self.clear_and_update_title()?;
-		self.get_mut_active_screen().on_close()?;
+		self.get_mut_active_screen().close()?;
 		let _ = self.screens.pop();
 		Ok(())
 	}
@@ -181,14 +180,14 @@ impl Handler {
 
 	/// Checks for whether a key event matches the quit controls.
 	#[must_use]
-	fn check_quit_controls(key_event: &KeyEvent) -> bool {
+	fn check_quit_controls(key: &KeyEvent) -> bool {
 		let quit_controls = vec![
 			KeyEvent::new(KeyCode::Char('q'), KeyModifiers::CONTROL),
 			KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
 			KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
 			KeyEvent::new(KeyCode::F(4), KeyModifiers::ALT),
 		];
-		quit_controls.contains(key_event)
+		quit_controls.contains(key)
 	}
 
 	/// Draws the UI of the active screen.
@@ -211,13 +210,61 @@ impl Handler {
 		Ok(())
 	}
 
+	/// Quits when the screen has no more screens to draw.
+	/// Also returns if there are no screens, and by proxy, if the application
+	/// has been quit.
+	fn quit_when_no_screens(&mut self) -> Outcome<bool> {
+		Ok(if self.screens.is_empty() {
+			self.quit()?;
+			true
+		} else {
+			false
+		})
+	}
+
 	/// The function to be called when Terminal Arcade starts up.
-	pub(super) fn startup(&mut self) -> Outcome<()> {
+	pub fn startup(&mut self) -> Outcome<()> {
 		let _ = get_terminal(); // This call will initialize the global TERMINAL static variable.
 		Self::set_global_terminal_rules()?;
-		self.spawn_screen(Box::new(WelcomeScreen))?;
+		self.spawn_screen(Box::<WelcomeScreen>::default())?;
 		self.run()?;
 		Ok(())
+	}
+
+	/// Handles the information provided by the active screen,
+	/// also returning if the event loop calling this function should quit.
+	fn handle_active_screen(&mut self) -> Outcome<bool> {
+		if self.quit_when_no_screens()? {
+			return Ok(true);
+		}
+		let active_screen = self.get_active_screen();
+		let created_screen: Option<Box<dyn Screen>> = active_screen.screen_created();
+		if active_screen.is_closing() {
+			self.close_screen()?;
+			return self.quit_when_no_screens();
+		}
+		if let Some(screen) = created_screen {
+			self.spawn_screen(screen)?;
+		}
+		Ok(false)
+	}
+
+	/// Handles an event read from the terminal.
+	/// also returning if the event loop calling this function should quit.
+	fn handle_terminal_event(&mut self) -> Outcome<bool> {
+		let event = read()?;
+		match event {
+			Event::Key(ref key) if Self::check_quit_controls(key) => {
+				self.quit()?;
+				return Ok(true);
+			},
+			Event::Resize(..) => {
+				self.draw_active_screen_ui()?;
+			},
+			_ => {},
+		}
+		self.get_mut_active_screen().event(&event)?;
+		Ok(false)
 	}
 
 	/// The function to be called when Terminal Arcade is done starting and
@@ -230,16 +277,8 @@ impl Handler {
 		self.draw_root_block()?;
 		self.draw_active_screen_ui()?;
 		loop {
-			let event = read()?;
-			match event {
-				Event::Key(ref key_event) if Self::check_quit_controls(key_event) => {
-					self.quit()?;
-					break;
-				},
-				Event::Resize(..) => {
-					self.draw_active_screen_ui()?;
-				},
-				_ => {},
+			if self.handle_active_screen()? || self.handle_terminal_event()? {
+				break;
 			}
 		}
 		Ok(())

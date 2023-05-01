@@ -40,18 +40,18 @@ pub fn wcl_lines() -> Vec<String> {
 			"{}: Choose a game to {}! ({}){reset}",
 			stylize_raw("[1]"),
 			stylize_raw("play"),
-			stylize_raw("[Ctrl-P]"),
+			stylize_raw("[P]"),
 		),
 		format!(
 			"{}: View your {} ({})!{reset}",
 			stylize_raw("[2]"),
 			stylize_raw("settings"),
-			stylize_raw("[Ctrl-Alt-S]"),
+			stylize_raw("[S]"),
 		),
 		format!(
 			"{}: {}uit...{reset} ({} and {} also work!)",
 			stylize_raw("[0]"),
-			stylize_raw("[Ctrl-Q]"),
+			stylize_raw("[Q]"),
 			stylize_raw("[Ctrl-C]"),
 			stylize_raw("[Esc]")
 		),

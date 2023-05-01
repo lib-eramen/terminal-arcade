@@ -1,5 +1,10 @@
 //! A module for containing the welcome screen in Terminal Arcade.
 
+use crossterm::event::{
+	Event,
+	KeyCode,
+	KeyModifiers,
+};
 use ratatui::{
 	layout::{
 		Alignment,
@@ -12,7 +17,10 @@ use ratatui::{
 };
 
 use crate::{
-	core::terminal::BackendType,
+	core::{
+		terminal::BackendType,
+		Outcome,
+	},
 	ui::{
 		components::{
 			presets::{
@@ -47,10 +55,18 @@ pub const BANNER: &str = r#"/‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 
 /// The struct that welcomes the user to Terminal Arcade. To be presented every
 /// time Terminal Arcade is started.
-pub struct WelcomeScreen;
+#[derive(Default)]
+pub struct WelcomeScreen {
+	closing: bool,
+	screen_created: Option<Box<dyn Screen>>,
+}
 
 /// TODO: Implement the event handler for the welcome screen
 impl Screen for WelcomeScreen {
+	fn is_closing(&self) -> bool {
+		self.closing
+	}
+
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
 		Self::welcome_ui(frame);
 	}
@@ -58,9 +74,47 @@ impl Screen for WelcomeScreen {
 	fn title(&self) -> &str {
 		"Welcome to Terminal Arcade!"
 	}
+
+	fn event(&mut self, event: &Event) -> Outcome<()> {
+		if let Event::Key(key) = event {
+			if let KeyCode::Char(character) = key.code {
+				if key.modifiers != KeyModifiers::NONE {
+					return Ok(());
+				}
+				match character {
+					'1' | 'p' => self.create_game_selection_screen(),
+					'2' | 's' => self.create_settings_screen(),
+					'0' | 'q' => self.mark_closed(),
+					_ => {},
+				}
+			}
+		}
+		Ok(())
+	}
+
+	fn screen_created(&self) -> Option<Box<dyn Screen>> {
+		None
+	}
 }
 
 impl WelcomeScreen {
+	/// Marks the screen as closed.
+	fn mark_closed(&mut self) {
+		self.closing = true;
+	}
+
+	// TODO: Game selection screen.
+	/// Creates the game selection screen to switch to from this screen.
+	fn create_game_selection_screen(&mut self) {
+		todo!()
+	}
+
+	// TODO: Game selection screen.
+	/// Creates the settings screen to switch to from this screen.
+	fn create_settings_screen(&mut self) {
+		todo!()
+	}
+
 	/// Renders the welcome UI to the screen.
 	fn welcome_ui(frame: &mut Frame<'_, BackendType>) {
 		let size = frame.size();
