@@ -50,8 +50,8 @@ pub fn wcl_lines() -> Vec<String> {
 		format!(
 			"{}: View your {} ({})!{reset}",
 			stylize_raw("[2]"),
-			stylize_raw("settings"),
-			stylize_raw("[S]"),
+			stylize_raw("configurations"),
+			stylize_raw("[C]"),
 		),
 		format!(
 			"{}: {}uit...{reset} ({} and {} also work!)",
