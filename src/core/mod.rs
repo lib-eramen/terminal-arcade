@@ -124,12 +124,13 @@ impl Handler {
 		self.root_block_title = self.get_active_screen().title().to_string();
 	}
 
-	/// Clears the screen and updates the root block title.
-	/// This is an operation always done when changing screens, like in
+	/// Clears the screen, updates the root block title and redraws the root
+	/// block. This is an operation always done when changing screens, like in
 	/// [`Self::spawn_screen`] and [`Self::close_screen`].
 	fn clear_and_update_title(&mut self) -> Outcome<()> {
+		clear_terminal()?;
 		self.update_root_block_title();
-		clear_terminal()
+		self.draw_root_block()
 	}
 
 	/// Spawns an active screen.
@@ -262,11 +263,13 @@ impl Handler {
 			},
 			_ => {},
 		}
+		self.get_mut_active_screen().event(event)?;
 		Ok(false)
 	}
 
-	/// Checks whether the event loop should break.
-	fn event_loop_should_break(&mut self, event: &Event) -> Outcome<bool> {
+	/// Runs the event loop, also returning whether the loop should continue
+	/// running.
+	fn event_loop(&mut self, event: &Event) -> Outcome<bool> {
 		Ok(self.handle_active_screen()? || self.handle_terminal_event(event)?)
 	}
 
@@ -280,14 +283,12 @@ impl Handler {
 		self.draw_root_block()?;
 		self.draw_active_screen_ui()?;
 		loop {
+			self.draw_active_screen_ui()?;
 			let event = read()?;
-			if self.event_loop_should_break(&event)? {
+			if self.event_loop(&event)? {
 				break;
 			}
-
-			self.get_mut_active_screen().event(&event)?;
 			self.draw_active_screen_ui()?;
-
 			if self.handle_active_screen()? {
 				break;
 			}
