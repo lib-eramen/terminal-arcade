@@ -16,7 +16,10 @@ use ratatui::{
 	Frame,
 };
 
-use super::config::ConfigScreen;
+use super::{
+	config::ConfigScreen,
+	game_select::GameSelectionScreen,
+};
 use crate::{
 	core::{
 		terminal::BackendType,
@@ -88,7 +91,22 @@ impl Screen for WelcomeScreen {
 	}
 
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
-		self.welcome_ui(frame);
+		let size = frame.size();
+		let chunks = Layout::default()
+			.direction(Direction::Vertical)
+			.margin(1)
+			.constraints([Constraint::Max(17), Constraint::Max(11), Constraint::Min(0)].as_ref())
+			.split(size);
+		frame.render_widget(titled_ui_block("Welcome to Terminal Arcade!"), size);
+		let banner_text = stylize(format!(
+			"{}\nTerminal Arcade, {}",
+			BANNER,
+			get_crate_version()
+		));
+		let banner =
+			Paragraph::new(banner_text).block(untitled_ui_block()).alignment(Alignment::Center);
+		frame.render_widget(banner, chunks[0]);
+		render_wcl_block(chunks[1], frame, self.selected_control);
 	}
 
 	fn event(&mut self, event: &Event) -> Outcome<()> {
@@ -137,7 +155,7 @@ impl WelcomeScreen {
 	// TODO: Game selection screen.
 	/// Creates the game selection screen to switch to from this screen.
 	fn create_game_selection_screen() -> Box<dyn Screen> {
-		todo!()
+		Box::<GameSelectionScreen>::default()
 	}
 
 	// TODO: Game selection screen.
@@ -197,25 +215,5 @@ impl WelcomeScreen {
 				_ => panic!("Index not in predefined range (0..2) of welcome controls!"),
 			}
 		}
-	}
-
-	/// Renders the welcome UI to the screen.
-	fn welcome_ui(&self, frame: &mut Frame<'_, BackendType>) {
-		let size = frame.size();
-		let chunks = Layout::default()
-			.direction(Direction::Vertical)
-			.margin(1)
-			.constraints([Constraint::Max(17), Constraint::Max(11), Constraint::Min(0)].as_ref())
-			.split(size);
-		frame.render_widget(titled_ui_block("Welcome to Terminal Arcade!"), size);
-		let banner_text = stylize(format!(
-			"{}\nTerminal Arcade, {}",
-			BANNER,
-			get_crate_version()
-		));
-		let banner =
-			Paragraph::new(banner_text).block(untitled_ui_block()).alignment(Alignment::Center);
-		frame.render_widget(banner, chunks[0]);
-		render_wcl_block(chunks[1], frame, self.selected_control);
 	}
 }
