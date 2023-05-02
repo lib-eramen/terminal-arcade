@@ -13,6 +13,8 @@ use crate::core::{
 
 pub mod config;
 pub mod welcome;
+pub mod games;
+pub mod game_select;
 
 /// The trait for handling drawing on the terminal and receiving events from the
 /// user.

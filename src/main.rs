@@ -23,6 +23,7 @@ use crate::core::{
 };
 
 pub mod core;
+pub mod game;
 pub mod ui;
 
 /// Entry point of a program! What, you expected a `main` function to be

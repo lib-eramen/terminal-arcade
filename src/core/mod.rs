@@ -59,6 +59,8 @@ use crate::{
 pub mod outcomes;
 pub mod terminal;
 
+/// The directory where Terminal Arcade saves all of its data.
+pub const SAVE_DIR: &str = "~/.local/share";
 /// The core struct to all inner workings in Terminal Arcade.
 /// Terminal Arcade has one encompassing UI construct - the root block. It is
 /// instantiated first hand, and it nests all UI components and child screens.
