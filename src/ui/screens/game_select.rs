@@ -7,15 +7,15 @@ use crossterm::event::{
 	KeyCode,
 	KeyModifiers,
 };
-use ratatui::Frame;
+use ratatui::{Frame, layout::{Layout, Direction, Constraint}};
 
-use super::Screen;
+use super::{Screen, check_escape_key};
 use crate::{
 	core::{
 		terminal::BackendType,
 		Outcome,
 	},
-	ui::components::presets::titled_ui_block,
+	ui::components::presets::{titled_ui_block, untitled_ui_block},
 };
 
 /// The struct for the game selection screen.
@@ -27,11 +27,9 @@ pub struct GameSelectionScreen {
 
 impl Screen for GameSelectionScreen {
 	fn event(&mut self, event: &Event) -> Outcome<()> {
-		if let Event::Key(key) = event {
-			if key.code == KeyCode::Esc && key.modifiers == KeyModifiers::NONE {
-				self.closing = true;
-			}
-		}
+		if check_escape_key(event) {
+            self.closing = true;
+        }
 		Ok(())
 	}
 
@@ -42,6 +40,16 @@ impl Screen for GameSelectionScreen {
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
 		let size = frame.size();
 		frame.render_widget(titled_ui_block("Select a game!"), size);
+
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .margin(1)
+            .constraints([
+                Constraint::Ratio(1, 5), // For search bar and controls
+                Constraint::Ratio(4, 5), // For search results
+            ].as_ref())
+            .split(size);
+        
 	}
 }
 

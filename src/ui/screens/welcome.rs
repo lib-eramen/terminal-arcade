@@ -95,7 +95,11 @@ impl Screen for WelcomeScreen {
 		let chunks = Layout::default()
 			.direction(Direction::Vertical)
 			.margin(1)
-			.constraints([Constraint::Max(17), Constraint::Max(11), Constraint::Min(0)].as_ref())
+			.constraints([
+				Constraint::Max(17), // Banner's height + borders
+				Constraint::Max(11), // Controls list block's height
+				Constraint::Max(0) // Prevents blocks taking all remaining space
+			].as_ref())
 			.split(size);
 		frame.render_widget(titled_ui_block("Welcome to Terminal Arcade!"), size);
 		let banner_text = stylize(format!(
@@ -121,6 +125,7 @@ impl Screen for WelcomeScreen {
 				KeyCode::Up => self.handle_up_shortcut(),
 				KeyCode::Down => self.handle_down_shortcut(),
 				KeyCode::Enter => self.handle_enter_shortcut(),
+				KeyCode::Esc if key.modifiers == KeyModifiers::NONE => self.mark_closed(),
 				_ => {},
 			}
 		}

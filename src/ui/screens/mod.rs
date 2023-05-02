@@ -3,7 +3,7 @@
 //! started. It also contains the various screens that the game uses to present
 //! itself on the terminal.
 
-use crossterm::event::Event;
+use crossterm::event::{Event, KeyCode, KeyModifiers};
 use ratatui::Frame;
 
 use crate::core::{
@@ -15,6 +15,16 @@ pub mod config;
 pub mod game_select;
 pub mod games;
 pub mod welcome;
+
+/// Checks if the event is a key event in which the ESC key is pressed.
+#[must_use]
+pub fn check_escape_key(event: &Event) -> bool {
+	if let Event::Key(key) = event {
+		key.code == KeyCode::Esc && key.modifiers == KeyModifiers::NONE
+	} else {
+		false
+	}
+}
 
 /// The trait for handling drawing on the terminal and receiving events from the
 /// user.

@@ -80,7 +80,7 @@ pub fn wcl_layout() -> Layout {
 	Layout::default()
 		.direction(Direction::Vertical)
 		.margin(1)
-		.constraints([Constraint::Max(3); 3].as_ref())
+		.constraints([Constraint::Length(3); 3].as_ref())
 }
 
 /// Returns a controls list's individual control entry paragraphs.

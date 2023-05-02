@@ -45,7 +45,10 @@ pub fn draw_uc_block(frame: &mut Frame<'_, BackendType>) {
 	let chunks = Layout::default()
 		.direction(Direction::Vertical)
 		.margin(1)
-		.constraints([Constraint::Max(13), Constraint::Max(0)].as_ref())
+		.constraints([
+			Constraint::Max(13), // Banner height
+			Constraint::Max(0) // Prevents blocks from taking up all remaining space
+		].as_ref())
 		.split(size);
 	frame.render_widget(
 		titled_ui_block("Configuration (Under construction!) (Probably for a very long time!)"),

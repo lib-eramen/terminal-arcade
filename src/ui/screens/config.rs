@@ -19,7 +19,7 @@ use ratatui::{
 	Frame,
 };
 
-use super::Screen;
+use super::{Screen, check_escape_key};
 use crate::{
 	core::{
 		terminal::BackendType,
@@ -46,10 +46,8 @@ pub struct ConfigScreen {
 
 impl Screen for ConfigScreen {
 	fn event(&mut self, event: &Event) -> Outcome<()> {
-		if let Event::Key(key) = event {
-			if key.code == KeyCode::Esc && key.modifiers == KeyModifiers::NONE {
-				self.closing = true;
-			}
+		if check_escape_key(event) {
+			self.closing = true;
 		}
 		Ok(())
 	}
