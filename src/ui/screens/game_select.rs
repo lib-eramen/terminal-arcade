@@ -27,7 +27,7 @@ use crate::{
 	},
 	game::{all_games, GameMetadata},
 	ui::components::{
-		presets::{
+		ui_presets::{
 			titled_ui_block,
 			untitled_ui_block,
 		},

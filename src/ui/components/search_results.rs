@@ -12,7 +12,7 @@ use ratatui::{
 	Frame, widgets::Paragraph,
 };
 
-use super::presets::titled_ui_block;
+use super::ui_presets::titled_ui_block;
 use crate::{
 	core::terminal::BackendType,
 	game::{Game, GameMetadata}, ui::util::stylize_raw,

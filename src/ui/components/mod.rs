@@ -5,7 +5,7 @@
 //! WCL: Welcome Controls List
 //! GSC: Game Search Controls
 
-pub mod presets;
+pub mod ui_presets;
 pub mod search_results;
 pub mod search_section;
 pub mod under_construction;
