@@ -17,10 +17,10 @@ pub struct Minesweeper;
 impl Game for Minesweeper {
 	fn metadata(&self) -> GameMetadata {
 		GameMetadata::new(|info| {
-			info.authors(vec!["the guy who made this crate".to_string()])
+			info.authors(vec!["me, it literally says \"mine\" in there".to_string()])
 				.description(
-					"A tile-based game of looking for mines and avoiding responsibilities. On that \
-					 note, get back to work, devs."
+					"A tile-based game of looking for mines and avoiding responsibilities. On \
+					 that note, get back to work, devs."
 						.to_string(),
 				)
 				.name("Minesweeper".to_string())

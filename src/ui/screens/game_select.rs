@@ -25,14 +25,17 @@ use crate::{
 		terminal::BackendType,
 		Outcome,
 	},
-	game::{all_games, GameMetadata},
+	game::{
+		all_games,
+		GameMetadata,
+	},
 	ui::components::{
+		search_results::render_search_results,
+		search_section::render_search_section,
 		ui_presets::{
 			titled_ui_block,
 			untitled_ui_block,
 		},
-		search_results::render_search_results,
-		search_section::render_search_section,
 	},
 };
 
@@ -82,10 +85,8 @@ impl Screen for GameSelectionScreen {
 
 		let search_term = if self.term.is_empty() { None } else { Some(self.term.as_str()) };
 		render_search_section(frame, chunks[0], search_term);
-		let search_results: Vec<GameMetadata> = all_games()
-			.into_iter()
-			.map(|game| game.metadata())
-			.collect();
+		let search_results: Vec<GameMetadata> =
+			all_games().into_iter().map(|game| game.metadata()).collect();
 		render_search_results(frame, chunks[1], search_term, &search_results);
 	}
 }

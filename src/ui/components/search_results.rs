@@ -6,26 +6,35 @@ use std::fmt::format;
 use ansi_to_tui::IntoText;
 use ratatui::{
 	layout::{
+		Alignment,
+		Constraint,
+		Direction,
 		Layout,
-		Rect, Direction, Constraint, Alignment,
+		Rect,
 	},
-	Frame, widgets::Paragraph,
+	widgets::Paragraph,
+	Frame,
 };
 
 use super::ui_presets::titled_ui_block;
 use crate::{
 	core::terminal::BackendType,
-	game::{Game, GameMetadata}, ui::util::stylize_raw,
+	game::{
+		Game,
+		GameMetadata,
+	},
+	ui::util::stylize_raw,
 };
 
-/// Highlights the keyword in the word (ANSI-colors the keyword substring in it).
+/// Highlights the keyword in the word (ANSI-colors the keyword substring in
+/// it).
 #[must_use]
-pub fn highlight_keyword(keyword: &str, word: &str)	-> String {
+pub fn highlight_keyword(keyword: &str, word: &str) -> String {
 	let keyword_index = word.to_lowercase().find::<&str>(keyword.to_lowercase().as_ref());
 	if keyword_index.is_none() {
 		return word.to_string();
 	}
-	
+
 	let keyword_index = keyword_index.unwrap();
 	let highlighted_range = keyword_index..(keyword_index + keyword.len());
 	let new_string = format!(
@@ -38,6 +47,7 @@ pub fn highlight_keyword(keyword: &str, word: &str)	-> String {
 }
 
 /// Render a search result.
+#[rustfmt::skip]
 pub fn render_search_result(
 	frame: &mut Frame<'_, BackendType>,
 	size: Rect,
@@ -70,7 +80,7 @@ pub fn search_results_layout() -> Layout {
 	let mut constraints = vec![Constraint::Max(5); 7];
 	constraints.push(Constraint::Max(0));
 
-    Layout::default()
+	Layout::default()
 		.direction(Direction::Vertical)
 		.vertical_margin(2)
 		.horizontal_margin(3)
@@ -88,12 +98,6 @@ pub fn render_search_results(
 
 	let chunks = search_results_layout().split(size);
 	for (index, metadata) in results.iter().enumerate() {
-		render_search_result(
-			frame,
-			chunks[index],
-			search_term, 
-			index,
-			metadata,
-		);
+		render_search_result(frame, chunks[index], search_term, index, metadata);
 	}
 }
