@@ -57,8 +57,8 @@ pub fn im_feeling_lucky_text() -> Text<'static> {
 #[must_use]
 pub fn search_bar_layout() -> Layout {
 	Layout::default().direction(Direction::Horizontal).margin(0).constraints([
-		Constraint::Ratio(1, 8), // Back "button"
-		Constraint::Ratio(7, 8), // Search area
+		Constraint::Ratio(1, 7), // Back "button"
+		Constraint::Ratio(6, 7), // Search area
 	])
 }
 

@@ -27,6 +27,7 @@ use crate::{
 	},
 	game::{
 		all_games,
+		games_by_keyword,
 		GameMetadata,
 	},
 	ui::components::{
@@ -38,6 +39,10 @@ use crate::{
 		},
 	},
 };
+
+fn uppercase_char(c: char) -> char {
+	c.to_uppercase().to_string().chars().next().unwrap()
+}
 
 /// The struct for the game selection screen.
 #[derive(Default)]
@@ -56,9 +61,6 @@ impl Screen for GameSelectionScreen {
 		}
 		if let Event::Key(key) = event {
 			match key.code {
-				KeyCode::Char(character) if key.modifiers == KeyModifiers::NONE => {
-					self.add_character_to_term(character);
-				},
 				KeyCode::Char('r') if key.modifiers == KeyModifiers::CONTROL => {
 					self.set_random_game();
 				},
@@ -67,6 +69,11 @@ impl Screen for GameSelectionScreen {
 				},
 				KeyCode::Char('d') if key.modifiers == KeyModifiers::CONTROL => {
 					self.clear_search_term();
+				},
+				KeyCode::Char(character)
+					if [KeyModifiers::SHIFT, KeyModifiers::NONE].contains(&key.modifiers) =>
+				{
+					self.add_character_to_term(character, key.modifiers);
 				},
 				_ => {},
 			}
@@ -85,8 +92,15 @@ impl Screen for GameSelectionScreen {
 
 		let search_term = if self.term.is_empty() { None } else { Some(self.term.as_str()) };
 		render_search_section(frame, chunks[0], search_term);
-		let search_results: Vec<GameMetadata> =
-			all_games().into_iter().map(|game| game.metadata()).collect();
+
+		let search_results: Vec<GameMetadata> = if let Some(term) = search_term {
+			games_by_keyword(term.to_lowercase().as_str())
+		} else {
+			all_games()
+		}
+		.into_iter()
+		.map(|game| game.metadata())
+		.collect();
 		render_search_results(frame, chunks[1], search_term, &search_results);
 	}
 }
@@ -94,7 +108,9 @@ impl Screen for GameSelectionScreen {
 impl GameSelectionScreen {
 	/// Adds the character to the search term object, capping out at 256
 	/// characters.
-	fn add_character_to_term(&mut self, character: char) {
+	fn add_character_to_term(&mut self, character: char, modifier: KeyModifiers) {
+		let character =
+			if modifier == KeyModifiers::SHIFT { uppercase_char(character) } else { character };
 		if self.term.len() < 256 {
 			self.term.push(character);
 		}

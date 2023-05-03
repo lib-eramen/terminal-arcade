@@ -17,7 +17,9 @@ pub struct Minesweeper;
 impl Game for Minesweeper {
 	fn metadata(&self) -> GameMetadata {
 		GameMetadata::new(|info| {
-			info.authors(vec!["me, it literally says \"mine\" in there".to_string()])
+			info.authors(vec!["me (the crate author), it literally says \"mine\" \
+			                   in there"
+				.to_string()])
 				.description(
 					"A tile-based game of looking for mines and avoiding responsibilities. On \
 					 that note, get back to work, devs."

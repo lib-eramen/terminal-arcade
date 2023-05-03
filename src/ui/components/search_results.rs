@@ -82,8 +82,8 @@ pub fn search_results_layout() -> Layout {
 
 	Layout::default()
 		.direction(Direction::Vertical)
-		.vertical_margin(2)
-		.horizontal_margin(3)
+		.vertical_margin(1)
+		.horizontal_margin(2)
 		.constraints(constraints)
 }
 

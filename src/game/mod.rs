@@ -98,6 +98,18 @@ impl<'a> GameMetadata {
 	pub fn version_created(&'a self) -> &'a str {
 		&self.static_info.version_created
 	}
+
+	/// Gets the number of times this game has been played.
+	#[must_use]
+	pub fn play_count(&'a self) -> u64 {
+		self.dynamic_info.play_count
+	}
+
+	/// Gets the UNIX timestamp at which this game was last played.
+	#[must_use]
+	pub fn last_played(&'a self) -> Option<u64> {
+		self.dynamic_info.last_played
+	}
 }
 
 /// A [Game]'s static, unchanging info/data. This includes things like the
@@ -189,4 +201,13 @@ pub trait Game {
 #[must_use]
 pub fn all_games() -> Vec<Box<dyn Game>> {
 	vec![Box::new(Minesweeper)]
+}
+
+/// Returns a list of games that match the keyword in their name.
+#[must_use]
+pub fn games_by_keyword(keyword: &str) -> Vec<Box<dyn Game>> {
+	all_games()
+		.into_iter()
+		.filter(|game| game.metadata().name().to_lowercase().contains(keyword))
+		.collect()
 }
