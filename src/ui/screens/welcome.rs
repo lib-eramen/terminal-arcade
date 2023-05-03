@@ -31,7 +31,7 @@ use crate::{
 				titled_ui_block,
 				untitled_ui_block,
 			},
-			wcl::render_wcl_block,
+			welcome_controls_list::render_wcl_block,
 		},
 		util::{
 			get_crate_version,
@@ -95,11 +95,14 @@ impl Screen for WelcomeScreen {
 		let chunks = Layout::default()
 			.direction(Direction::Vertical)
 			.margin(1)
-			.constraints([
-				Constraint::Max(17), // Banner's height + borders
-				Constraint::Max(11), // Controls list block's height
-				Constraint::Max(0) // Prevents blocks taking all remaining space
-			].as_ref())
+			.constraints(
+				[
+					Constraint::Max(17), // Banner's height + borders
+					Constraint::Max(11), // Controls list block's height
+					Constraint::Max(0),  // Prevents blocks taking all remaining space
+				]
+				.as_ref(),
+			)
 			.split(size);
 		frame.render_widget(titled_ui_block("Welcome to Terminal Arcade!"), size);
 		let banner_text = stylize(format!(

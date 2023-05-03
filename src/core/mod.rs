@@ -49,7 +49,6 @@ use self::terminal::get_terminal;
 use crate::{
 	core::terminal::get_mut_terminal,
 	ui::{
-		components::presets::titled_ui_block,
 		util::clear_terminal,
 		Screen,
 		WelcomeScreen,

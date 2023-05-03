@@ -19,7 +19,10 @@ use ratatui::{
 	Frame,
 };
 
-use super::{Screen, check_escape_key};
+use super::{
+	check_escape_key,
+	Screen,
+};
 use crate::{
 	core::{
 		terminal::BackendType,
@@ -31,7 +34,7 @@ use crate::{
 				titled_ui_block,
 				untitled_ui_block,
 			},
-			uc::draw_uc_block,
+			under_construction::render_under_construction_block,
 		},
 		util::stylize,
 	},
@@ -58,6 +61,6 @@ impl Screen for ConfigScreen {
 
 	// TODO: I don't think this is getting implemented anytime soon...
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
-		draw_uc_block(frame);
+		render_under_construction_block(frame);
 	}
 }

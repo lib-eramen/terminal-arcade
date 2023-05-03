@@ -39,16 +39,19 @@ pub const UC_BANNER: &str = r#"
 ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾   ‾‾‾‾‾‾‾‾‾  ‾‾‾        ‾‾‾‾‾‾‾‾‾  ‾‾‾  ‾‾‾  ‾‾‾  ‾‾‾       
 ⚠ Sorry! This page is under construction! I promise it's coming soon (read: probably not for a while)! Press [ESC] to leave for now..."#;
 
-/// Draws the [under construction](UC_BANNER) in a block.
-pub fn draw_uc_block(frame: &mut Frame<'_, BackendType>) {
+/// Renders the [under construction](UC_BANNER) in a block.
+pub fn render_under_construction_block(frame: &mut Frame<'_, BackendType>) {
 	let size = frame.size();
 	let chunks = Layout::default()
 		.direction(Direction::Vertical)
 		.margin(1)
-		.constraints([
-			Constraint::Max(13), // Banner height
-			Constraint::Max(0) // Prevents blocks from taking up all remaining space
-		].as_ref())
+		.constraints(
+			[
+				Constraint::Max(13), // Banner height
+				Constraint::Max(0),  // Prevents blocks from taking up all remaining space
+			]
+			.as_ref(),
+		)
 		.split(size);
 	frame.render_widget(
 		titled_ui_block("Configuration (Under construction!) (Probably for a very long time!)"),

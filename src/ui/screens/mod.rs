@@ -3,7 +3,11 @@
 //! started. It also contains the various screens that the game uses to present
 //! itself on the terminal.
 
-use crossterm::event::{Event, KeyCode, KeyModifiers};
+use crossterm::event::{
+	Event,
+	KeyCode,
+	KeyModifiers,
+};
 use ratatui::Frame;
 
 use crate::core::{
