@@ -6,6 +6,11 @@
 //! To get started, take a look at the [`TerminalArcade`] struct, the struct
 //! that all mechanics in this crate is based on.
 
+use std::path::{
+	Path,
+	PathBuf,
+};
+
 use crossterm::{
 	cursor::{
 		DisableBlinking,
@@ -59,7 +64,17 @@ pub mod outcomes;
 pub mod terminal;
 
 /// The directory where Terminal Arcade saves all of its data.
-pub const SAVE_DIR: &str = "~/.local/share";
+/// NOT TO BE USED DIRECTLY. This path does not include the home dir.
+/// Use [`get_save_dir`] for this instead.
+pub const SAVE_DIR: &str = ".local/share/terminal-arcade/";
+
+/// Gets the save directory of Terminal Arcade.
+/// Always use this function over the constant [`SAVE_DIR`].
+#[must_use]
+pub fn get_save_dir() -> PathBuf {
+	home::home_dir().unwrap().as_path().to_owned().join(SAVE_DIR)
+}
+
 /// The core struct to all inner workings in Terminal Arcade.
 /// Terminal Arcade has one encompassing UI construct - the root block. It is
 /// instantiated first hand, and it nests all UI components and child screens.
@@ -80,9 +95,6 @@ pub struct Handler {
 	/// nesting root block that is globally visible.
 	screens: Vec<Box<dyn Screen>>,
 }
-
-/// The level of indentation to be used for printing.
-pub static INDENT: &str = r#"        "#;
 
 impl Handler {
 	/// Constructs a new Terminal Arcade object.

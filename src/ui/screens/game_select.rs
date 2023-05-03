@@ -25,11 +25,13 @@ use crate::{
 		terminal::BackendType,
 		Outcome,
 	},
+	game::{all_games, GameMetadata},
 	ui::components::{
 		presets::{
 			titled_ui_block,
 			untitled_ui_block,
 		},
+		search_results::render_search_results,
 		search_section::render_search_section,
 	},
 };
@@ -76,22 +78,15 @@ impl Screen for GameSelectionScreen {
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
 		let size = frame.size();
 		frame.render_widget(titled_ui_block("Select a game!"), size);
-
-		let chunks = Layout::default()
-			.direction(Direction::Vertical)
-			.vertical_margin(1)
-			.horizontal_margin(0)
-			.constraints(
-				[
-					Constraint::Ratio(1, 5), // For search section (search bar and controls)
-					Constraint::Ratio(4, 5), // For search results
-				]
-				.as_ref(),
-			)
-			.split(size);
+		let chunks = Self::game_selection_layout().split(size);
 
 		let search_term = if self.term.is_empty() { None } else { Some(self.term.as_str()) };
 		render_search_section(frame, chunks[0], search_term);
+		let search_results: Vec<GameMetadata> = all_games()
+			.into_iter()
+			.map(|game| game.metadata())
+			.collect();
+		render_search_results(frame, chunks[1], search_term, &search_results);
 	}
 }
 
@@ -120,5 +115,21 @@ impl GameSelectionScreen {
 		if !self.term.is_empty() {
 			self.term.pop();
 		}
+	}
+
+	/// Returns the layout for the game selection screen.
+	#[must_use]
+	pub fn game_selection_layout() -> Layout {
+		Layout::default()
+			.direction(Direction::Vertical)
+			.vertical_margin(1)
+			.horizontal_margin(1)
+			.constraints(
+				[
+					Constraint::Ratio(1, 7), // For search section (search bar and controls)
+					Constraint::Ratio(6, 7), // For search results
+				]
+				.as_ref(),
+			)
 	}
 }

@@ -6,6 +6,7 @@
 //! GSC: Game Search Controls
 
 pub mod presets;
+pub mod search_results;
 pub mod search_section;
 pub mod under_construction;
 pub mod welcome_controls_list;

@@ -15,9 +15,13 @@ use ratatui::{
 	Frame,
 };
 
-use super::presets::untitled_ui_block;
+use super::presets::{
+	titled_ui_block,
+	untitled_ui_block,
+};
 use crate::{
 	core::terminal::BackendType,
+	game::Game,
 	ui::util::{
 		stylize,
 		stylize_raw,
@@ -64,7 +68,7 @@ pub fn search_section_layout() -> Layout {
 	Layout::default()
 		.direction(Direction::Vertical)
 		.vertical_margin(0)
-		.horizontal_margin(1)
+		.horizontal_margin(0)
 		.constraints([
 			Constraint::Max(3), // Back "button" and search bar
 			Constraint::Max(3), // I'm Feeling Lucky help text
