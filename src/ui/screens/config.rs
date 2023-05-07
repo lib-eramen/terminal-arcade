@@ -42,23 +42,9 @@ use crate::{
 
 /// See the [module](self) documentation for more information.
 #[derive(Default)]
-pub struct ConfigScreen {
-	/// Controls whether the screen is closing or not.
-	closing: bool,
-}
+pub struct ConfigScreen;
 
 impl Screen for ConfigScreen {
-	fn event(&mut self, event: &Event) -> Outcome<()> {
-		if check_escape_key(event) {
-			self.closing = true;
-		}
-		Ok(())
-	}
-
-	fn is_closing(&self) -> bool {
-		self.closing
-	}
-
 	// TODO: I don't think this is getting implemented anytime soon...
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
 		render_under_construction_block(frame);

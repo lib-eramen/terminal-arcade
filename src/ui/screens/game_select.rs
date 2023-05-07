@@ -2,6 +2,8 @@
 //! Users can scroll through the list with arrows to look for a game they want,
 //! search a game by its name, or pick a game at random.
 
+use std::cmp::min;
+
 use crossterm::event::{
 	Event,
 	KeyCode,
@@ -40,25 +42,39 @@ use crate::{
 	},
 };
 
+/// Turns a character uppercase.
 fn uppercase_char(c: char) -> char {
 	c.to_uppercase().to_string().chars().next().unwrap()
+}
+
+/// Slices a, well, slice, getting the elements until there is no more to get,
+/// or the slice range ends.
+fn slice_until_end<T>(slice: &[T], start: usize, end: usize) -> &[T] {
+	if start >= slice.len() {
+		return &[];
+	}
+	&slice[start..min(slice.len(), end)]
 }
 
 /// The struct for the game selection screen.
 #[derive(Default)]
 pub struct GameSelectionScreen {
-	/// Controls whether this screen is ready to be closed.
-	closing: bool,
-
 	/// The search term inputted by the user.
-	term: String,
+	search_term: Option<String>,
+
+	/// The search results.
+	search_results: Vec<GameMetadata>,
+
+	/// The current choice index highlighted in the UI.
+	selected_index: Option<usize>,
+
+	/// The current index to start displaying the search results from.
+	/// Is used for scrolling.
+	start_index: usize,
 }
 
 impl Screen for GameSelectionScreen {
 	fn event(&mut self, event: &Event) -> Outcome<()> {
-		if check_escape_key(event) {
-			self.closing = true;
-		}
 		if let Event::Key(key) = event {
 			match key.code {
 				KeyCode::Char('r') if key.modifiers == KeyModifiers::CONTROL => {
@@ -75,14 +91,16 @@ impl Screen for GameSelectionScreen {
 				{
 					self.add_character_to_term(character, key.modifiers);
 				},
+				KeyCode::Up => {
+					self.scroll_up();
+				},
+				KeyCode::Down => {
+					self.scroll_down();
+				},
 				_ => {},
 			}
 		}
 		Ok(())
-	}
-
-	fn is_closing(&self) -> bool {
-		self.closing
 	}
 
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
@@ -90,7 +108,7 @@ impl Screen for GameSelectionScreen {
 		frame.render_widget(titled_ui_block("Select a game!"), size);
 		let chunks = Self::game_selection_layout().split(size);
 
-		let search_term = if self.term.is_empty() { None } else { Some(self.term.as_str()) };
+		let search_term = self.search_term.as_ref().map(|term| term.as_str());
 		render_search_section(frame, chunks[0], search_term);
 
 		let search_results: Vec<GameMetadata> = if let Some(term) = search_term {
@@ -101,39 +119,16 @@ impl Screen for GameSelectionScreen {
 		.into_iter()
 		.map(|game| game.metadata())
 		.collect();
-		render_search_results(frame, chunks[1], search_term, &search_results);
+		render_search_results(
+			frame,
+			chunks[1],
+			search_term,
+			slice_until_end(&search_results, self.start_index, self.start_index + 5),
+		);
 	}
 }
 
 impl GameSelectionScreen {
-	/// Adds the character to the search term object, capping out at 256
-	/// characters.
-	fn add_character_to_term(&mut self, character: char, modifier: KeyModifiers) {
-		let character =
-			if modifier == KeyModifiers::SHIFT { uppercase_char(character) } else { character };
-		if self.term.len() < 256 {
-			self.term.push(character);
-		}
-	}
-
-	/// Sets the entire UI to display a randomly generated game.
-	fn set_random_game(&mut self) {
-		todo!()
-	}
-
-	/// Clears the search term.
-	fn clear_search_term(&mut self) {
-		self.term.clear();
-	}
-
-	/// Pops one character from the search term (the top one), or does
-	/// nothing if the term is empty.
-	fn remove_one_character(&mut self) {
-		if !self.term.is_empty() {
-			self.term.pop();
-		}
-	}
-
 	/// Returns the layout for the game selection screen.
 	#[must_use]
 	pub fn game_selection_layout() -> Layout {
@@ -149,4 +144,56 @@ impl GameSelectionScreen {
 				.as_ref(),
 			)
 	}
+
+	/// Updates the search results.
+	fn update_search_results(&mut self) {
+		self.search_results = if let Some(ref term) = self.search_term {
+			games_by_keyword(term.to_lowercase().as_str())
+		} else {
+			all_games()
+		}
+		.into_iter()
+		.map(|game| game.metadata())
+		.collect()
+	}
+
+	/// Adds the character to the search term object, capping out at 256
+	/// characters.
+	fn add_character_to_term(&mut self, character: char, modifier: KeyModifiers) {
+		let character =
+			if modifier == KeyModifiers::SHIFT { uppercase_char(character) } else { character };
+		match self.search_term {
+			None => self.search_term = Some(character.to_string()),
+			Some(ref mut term) if term.len() < 100 => term.push(character),
+			Some(_) => panic!("Something went horribly wrong, woop woop"),
+		}
+		self.update_search_results();
+	}
+
+	/// Sets the entire UI to display a randomly generated game.
+	fn set_random_game(&mut self) {
+		todo!()
+	}
+
+	/// Clears the search term.
+	fn clear_search_term(&mut self) {
+		self.search_term = None;
+	}
+
+	/// Pops one character from the search term (the top one), or does
+	/// nothing if the term is empty.
+	fn remove_one_character(&mut self) {
+		if let Some(ref mut term) = self.search_term {
+			term.pop();
+			if term.is_empty() {
+				self.search_term = None;
+			}
+		}
+	}
+
+	/// Scrolls the list up.
+	fn scroll_up(&mut self) {}
+
+	/// Scrolls the list down.
+	fn scroll_down(&mut self) {}
 }

@@ -86,10 +86,6 @@ pub struct WelcomeScreen {
 }
 
 impl Screen for WelcomeScreen {
-	fn is_closing(&self) -> bool {
-		self.closing
-	}
-
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
 		let size = frame.size();
 		let chunks = Layout::default()
@@ -125,10 +121,9 @@ impl Screen for WelcomeScreen {
 					}
 					self.handle_char_shortcut(character);
 				},
-				KeyCode::Up => self.handle_up_shortcut(),
-				KeyCode::Down => self.handle_down_shortcut(),
+				KeyCode::Up => self.scroll_up(),
+				KeyCode::Down => self.scroll_down(),
 				KeyCode::Enter => self.handle_enter_shortcut(),
-				KeyCode::Esc if key.modifiers == KeyModifiers::NONE => self.mark_closed(),
 				_ => {},
 			}
 		}
@@ -183,7 +178,7 @@ impl WelcomeScreen {
 	}
 
 	/// Handles the UP-arrow shortcut, which moves the UI selector up.
-	fn handle_up_shortcut(&mut self) {
+	fn scroll_up(&mut self) {
 		self.selected_control = Some(
 			if let Some(index) = self.selected_control {
 				if index == 0 {
@@ -198,7 +193,7 @@ impl WelcomeScreen {
 	}
 
 	/// Handles the DOWN-arrow shortcut, which moves the UI selector down.
-	fn handle_down_shortcut(&mut self) {
+	fn scroll_down(&mut self) {
 		self.selected_control = Some(
 			if let Some(index) = self.selected_control {
 				if index == 2 {

@@ -52,7 +52,9 @@ pub trait Screen {
 	/// Indicates that the screen is ready to be closed.
 	/// If the screen is ready to be closed, the implementation of this function
 	/// should return true. Otherwise, it should return false.
-	fn is_closing(&self) -> bool;
+	fn is_closing(&self) -> bool {
+		false
+	}
 
 	/// Indicates the screen that this screen itself is trying to create.
 	/// If the window wants to create another screen, this function should

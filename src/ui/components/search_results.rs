@@ -1,9 +1,21 @@
 //! A search results panel, displaying 10 results at a time.
 //! Search results when lacking space will scroll.
 
-use std::fmt::format;
+use std::{
+	fmt::format,
+	time::{
+		Duration,
+		SystemTime,
+		UNIX_EPOCH,
+	},
+};
 
 use ansi_to_tui::IntoText;
+use chrono::{
+	DateTime,
+	Utc,
+};
+use pluralizer::pluralize;
 use ratatui::{
 	layout::{
 		Alignment,
@@ -12,6 +24,7 @@ use ratatui::{
 		Layout,
 		Rect,
 	},
+	text::Text,
 	widgets::Paragraph,
 	Frame,
 };
@@ -29,7 +42,12 @@ use crate::{
 /// Highlights the keyword in the word (ANSI-colors the keyword substring in
 /// it).
 #[must_use]
-pub fn highlight_keyword(keyword: &str, word: &str) -> String {
+pub fn highlight_keyword(keyword: Option<&str>, word: &str) -> String {
+	if keyword.is_none() {
+		return word.to_string();
+	}
+
+	let keyword = keyword.unwrap();
 	let keyword_index = word.to_lowercase().find::<&str>(keyword.to_lowercase().as_ref());
 	if keyword_index.is_none() {
 		return word.to_string();
@@ -46,8 +64,48 @@ pub fn highlight_keyword(keyword: &str, word: &str) -> String {
 	new_string
 }
 
+/// Returns the text that displays the play status.
+pub fn play_status_text(metadata: &GameMetadata) -> String {
+	let play_count = metadata.play_count();
+	let last_played = metadata.last_played();
+	if metadata.played() {
+		let system_time = UNIX_EPOCH + Duration::from_secs(last_played.unwrap());
+		let datetime = DateTime::<Utc>::from(system_time);
+		let date_str = datetime.format("%d/%m/%Y");
+
+		format!(
+			"Played {} {}, last played at {}",
+			stylize_raw(play_count),
+			pluralize("time", play_count as isize, false),
+			stylize_raw(date_str),
+		)
+	} else {
+		format!(
+			"{} How about trying it this time?",
+			stylize_raw("Never played before!")
+		)
+	}
+}
+
+/// Formats the game metadata into a search result.
+pub fn search_result_text(search_term: Option<&str>, metadata: &GameMetadata) -> Text<'static> {
+	format!(
+		"{}: {}\n{}: {}\n{}: {}, {}: v{}\n{}",
+		stylize_raw("Name"),
+		highlight_keyword(search_term, metadata.name()),
+		stylize_raw("Description"),
+		highlight_keyword(search_term, metadata.description()),
+		stylize_raw("Made by"),
+		highlight_keyword(search_term, metadata.authors_string().as_str()),
+		stylize_raw("created at"),
+		highlight_keyword(search_term, metadata.version_created()),
+		play_status_text(metadata),
+	)
+	.into_text()
+	.unwrap()
+}
+
 /// Render a search result.
-#[rustfmt::skip]
 pub fn render_search_result(
 	frame: &mut Frame<'_, BackendType>,
 	size: Rect,
@@ -55,18 +113,7 @@ pub fn render_search_result(
 	result_index: usize,
 	metadata: &GameMetadata,
 ) {
-	let game_name = if let Some(term) = search_term {
-		highlight_keyword(term, metadata.name())
-	} else {
-		metadata.name().to_string()
-	};
-	let result_contents = format!(
-		"{}: {}\n{}: {}\n{}: {}, {}: v{}",
-		stylize_raw("Name"), game_name,
-		stylize_raw("Description"), metadata.description(),
-		stylize_raw("Made by"), metadata.authors_string(),
-		stylize_raw("created at"), metadata.version_created(),
-	).into_text().unwrap();
+	let result_contents = search_result_text(search_term, metadata);
 	let result_paragraph = Paragraph::new(result_contents)
 		.alignment(Alignment::Center)
 		.block(titled_ui_block(format!("[{result_index}]")))
@@ -74,10 +121,11 @@ pub fn render_search_result(
 	frame.render_widget(result_paragraph, size);
 }
 
-/// Returns the layout of the search results.
+/// Returns the layout of the search results. This layout handles 5 results at
+/// once.
 #[must_use]
 pub fn search_results_layout() -> Layout {
-	let mut constraints = vec![Constraint::Max(5); 7];
+	let mut constraints = vec![Constraint::Max(6); 5];
 	constraints.push(Constraint::Max(0));
 
 	Layout::default()

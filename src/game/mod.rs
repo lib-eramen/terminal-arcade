@@ -70,6 +70,13 @@ impl<'a> GameMetadata {
 		})
 	}
 
+	/// Adds 1 play count and updates the last playtime, while also saving the
+	/// metadata.
+	pub fn play(&mut self) {
+		self.dynamic_info.play();
+		let _ = self.dynamic_info.save(self.name());
+	}
+
 	/// Gets the name of the game.
 	#[must_use]
 	pub fn name(&'a self) -> &'a str {
@@ -109,6 +116,12 @@ impl<'a> GameMetadata {
 	#[must_use]
 	pub fn last_played(&'a self) -> Option<u64> {
 		self.dynamic_info.last_played
+	}
+
+	/// Returns whether this game has been played.
+	#[must_use]
+	pub fn played(&'a self) -> bool {
+		self.dynamic_info.played()
 	}
 }
 
@@ -172,6 +185,11 @@ impl GameDynamicInfo {
 	pub fn play(&mut self) {
 		self.play_count += 1;
 		self.last_played = Some(get_unix_time_as_secs());
+	}
+
+	/// Checks if the game has ever been played.
+	pub fn played(&self) -> bool {
+		return self.play_count > 0;
 	}
 }
 

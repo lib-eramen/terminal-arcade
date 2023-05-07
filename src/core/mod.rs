@@ -217,6 +217,12 @@ impl Handler {
 				self.quit()?;
 				return Ok(true);
 			},
+			Event::Key(ref key) if key.code == KeyCode::Esc => {
+				self.close_screen()?;
+				if self.quit_when_no_screens()? {
+					return Ok(true);
+				}
+			},
 			Event::Resize(..) => {
 				self.draw_active_screen_ui()?;
 			},
@@ -238,7 +244,6 @@ impl Handler {
 	/// shortcuts), are passed to the last screen (which is the only active
 	/// screen anyways, see the struct documentation for more information).
 	fn run(&mut self) -> Outcome<()> {
-		self.draw_active_screen_ui()?;
 		loop {
 			self.draw_active_screen_ui()?;
 			let event = read()?;
