@@ -18,6 +18,7 @@ use crossterm::event::{
 	KeyCode,
 	KeyModifiers,
 };
+use rand::Rng;
 use ratatui::{
 	layout::{
 		Constraint,
@@ -39,6 +40,7 @@ use crate::{
 	game::{
 		all_games,
 		games_by_keyword,
+		get_game_by_name,
 		Game,
 		GameMetadata,
 	},
@@ -74,6 +76,9 @@ pub struct GameSelectionScreen {
 	/// The search results.
 	search_results: Vec<GameMetadata>,
 
+	/// Indicates whether a game has been chosen.
+	selected: bool,
+
 	/// The current choice index highlighted in the UI.
 	selected_index: Option<usize>,
 
@@ -89,6 +94,7 @@ impl Default for GameSelectionScreen {
 			search_results: all_games().into_iter().map(|game| game.metadata()).collect(),
 			selected_index: None,
 			display_start_index: 0,
+			selected: false,
 		}
 	}
 }
@@ -117,6 +123,11 @@ impl Screen for GameSelectionScreen {
 				KeyCode::Down => {
 					self.scroll_down();
 				},
+				KeyCode::Enter => {
+					if self.selected_index.is_some() {
+						self.selected = true;
+					}
+				},
 				_ => {},
 			}
 		}
@@ -143,6 +154,15 @@ impl Screen for GameSelectionScreen {
 			self.display_start_index,
 			self.selected_index,
 		);
+	}
+
+	fn screen_created(&mut self) -> Option<Box<dyn Screen>> {
+		if !self.selected {
+			return None;
+		}
+		self.selected_index?;
+		let selection = &self.search_results[self.selected_index.unwrap()];
+		Some(get_game_by_name(selection.name())?.screen_created())
 	}
 }
 
@@ -195,7 +215,9 @@ impl GameSelectionScreen {
 
 	/// Sets the entire UI to display a randomly generated game.
 	fn set_random_game(&mut self) {
-		todo!()
+		let mut rng = rand::thread_rng();
+		self.display_start_index = rng.gen_range(0..self.search_results_length());
+		self.selected_index = Some(rng.gen_range(0..self.search_results_length()));
 	}
 
 	/// Clears the search term.

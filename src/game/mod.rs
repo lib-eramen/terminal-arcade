@@ -213,7 +213,7 @@ pub trait Game {
 	/// The screen for the game to create.
 	/// This can be either a setup screen (that can create the game screen on
 	/// its own) or the game screen itself.
-	fn screen_created(&self) -> Option<Box<dyn Screen>>;
+	fn screen_created(&self) -> Box<dyn Screen>;
 }
 
 /// Returns a list of all games.
@@ -229,4 +229,10 @@ pub fn games_by_keyword(keyword: &str) -> Vec<Box<dyn Game>> {
 		.into_iter()
 		.filter(|game| game.metadata().name().to_lowercase().contains(keyword))
 		.collect()
+}
+
+/// Gets a game by its name.
+#[must_use]
+pub fn get_game_by_name(name: &str) -> Option<Box<dyn Game>> {
+	all_games().into_iter().find(|game| game.metadata().name() == name)
 }

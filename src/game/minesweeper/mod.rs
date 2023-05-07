@@ -40,7 +40,7 @@ impl Game for Minesweeper {
 		todo!()
 	}
 
-	fn screen_created(&self) -> Option<Box<dyn Screen>> {
+	fn screen_created(&self) -> Box<dyn Screen> {
 		todo!()
 	}
 }
