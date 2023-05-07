@@ -77,7 +77,7 @@ pub struct GameSelectionScreen {
 	search_results: Vec<GameMetadata>,
 
 	/// Indicates whether a game has been chosen.
-	selected: bool,
+	selected_game: bool,
 
 	/// The current choice index highlighted in the UI.
 	selected_index: Option<usize>,
@@ -94,7 +94,7 @@ impl Default for GameSelectionScreen {
 			search_results: all_games().into_iter().map(|game| game.metadata()).collect(),
 			selected_index: None,
 			display_start_index: 0,
-			selected: false,
+			selected_game: false,
 		}
 	}
 }
@@ -125,7 +125,7 @@ impl Screen for GameSelectionScreen {
 				},
 				KeyCode::Enter => {
 					if self.selected_index.is_some() {
-						self.selected = true;
+						self.selected_game = true;
 					}
 				},
 				_ => {},
@@ -157,12 +157,16 @@ impl Screen for GameSelectionScreen {
 	}
 
 	fn screen_created(&mut self) -> Option<Box<dyn Screen>> {
-		if !self.selected {
+		if !self.selected_game {
 			return None;
 		}
 		self.selected_index?;
 		let selection = &self.search_results[self.selected_index.unwrap()];
 		Some(get_game_by_name(selection.name())?.screen_created())
+	}
+
+	fn is_closing(&self) -> bool {
+		self.selected_game
 	}
 }
 

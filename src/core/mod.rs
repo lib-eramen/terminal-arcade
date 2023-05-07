@@ -201,12 +201,11 @@ impl Handler {
 		let created_screen: Option<Box<dyn Screen>> = active_screen.screen_created();
 		if active_screen.is_closing() {
 			self.close_screen()?;
-			return self.quit_when_no_screens();
 		}
 		if let Some(screen) = created_screen {
 			self.spawn_screen(screen);
 		}
-		Ok(false)
+		self.quit_when_no_screens()
 	}
 
 	/// Handles an event read from the terminal.

@@ -142,6 +142,10 @@ impl Screen for WelcomeScreen {
 			None
 		}
 	}
+
+	fn is_closing(&self) -> bool {
+		self.closing
+	}
 }
 
 impl WelcomeScreen {
@@ -215,7 +219,7 @@ impl WelcomeScreen {
 				0 => self.set_screen_created(ScreenCreated::GameSelection),
 				1 => self.set_screen_created(ScreenCreated::Settings),
 				2 => self.mark_closed(),
-				_ => panic!("Index not in predefined range (0..2) of welcome controls!"),
+				_ => panic!("Index not in predefined range (0..2) of welcome controls"),
 			}
 		}
 	}

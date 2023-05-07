@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
 	core::Outcome,
-	ui::Screen,
+	ui::{Screen, games::minesweeper::minesweeper_setup_screen::MinesweeperSetupScreen},
 };
 
 /// The struct containing the implementation for the game Minesweeper.
@@ -41,6 +41,6 @@ impl Game for Minesweeper {
 	}
 
 	fn screen_created(&self) -> Box<dyn Screen> {
-		todo!()
+		Box::new(MinesweeperSetupScreen)
 	}
 }
