@@ -1,8 +1,17 @@
 //! A game-selection screen.
 //! Users can scroll through the list with arrows to look for a game they want,
 //! search a game by its name, or pick a game at random.
+//!
+//! JANKY CODE WARNING! The functions that control the scrolling of the game
+//! list is quite janky, to say the least. Beware of burning your eyes! Use a
+//! pair of protective lab goggles to protect yourself from the eye-scorchingly
+//! horrible code quality! I as the author of the code is not responsible for
+//! any kinds of impact to physical health caused by looking at said janky code!
 
-use std::cmp::min;
+use std::cmp::{
+	max,
+	min,
+};
 
 use crossterm::event::{
 	Event,
@@ -30,6 +39,7 @@ use crate::{
 	game::{
 		all_games,
 		games_by_keyword,
+		Game,
 		GameMetadata,
 	},
 	ui::components::{
@@ -49,15 +59,14 @@ fn uppercase_char(c: char) -> char {
 
 /// Slices a, well, slice, getting the elements until there is no more to get,
 /// or the slice range ends.
-fn slice_until_end<T>(slice: &[T], start: usize, end: usize) -> &[T] {
+fn slice_until_end<T>(slice: &[T], start: usize, end_exclusive: usize) -> &[T] {
 	if start >= slice.len() {
 		return &[];
 	}
-	&slice[start..min(slice.len(), end)]
+	&slice[start..min(slice.len(), end_exclusive)]
 }
 
 /// The struct for the game selection screen.
-#[derive(Default)]
 pub struct GameSelectionScreen {
 	/// The search term inputted by the user.
 	search_term: Option<String>,
@@ -70,7 +79,18 @@ pub struct GameSelectionScreen {
 
 	/// The current index to start displaying the search results from.
 	/// Is used for scrolling.
-	start_index: usize,
+	display_start_index: usize,
+}
+
+impl Default for GameSelectionScreen {
+	fn default() -> Self {
+		Self {
+			search_term: None,
+			search_results: all_games().into_iter().map(|game| game.metadata()).collect(),
+			selected_index: None,
+			display_start_index: 0,
+		}
+	}
 }
 
 impl Screen for GameSelectionScreen {
@@ -108,22 +128,20 @@ impl Screen for GameSelectionScreen {
 		frame.render_widget(titled_ui_block("Select a game!"), size);
 		let chunks = Self::game_selection_layout().split(size);
 
-		let search_term = self.search_term.as_ref().map(|term| term.as_str());
+		let search_term = self.search_term.as_deref();
 		render_search_section(frame, chunks[0], search_term);
 
-		let search_results: Vec<GameMetadata> = if let Some(term) = search_term {
-			games_by_keyword(term.to_lowercase().as_str())
-		} else {
-			all_games()
-		}
-		.into_iter()
-		.map(|game| game.metadata())
-		.collect();
 		render_search_results(
 			frame,
 			chunks[1],
 			search_term,
-			slice_until_end(&search_results, self.start_index, self.start_index + 5),
+			slice_until_end(
+				&self.search_results,
+				self.display_start_index,
+				self.display_start_index + 5,
+			),
+			self.display_start_index,
+			self.selected_index,
 		);
 	}
 }
@@ -131,7 +149,7 @@ impl Screen for GameSelectionScreen {
 impl GameSelectionScreen {
 	/// Returns the layout for the game selection screen.
 	#[must_use]
-	pub fn game_selection_layout() -> Layout {
+	fn game_selection_layout() -> Layout {
 		Layout::default()
 			.direction(Direction::Vertical)
 			.vertical_margin(1)
@@ -145,6 +163,11 @@ impl GameSelectionScreen {
 			)
 	}
 
+	/// Gets the length of the search results.
+	fn search_results_length(&self) -> usize {
+		self.search_results.len()
+	}
+
 	/// Updates the search results.
 	fn update_search_results(&mut self) {
 		self.search_results = if let Some(ref term) = self.search_term {
@@ -154,7 +177,7 @@ impl GameSelectionScreen {
 		}
 		.into_iter()
 		.map(|game| game.metadata())
-		.collect()
+		.collect();
 	}
 
 	/// Adds the character to the search term object, capping out at 256
@@ -165,7 +188,7 @@ impl GameSelectionScreen {
 		match self.search_term {
 			None => self.search_term = Some(character.to_string()),
 			Some(ref mut term) if term.len() < 100 => term.push(character),
-			Some(_) => panic!("Something went horribly wrong, woop woop"),
+			Some(_) => panic!("Logic went flying all around the place"),
 		}
 		self.update_search_results();
 	}
@@ -178,6 +201,7 @@ impl GameSelectionScreen {
 	/// Clears the search term.
 	fn clear_search_term(&mut self) {
 		self.search_term = None;
+		self.update_search_results();
 	}
 
 	/// Pops one character from the search term (the top one), or does
@@ -189,11 +213,48 @@ impl GameSelectionScreen {
 				self.search_term = None;
 			}
 		}
+		self.update_search_results();
 	}
 
 	/// Scrolls the list up.
-	fn scroll_up(&mut self) {}
+	fn scroll_up(&mut self) {
+		let length = self.search_results_length();
+		if self.selected_index.is_none() {
+			if length > 0 {
+				self.selected_index = Some(0);
+			}
+			return;
+		}
+		let selected = self.selected_index.unwrap();
+		if selected == 0 {
+			self.display_start_index = length - 1;
+			self.selected_index = Some(length - 1);
+		} else {
+			self.selected_index = Some(selected - 1);
+			if selected == self.display_start_index {
+				self.display_start_index = if selected < 5 { 0 } else { selected - 5 }
+			}
+		}
+	}
 
 	/// Scrolls the list down.
-	fn scroll_down(&mut self) {}
+	fn scroll_down(&mut self) {
+		let length = self.search_results_length();
+		if self.selected_index.is_none() {
+			if length > 0 {
+				self.selected_index = Some(0);
+			}
+			return;
+		}
+		let selected = self.selected_index.unwrap();
+		if selected == length - 1 {
+			self.display_start_index = 0;
+			self.selected_index = Some(0);
+		} else {
+			self.selected_index = Some(selected + 1);
+			if selected == self.display_start_index + 4 {
+				self.display_start_index = selected + 1;
+			}
+		}
+	}
 }

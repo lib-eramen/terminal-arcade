@@ -188,8 +188,9 @@ impl GameDynamicInfo {
 	}
 
 	/// Checks if the game has ever been played.
+	#[must_use]
 	pub fn played(&self) -> bool {
-		return self.play_count > 0;
+		self.play_count > 0
 	}
 }
 

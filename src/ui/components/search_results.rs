@@ -24,8 +24,15 @@ use ratatui::{
 		Layout,
 		Rect,
 	},
+	style::{
+		Color,
+		Style,
+	},
 	text::Text,
-	widgets::Paragraph,
+	widgets::{
+		BorderType,
+		Paragraph,
+	},
 	Frame,
 };
 
@@ -65,6 +72,9 @@ pub fn highlight_keyword(keyword: Option<&str>, word: &str) -> String {
 }
 
 /// Returns the text that displays the play status.
+#[must_use]
+#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_wrap)]
 pub fn play_status_text(metadata: &GameMetadata) -> String {
 	let play_count = metadata.play_count();
 	let last_played = metadata.last_played();
@@ -80,14 +90,12 @@ pub fn play_status_text(metadata: &GameMetadata) -> String {
 			stylize_raw(date_str),
 		)
 	} else {
-		format!(
-			"{} How about trying it this time?",
-			stylize_raw("Never played before!")
-		)
+		stylize_raw("Never played before!")
 	}
 }
 
 /// Formats the game metadata into a search result.
+#[must_use]
 pub fn search_result_text(search_term: Option<&str>, metadata: &GameMetadata) -> Text<'static> {
 	format!(
 		"{}: {}\n{}: {}\n{}: {}, {}: v{}\n{}",
@@ -111,12 +119,19 @@ pub fn render_search_result(
 	size: Rect,
 	search_term: Option<&str>,
 	result_index: usize,
+	selected_index: Option<usize>,
 	metadata: &GameMetadata,
 ) {
 	let result_contents = search_result_text(search_term, metadata);
+	let mut result_block = titled_ui_block(format!("[{}]", result_index + 1));
+	if selected_index.is_some_and(|index| index == result_index) {
+		result_block = result_block
+			.border_style(Style::default().fg(Color::LightRed))
+			.border_type(BorderType::Thick);
+	}
 	let result_paragraph = Paragraph::new(result_contents)
 		.alignment(Alignment::Center)
-		.block(titled_ui_block(format!("[{result_index}]")))
+		.block(result_block)
 		.scroll((0, 0));
 	frame.render_widget(result_paragraph, size);
 }
@@ -141,11 +156,19 @@ pub fn render_search_results(
 	size: Rect,
 	search_term: Option<&str>,
 	results: &[GameMetadata],
+	display_start_index: usize,
+	selected_index: Option<usize>,
 ) {
 	frame.render_widget(titled_ui_block("Search Results"), size);
-
 	let chunks = search_results_layout().split(size);
 	for (index, metadata) in results.iter().enumerate() {
-		render_search_result(frame, chunks[index], search_term, index, metadata);
+		render_search_result(
+			frame,
+			chunks[index],
+			search_term,
+			index + display_start_index,
+			selected_index,
+			metadata,
+		);
 	}
 }

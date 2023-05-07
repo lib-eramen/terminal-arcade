@@ -12,6 +12,7 @@ use crate::{
 };
 
 /// The struct containing the implementation for the game Minesweeper.
+#[derive(Clone)]
 pub struct Minesweeper;
 
 impl Game for Minesweeper {
