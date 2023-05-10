@@ -4,7 +4,10 @@ use ratatui::Frame;
 
 use crate::{
 	core::terminal::BackendType,
-	ui::{Screen, components::ui_presets::titled_ui_block},
+	ui::{
+		components::ui_presets::titled_ui_block,
+		Screen,
+	},
 };
 
 /// The struct containing the implmentation for the Minesweeper setup screen.

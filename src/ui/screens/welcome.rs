@@ -27,6 +27,7 @@ use crate::{
 	},
 	ui::{
 		components::{
+			scroll_tracker::ScrollTracker,
 			ui_presets::{
 				titled_ui_block,
 				untitled_ui_block,
@@ -69,7 +70,6 @@ enum ScreenCreated {
 
 /// The struct that welcomes the user to Terminal Arcade. To be presented every
 /// time Terminal Arcade is started.
-#[derive(Default)]
 pub struct WelcomeScreen {
 	/// Whether this screen is closing or not.
 	closing: bool,
@@ -77,12 +77,18 @@ pub struct WelcomeScreen {
 	/// The screen that this screen is spawning.
 	screen_created: Option<ScreenCreated>,
 
-	/// The control index that is being selected and highlighted on the UI.
-	/// 0 indicates the game selection control, 1 indicates the settings, and 2
-	/// indicates quit. Note that this index is in no way related to the actual
-	/// shortcut listed on the controls list, it is related to the order in
-	/// which the controls are presented on the UI.
-	selected_control: Option<u8>,
+	/// The scroll tracker for this screen.
+	tracker: ScrollTracker,
+}
+
+impl Default for WelcomeScreen {
+	fn default() -> Self {
+		Self {
+			closing: false,
+			screen_created: None,
+			tracker: ScrollTracker::new(2),
+		}
+	}
 }
 
 impl Screen for WelcomeScreen {
@@ -109,7 +115,7 @@ impl Screen for WelcomeScreen {
 		let banner =
 			Paragraph::new(banner_text).block(untitled_ui_block()).alignment(Alignment::Center);
 		frame.render_widget(banner, chunks[0]);
-		render_wcl_block(chunks[1], frame, self.selected_control);
+		render_wcl_block(chunks[1], frame, self.tracker.selected);
 	}
 
 	fn event(&mut self, event: &Event) -> Outcome<()> {
@@ -121,8 +127,8 @@ impl Screen for WelcomeScreen {
 					}
 					self.handle_char_shortcut(character);
 				},
-				KeyCode::Up => self.scroll_up(),
-				KeyCode::Down => self.scroll_down(),
+				KeyCode::Up => self.tracker.scroll_up(),
+				KeyCode::Down => self.tracker.scroll_down(),
 				KeyCode::Enter => self.handle_enter_shortcut(),
 				_ => {},
 			}
@@ -181,40 +187,10 @@ impl WelcomeScreen {
 		}
 	}
 
-	/// Handles the UP-arrow shortcut, which moves the UI selector up.
-	fn scroll_up(&mut self) {
-		self.selected_control = Some(
-			if let Some(index) = self.selected_control {
-				if index == 0 {
-					2
-				} else {
-					index - 1
-				}
-			} else {
-				0
-			},
-		);
-	}
-
-	/// Handles the DOWN-arrow shortcut, which moves the UI selector down.
-	fn scroll_down(&mut self) {
-		self.selected_control = Some(
-			if let Some(index) = self.selected_control {
-				if index == 2 {
-					0
-				} else {
-					index + 1
-				}
-			} else {
-				0
-			},
-		);
-	}
-
 	/// Handles the ENTER shortcut, which executes the function that the UI
 	/// selector is pointing at.
 	fn handle_enter_shortcut(&mut self) {
-		if let Some(index) = self.selected_control {
+		if let Some(index) = self.tracker.selected {
 			match index {
 				0 => self.set_screen_created(ScreenCreated::GameSelection),
 				1 => self.set_screen_created(ScreenCreated::Settings),

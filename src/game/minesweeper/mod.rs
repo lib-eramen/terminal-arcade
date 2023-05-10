@@ -8,7 +8,10 @@ use super::{
 };
 use crate::{
 	core::Outcome,
-	ui::{Screen, games::minesweeper::minesweeper_setup_screen::MinesweeperSetupScreen},
+	ui::{
+		games::minesweeper::minesweeper_setup_screen::MinesweeperSetupScreen,
+		Screen,
+	},
 };
 
 /// The struct containing the implementation for the game Minesweeper.

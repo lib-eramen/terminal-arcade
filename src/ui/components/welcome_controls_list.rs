@@ -94,13 +94,12 @@ pub fn wcl_layout() -> Layout {
 
 /// Returns a controls list's individual control entry paragraphs.
 #[must_use]
-pub fn wcl_paragraphs(selected: Option<u8>) -> Vec<Paragraph<'static>> {
+pub fn wcl_paragraphs(selected: Option<u64>) -> Vec<Paragraph<'static>> {
 	wcl_texts()
 		.into_iter()
 		.enumerate()
 		.map(|(index, text)| {
-			let matches =
-				selected.is_some_and(|selected_index| index == usize::from(selected_index));
+			let matches = selected.is_some_and(|selected_index| index as u64 == selected_index);
 			Paragraph::new(text)
 				.block(
 					if matches {
@@ -117,7 +116,7 @@ pub fn wcl_paragraphs(selected: Option<u8>) -> Vec<Paragraph<'static>> {
 }
 
 /// Renders a controls list block.
-pub fn render_wcl_block(size: Rect, frame: &mut Frame<'_, BackendType>, selected: Option<u8>) {
+pub fn render_wcl_block(size: Rect, frame: &mut Frame<'_, BackendType>, selected: Option<u64>) {
 	frame.render_widget(titled_ui_block("Controls").borders(Borders::NONE), size);
 	let chunks = wcl_layout().split(size);
 	let widget_config = wcl_paragraphs(selected).into_iter().zip(chunks.iter());
