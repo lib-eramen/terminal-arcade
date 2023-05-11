@@ -86,7 +86,7 @@ impl Default for WelcomeScreen {
 		Self {
 			closing: false,
 			screen_created: None,
-			tracker: ScrollTracker::new(2),
+			tracker: ScrollTracker::new(2, None),
 		}
 	}
 }
