@@ -8,7 +8,6 @@
 //! horrible code quality! I as the author of the code is not responsible for
 //! any kinds of impact to physical health caused by looking at said janky code!
 
-#![allow(clippy::cast_possible_truncation)]
 use std::cmp::{
 	max,
 	min,
@@ -83,6 +82,9 @@ pub struct GameSelectionScreen {
 
 	/// The scroll tracker of this screen.
 	scroll_tracker: ScrollTracker,
+
+	/// Controls whether the controls help text are displayed.
+	display_help_text: bool,
 }
 
 impl Default for GameSelectionScreen {
@@ -96,6 +98,7 @@ impl Default for GameSelectionScreen {
 			search_results: all_game_meta,
 			selected_game: false,
 			scroll_tracker: ScrollTracker::new(length as u64, Some(5)),
+			display_help_text: true,
 		}
 	}
 }
@@ -124,10 +127,15 @@ impl Screen for GameSelectionScreen {
 				KeyCode::Down => {
 					self.scroll_tracker.scroll_down();
 				},
+				KeyCode::Left => self.decrease_searches_shown(),
+				KeyCode::Right => self.increase_searches_shown(),
 				KeyCode::Enter => {
 					if self.scroll_tracker.is_selected() {
 						self.selected_game = true;
 					}
+				},
+				KeyCode::Tab => {
+					self.display_help_text = !self.display_help_text;
 				},
 				_ => {},
 			}
@@ -138,16 +146,20 @@ impl Screen for GameSelectionScreen {
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
 		let size = frame.size();
 		frame.render_widget(titled_ui_block("Select a game!"), size);
-		let chunks = Self::game_selection_layout().split(size);
+		let chunks = self.game_selection_layout().split(size);
 
 		let search_term = self.search_term.as_deref();
-		render_search_section(frame, chunks[0], search_term);
+		render_search_section(frame, chunks[0], search_term, self.display_help_text);
 
 		render_search_results(
 			frame,
 			chunks[1],
 			search_term,
-			slice_until_end(&self.search_results, self.scroll_tracker.start as usize, 5),
+			slice_until_end(
+				&self.search_results,
+				self.scroll_tracker.start as usize,
+				self.scroll_tracker.range.unwrap() as usize,
+			),
 			&self.scroll_tracker,
 		);
 	}
@@ -169,18 +181,16 @@ impl Screen for GameSelectionScreen {
 impl GameSelectionScreen {
 	/// Returns the layout for the game selection screen.
 	#[must_use]
-	fn game_selection_layout() -> Layout {
+	fn game_selection_layout(&self) -> Layout {
+		let constraints = vec![
+			Constraint::Max(if self.display_help_text { 8 } else { 3 }),
+			Constraint::Max(50),
+		];
 		Layout::default()
 			.direction(Direction::Vertical)
 			.vertical_margin(1)
 			.horizontal_margin(1)
-			.constraints(
-				[
-					Constraint::Ratio(1, 7), // For search section (search bar and controls)
-					Constraint::Ratio(6, 7), // For search results
-				]
-				.as_ref(),
-			)
+			.constraints(constraints)
 	}
 
 	/// Gets the length of the search results.
@@ -230,5 +240,21 @@ impl GameSelectionScreen {
 			}
 		}
 		self.update_search_results();
+	}
+
+	/// Increases the number of shown searches, capping out at 10.
+	fn increase_searches_shown(&mut self) {
+		let count = self.scroll_tracker.range.unwrap();
+		if count < 10 {
+			self.scroll_tracker.set_range(count + 1);
+		}
+	}
+
+	/// Decreases the number of shown searches, capping out at 5.
+	fn decrease_searches_shown(&mut self) {
+		let count = self.scroll_tracker.range.unwrap();
+		if count > 5 {
+			self.scroll_tracker.set_range(count - 1);
+		}
 	}
 }

@@ -14,6 +14,7 @@
 	clippy::missing_errors_doc,
 	clippy::missing_panics_doc,
 	clippy::module_name_repetitions,
+	clippy::cast_possible_truncation,
 	unused_imports
 )]
 

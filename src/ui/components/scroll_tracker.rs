@@ -2,6 +2,8 @@
 //! the process of building a UI that has a number of navigable,
 //! indexed elements
 
+use std::cmp::min;
+
 use rand::Rng;
 
 /// Keeps track of scroll position.
@@ -28,18 +30,11 @@ impl ScrollTracker {
 	/// Creates a new unselected list that starts at 0.
 	#[must_use]
 	pub fn new(length: u64, range: Option<u64>) -> Self {
-		if let Some(range) = range {
-			assert!(
-				range <= length,
-				"New range cannot exceed scroll tracker's length"
-			);
-		}
-
 		Self {
 			selected: None,
 			start: 0,
 			end: length - 1,
-			range,
+			range: Some(min(range.unwrap_or(length), length)),
 			length,
 		}
 	}
@@ -62,7 +57,7 @@ impl ScrollTracker {
 		if selected == 0 {
 			let location = self.length - 1;
 			if let Some(range) = self.range {
-				self.start = location - range + 1;
+				self.start = location - (range - 1);
 			}
 			self.selected = Some(self.length - 1);
 		} else {
@@ -89,10 +84,7 @@ impl ScrollTracker {
 		} else {
 			self.selected = Some(selected + 1);
 			if self.range.is_some() && selected == self.start + self.range.unwrap() - 1 {
-				self.start = std::cmp::min(
-					self.start + self.range.unwrap(),
-					self.end,
-				);
+				self.start = min(self.start + self.range.unwrap(), self.end);
 			}
 		}
 	}

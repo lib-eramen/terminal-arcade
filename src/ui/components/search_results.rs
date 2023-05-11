@@ -142,8 +142,8 @@ pub fn render_search_result(
 /// Returns the layout of the search results. This layout handles 5 results at
 /// once.
 #[must_use]
-pub fn search_results_layout() -> Layout {
-	let mut constraints = vec![Constraint::Max(6); 5];
+pub fn search_results_layout(count: u64) -> Layout {
+	let mut constraints = vec![Constraint::Max(6); count as usize];
 	constraints.push(Constraint::Max(0));
 
 	Layout::default()
@@ -162,7 +162,7 @@ pub fn render_search_results(
 	scroll_tracker: &ScrollTracker,
 ) {
 	frame.render_widget(titled_ui_block("Search Results"), size);
-	let chunks = search_results_layout().split(size);
+	let chunks = search_results_layout(scroll_tracker.range.unwrap()).split(size);
 	for (index, metadata) in results.iter().enumerate() {
 		render_search_result(
 			frame,
