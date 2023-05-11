@@ -54,7 +54,7 @@ pub fn wcl_lines() -> Vec<String> {
 			stylize_raw("[C]"),
 		),
 		format!(
-			"{}: {}uit...{reset} ({} also works!)",
+			"{}: {}uit...{reset} ({} works!)",
 			stylize_raw("[0]"),
 			stylize_raw("[Q]"),
 			stylize_raw("[Ctrl-C]"),

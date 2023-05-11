@@ -36,7 +36,10 @@ use ratatui::{
 	Frame,
 };
 
-use super::ui_presets::titled_ui_block;
+use super::{
+	scroll_tracker::ScrollTracker,
+	ui_presets::titled_ui_block,
+};
 use crate::{
 	core::terminal::BackendType,
 	game::{
@@ -118,8 +121,8 @@ pub fn render_search_result(
 	frame: &mut Frame<'_, BackendType>,
 	size: Rect,
 	search_term: Option<&str>,
-	result_index: usize,
-	selected_index: Option<usize>,
+	result_index: u64,
+	selected_index: Option<u64>,
 	metadata: &GameMetadata,
 ) {
 	let result_contents = search_result_text(search_term, metadata);
@@ -156,8 +159,7 @@ pub fn render_search_results(
 	size: Rect,
 	search_term: Option<&str>,
 	results: &[GameMetadata],
-	display_start_index: usize,
-	selected_index: Option<usize>,
+	scroll_tracker: &ScrollTracker,
 ) {
 	frame.render_widget(titled_ui_block("Search Results"), size);
 	let chunks = search_results_layout().split(size);
@@ -166,8 +168,8 @@ pub fn render_search_results(
 			frame,
 			chunks[index],
 			search_term,
-			index + display_start_index,
-			selected_index,
+			index as u64 + scroll_tracker.start,
+			scroll_tracker.selected,
 			metadata,
 		);
 	}
