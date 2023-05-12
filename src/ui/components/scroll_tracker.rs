@@ -109,10 +109,6 @@ impl ScrollTracker {
 	/// Sets the range of the scroll tracker. Note that the function will panic
 	/// if the range is outside of the specified size.
 	pub fn set_range(&mut self, new_range: u64) {
-		assert!(
-			new_range <= self.length,
-			"New range cannot exceed scroll tracker's length"
-		);
-		self.range = Some(new_range);
+		self.range = Some(min(self.length, new_range));
 	}
 }
