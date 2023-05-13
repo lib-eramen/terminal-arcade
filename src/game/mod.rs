@@ -29,6 +29,7 @@ use crate::{
 	ui::Screen,
 };
 
+pub mod authors;
 pub mod minesweeper;
 
 /// Gets the current UNIX time as seconds.
