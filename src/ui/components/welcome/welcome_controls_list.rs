@@ -24,15 +24,17 @@ use ratatui::{
 	Frame,
 };
 
-use super::ui_presets::{
-	titled_ui_block,
-	untitled_ui_block,
-};
 use crate::{
 	core::terminal::BackendType,
-	ui::util::{
-		ansi_parse_lines,
-		stylize_raw,
+	ui::{
+		components::ui_presets::{
+			titled_ui_block,
+			untitled_ui_block,
+		},
+		util::{
+			ansi_parse_lines,
+			stylize_raw,
+		},
 	},
 };
 

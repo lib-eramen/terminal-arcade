@@ -16,16 +16,18 @@ use ratatui::{
 	Frame,
 };
 
-use super::ui_presets::{
-	titled_ui_block,
-	untitled_ui_block,
-};
 use crate::{
 	core::terminal::BackendType,
 	game::Game,
-	ui::util::{
-		stylize,
-		stylize_raw,
+	ui::{
+		components::ui_presets::{
+			titled_ui_block,
+			untitled_ui_block,
+		},
+		util::{
+			stylize,
+			stylize_raw,
+		},
 	},
 };
 

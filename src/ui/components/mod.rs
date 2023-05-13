@@ -5,9 +5,8 @@
 //! WCL: Welcome Controls List
 //! GSC: Game Search Controls
 
+pub mod game_select;
 pub mod scroll_tracker;
-pub mod search_results;
-pub mod search_section;
 pub mod ui_presets;
 pub mod under_construction;
-pub mod welcome_controls_list;
+pub mod welcome;

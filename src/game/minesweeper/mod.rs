@@ -2,13 +2,13 @@
 
 use crossterm::event::Event;
 
-use super::{
-	authors::ramendev,
-	Game,
-	GameMetadata,
-};
 use crate::{
 	core::Outcome,
+	game::{
+		authors::ramendev,
+		Game,
+		GameMetadata,
+	},
 	ui::{
 		games::minesweeper::minesweeper_setup_screen::MinesweeperSetupScreen,
 		Screen,

@@ -16,10 +16,6 @@ use ratatui::{
 	Frame,
 };
 
-use super::{
-	config::ConfigScreen,
-	game_select::GameSelectionScreen,
-};
 use crate::{
 	core::{
 		terminal::BackendType,
@@ -32,7 +28,11 @@ use crate::{
 				titled_ui_block,
 				untitled_ui_block,
 			},
-			welcome_controls_list::render_wcl_block,
+			welcome::welcome_controls_list::render_wcl_block,
+		},
+		screens::{
+			config::ConfigScreen,
+			game_select::GameSelectionScreen,
 		},
 		util::{
 			get_crate_version,

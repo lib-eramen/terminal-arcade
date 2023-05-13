@@ -28,10 +28,6 @@ use ratatui::{
 	Frame,
 };
 
-use super::{
-	check_escape_key,
-	Screen,
-};
 use crate::{
 	core::{
 		terminal::BackendType,
@@ -44,14 +40,19 @@ use crate::{
 		Game,
 		GameMetadata,
 	},
-	ui::components::{
-		scroll_tracker::ScrollTracker,
-		search_results::render_search_results,
-		search_section::render_search_section,
-		ui_presets::{
-			titled_ui_block,
-			untitled_ui_block,
+	ui::{
+		components::{
+			game_select::{
+				search_results::render_search_results,
+				search_section::render_search_section,
+			},
+			scroll_tracker::ScrollTracker,
+			ui_presets::{
+				titled_ui_block,
+				untitled_ui_block,
+			},
 		},
+		Screen,
 	},
 };
 

@@ -36,17 +36,19 @@ use ratatui::{
 	Frame,
 };
 
-use super::{
-	scroll_tracker::ScrollTracker,
-	ui_presets::titled_ui_block,
-};
 use crate::{
 	core::terminal::BackendType,
 	game::{
 		Game,
 		GameMetadata,
 	},
-	ui::util::stylize_raw,
+	ui::{
+		components::{
+			scroll_tracker::ScrollTracker,
+			ui_presets::titled_ui_block,
+		},
+		util::stylize_raw,
+	},
 };
 
 /// Highlights the keyword in the word (ANSI-colors the keyword substring in
