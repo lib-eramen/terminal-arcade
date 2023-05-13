@@ -129,7 +129,7 @@ pub fn render_search_result(
 ) {
 	let result_contents = search_result_text(search_term, metadata);
 	let mut result_block = titled_ui_block(format!("[{}]", result_index + 1));
-	if selected_index.is_some_and(|index| index == result_index) {
+	if selected_index.map_or(false, |index| index == result_index) {
 		result_block = result_block
 			.border_style(Style::default().fg(Color::LightRed))
 			.border_type(BorderType::Thick);

@@ -13,12 +13,14 @@ Fine, I'll tell you. It's a collection of games (in no particular theme or patte
 
 ## Installation ⬇️
 
+This project has a MSRV of `v1.64.0`.
+
 Binaries are available in the [Releases](https://github.com/developer-ramen/terminal-arcade/releases) section of the GitHub repo! Can someone remind me to start distributing binaries?
 
 This project is ~~re~~written in Rust 🦀, and uses the Cargo 📦 build tool/package manager.
 Periodically, as new versions are released, I will also upload them to the [`crates.io`](https://crates.io) package registry.
 
-If you understand what I just said, there is a _non-zero_ probability that you know how to run a Cargo project, but just in case:
+If you understand what I just said, there is a *non-zero* probability that you know how to run a Cargo project, but just in case:
 
 1. Prerequisites: `gh`, `git`, or `cargo`
 
@@ -28,7 +30,7 @@ If you understand what I just said, there is a _non-zero_ probability that you k
     - If using `git`, clone my repository like this: `git clone https://github.com/developer-ramen/terminal-arcade`. I don't know how to do it over SSH.
     - If using `cargo`, retrieve my crate as an executable with `cargo install terminal-arcade --locked`.
 
-3. **_Run the dang thing!_**
+3. ***Run the dang thing!***
 
     - Most likely, if you cloned this repository, you will need to manually `cargo run` it, or if you're paranoid that I ship buggy, unreliable software, `cargo test` to keep that anxiety in check.
 
