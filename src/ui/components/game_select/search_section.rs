@@ -49,17 +49,15 @@ pub fn im_feeling_lucky_text() -> Text<'static> {
 	let reset = Attribute::Reset;
 	format!(
 		r#"Feeling {}? {} for a {} game!{reset}
-		Search page {}? {}? Use {} and {} to adjust the density! ({} <= density <= {}){reset}
+		Search page {}? {}? Use {} to adjust the density! ({}){reset}
 		Feeling kind of annoyed with this popup taking space? Toggle with {}!{reset}"#,
 		stylize_raw("lucky"),
 		stylize_raw("[Ctrl-R]"),
 		stylize_raw("random"),
 		stylize_raw("too dense"),
 		stylize_raw("Not dense enough"),
-		stylize_raw("<-"),
-		stylize_raw("->"),
-		stylize_raw("5"),
-		stylize_raw("10"),
+		stylize_raw("<- and ->"),
+		stylize_raw("5 <= density <= 10"),
 		stylize_raw("[Tab]"),
 	)
 	.into_text()

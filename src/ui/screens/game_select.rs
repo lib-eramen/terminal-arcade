@@ -2,7 +2,9 @@
 //! Users can scroll through the list with arrows to look for a game they want,
 //! search a game by its name, or pick a game at random.
 //!
-//! JANKY CODE WARNING! The functions that control the scrolling of the game
+//! # JANKY CODE WARNING!
+//!
+//! The functions that control the scrolling of the game
 //! list is quite janky, to say the least. Beware of burning your eyes! Use a
 //! pair of protective lab goggles to protect yourself from the eye-scorchingly
 //! horrible code quality! I as the author of the code is not responsible for
@@ -24,6 +26,7 @@ use ratatui::{
 		Constraint,
 		Direction,
 		Layout,
+		Rect,
 	},
 	Frame,
 };
@@ -43,6 +46,7 @@ use crate::{
 	ui::{
 		components::{
 			game_select::{
+				search_bottom_bar::render_search_bottom_bar,
 				search_results::render_search_results,
 				search_section::render_search_section,
 			},
@@ -86,6 +90,9 @@ pub struct GameSelectionScreen {
 
 	/// Controls whether the controls help text are displayed.
 	display_help_text: bool,
+
+	/// The time spent to search and filter the results, in seconds.
+	time_to_search_secs: f64,
 }
 
 impl Default for GameSelectionScreen {
@@ -100,6 +107,7 @@ impl Default for GameSelectionScreen {
 			selected_game: false,
 			scroll_tracker: ScrollTracker::new(length as u64, Some(5)),
 			display_help_text: true,
+			time_to_search_secs: 0.0,
 		}
 	}
 }
@@ -111,33 +119,21 @@ impl Screen for GameSelectionScreen {
 				KeyCode::Char('r') if key.modifiers == KeyModifiers::CONTROL => {
 					self.scroll_tracker.scroll_to_random();
 				},
-				KeyCode::Backspace => {
-					self.remove_one_character();
-				},
 				KeyCode::Char('d') if key.modifiers == KeyModifiers::CONTROL => {
 					self.clear_search_term();
 				},
+				KeyCode::Backspace => self.remove_one_character(),
 				KeyCode::Char(character)
 					if [KeyModifiers::SHIFT, KeyModifiers::NONE].contains(&key.modifiers) =>
 				{
 					self.add_character_to_term(character, key.modifiers);
 				},
-				KeyCode::Up => {
-					self.scroll_tracker.scroll_up();
-				},
-				KeyCode::Down => {
-					self.scroll_tracker.scroll_down();
-				},
+				KeyCode::Up => self.scroll_tracker.scroll_up(),
+				KeyCode::Down => self.scroll_tracker.scroll_down(),
 				KeyCode::Left => self.decrease_searches_shown(),
 				KeyCode::Right => self.increase_searches_shown(),
-				KeyCode::Enter => {
-					if self.scroll_tracker.is_selected() {
-						self.selected_game = true;
-					}
-				},
-				KeyCode::Tab => {
-					self.display_help_text = !self.display_help_text;
-				},
+				KeyCode::Tab => self.display_help_text = !self.display_help_text,
+				KeyCode::Enter if self.scroll_tracker.is_selected() => self.selected_game = true,
 				_ => {},
 			}
 		}
@@ -147,11 +143,10 @@ impl Screen for GameSelectionScreen {
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
 		let size = frame.size();
 		frame.render_widget(titled_ui_block("Select a game!"), size);
-		let chunks = self.game_selection_layout().split(size);
+		let chunks = self.game_selection_layout(size).split(size);
 
 		let search_term = self.search_term.as_deref();
 		render_search_section(frame, chunks[0], search_term, self.display_help_text);
-
 		render_search_results(
 			frame,
 			chunks[1],
@@ -162,6 +157,13 @@ impl Screen for GameSelectionScreen {
 				self.scroll_tracker.range.unwrap() as usize,
 			),
 			&self.scroll_tracker,
+		);
+		render_search_bottom_bar(
+			frame,
+			chunks[2],
+			self.search_results_length(),
+			self.time_to_search_secs,
+			max(self.scroll_tracker.range.unwrap(), 5),
 		);
 	}
 
@@ -182,10 +184,18 @@ impl Screen for GameSelectionScreen {
 impl GameSelectionScreen {
 	/// Returns the layout for the game selection screen.
 	#[must_use]
-	fn game_selection_layout(&self) -> Layout {
+	fn game_selection_layout(&self, size: Rect) -> Layout {
+		let search_section_height = if self.display_help_text { 8 } else { 3 };
+		let used_ui_height = search_section_height + 3 + 2;
+		let search_results_height =
+			if used_ui_height >= size.height { 10 } else { size.height - used_ui_height };
+
 		let constraints = vec![
-			Constraint::Max(if self.display_help_text { 8 } else { 3 }),
-			Constraint::Max(50),
+			Constraint::Max(search_section_height), // Search bar/section
+			Constraint::Max(search_results_height), // Search results
+			Constraint::Max(3),                     // Search bottom info row
+			Constraint::Max(0),                     /* Prevents elements from taking all
+			                                         * remaining space. */
 		];
 		Layout::default()
 			.direction(Direction::Vertical)
@@ -201,6 +211,7 @@ impl GameSelectionScreen {
 
 	/// Updates the search results.
 	fn update_search_results(&mut self) {
+		let timer = std::time::Instant::now();
 		self.search_results = if let Some(ref term) = self.search_term {
 			games_by_keyword(term.to_lowercase().as_str())
 		} else {
@@ -210,6 +221,7 @@ impl GameSelectionScreen {
 		.map(|game| game.metadata())
 		.collect();
 		self.scroll_tracker.set_length(self.search_results_length() as u64);
+		self.time_to_search_secs = timer.elapsed().as_secs_f64();
 	}
 
 	/// Adds the character to the search term object, capping out at 256
@@ -220,7 +232,7 @@ impl GameSelectionScreen {
 		match self.search_term {
 			None => self.search_term = Some(character.to_string()),
 			Some(ref mut term) if term.len() < 100 => term.push(character),
-			Some(_) => panic!("Logic went flying all around the place"),
+			Some(_) => panic!("Logic went flying all around the plane of existence"),
 		}
 		self.update_search_results();
 	}
