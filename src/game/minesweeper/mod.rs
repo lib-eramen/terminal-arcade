@@ -43,6 +43,6 @@ impl Game for Minesweeper {
 	}
 
 	fn screen_created(&self) -> Box<dyn Screen> {
-		Box::new(MinesweeperSetupScreen)
+		Box::<MinesweeperSetupScreen>::default()
 	}
 }

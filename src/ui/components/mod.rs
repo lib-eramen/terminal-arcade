@@ -6,6 +6,7 @@
 //! GSC: Game Search Controls
 
 pub mod game_select;
+pub mod games;
 pub mod scroll_tracker;
 pub mod ui_presets;
 pub mod under_construction;
