@@ -6,9 +6,12 @@
 //! To get started, take a look at the [`TerminalArcade`] struct, the struct
 //! that all mechanics in this crate is based on.
 
-use std::path::{
-	Path,
-	PathBuf,
+use std::{
+	path::{
+		Path,
+		PathBuf,
+	},
+	time::Duration,
 };
 
 use crossterm::{
@@ -20,6 +23,7 @@ use crossterm::{
 		Show,
 	},
 	event::{
+		poll,
 		read,
 		DisableBracketedPaste,
 		DisableFocusChange,
@@ -243,10 +247,11 @@ impl Handler {
 	/// shortcuts), are passed to the last screen (which is the only active
 	/// screen anyways, see the struct documentation for more information).
 	fn run(&mut self) -> Outcome<()> {
+		let sixty_fps_in_ms = 16;
 		loop {
 			self.draw_active_screen_ui()?;
-			let event = read()?;
-			if self.event_loop(&event)? {
+			let poll_status = poll(Duration::from_millis(sixty_fps_in_ms))?; // 60 FPS
+			if poll_status && self.event_loop(&read()?)? {
 				break;
 			}
 		}

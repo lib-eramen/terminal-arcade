@@ -1,5 +1,7 @@
 //! A module for containing the welcome screen in Terminal Arcade.
 
+use std::cmp::max;
+
 use crossterm::event::{
 	Event,
 	KeyCode,
@@ -28,7 +30,10 @@ use crate::{
 				titled_ui_block,
 				untitled_ui_block,
 			},
-			welcome::welcome_controls_list::render_wcl_block,
+			welcome::{
+				welcome_bottom_bar::render_welcome_bottom_bar,
+				welcome_controls_list::render_wcl_block,
+			},
 		},
 		screens::{
 			config::ConfigScreen,
@@ -94,6 +99,10 @@ impl Default for WelcomeScreen {
 impl Screen for WelcomeScreen {
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
 		let size = frame.size();
+		frame.render_widget(titled_ui_block("Welcome to Terminal Arcade!"), size);
+		let used_ui_height = 17 + 11 + 5 + 2;
+		let empty_space_height =
+			if size.height <= used_ui_height { 0 } else { size.height - used_ui_height };
 		let chunks = Layout::default()
 			.direction(Direction::Vertical)
 			.margin(1)
@@ -101,12 +110,12 @@ impl Screen for WelcomeScreen {
 				[
 					Constraint::Max(17), // Banner's height + borders
 					Constraint::Max(11), // Controls list block's height
-					Constraint::Max(0),  // Prevents blocks taking all remaining space
+					Constraint::Max(empty_space_height),
+					Constraint::Max(5), // Bottom bar
 				]
 				.as_ref(),
 			)
 			.split(size);
-		frame.render_widget(titled_ui_block("Welcome to Terminal Arcade!"), size);
 		let banner_text = stylize(format!(
 			"{}\nTerminal Arcade, {}",
 			BANNER,
@@ -116,6 +125,7 @@ impl Screen for WelcomeScreen {
 			Paragraph::new(banner_text).block(untitled_ui_block()).alignment(Alignment::Center);
 		frame.render_widget(banner, chunks[0]);
 		render_wcl_block(chunks[1], frame, self.tracker.selected);
+		render_welcome_bottom_bar(frame, chunks[3]);
 	}
 
 	fn event(&mut self, event: &Event) -> Outcome<()> {

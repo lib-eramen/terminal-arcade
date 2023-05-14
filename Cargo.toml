@@ -22,6 +22,7 @@ chrono = "0.4.24"
 crossterm = { version = "0.26.1", features = ["event-stream"] }
 derive-new = "0.5.9"
 derive_builder = "0.12.0"
+git_info = "0.1.2"
 home = "0.5.5"
 new = "0.0.0"
 once_cell = "1.17.1"
