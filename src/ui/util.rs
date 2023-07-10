@@ -11,7 +11,7 @@ use crossterm::{
 	},
 };
 use ratatui::text::{
-	Spans,
+	Line,
 	Text,
 };
 use tiny_gradient::{
@@ -55,7 +55,7 @@ pub fn stylize_raw<T: ToString>(text: T) -> String {
 
 /// Stylizes text with a gradient, immediately returning the first line.
 #[must_use]
-pub fn stylize_first<T: ToString>(text: T) -> Spans<'static> {
+pub fn stylize_first<T: ToString>(text: T) -> Line<'static> {
 	stylize(text).lines[0].clone()
 }
 

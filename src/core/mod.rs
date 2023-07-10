@@ -160,7 +160,7 @@ impl Handler {
 	/// Checks for whether a key event matches the quit controls.
 	#[must_use]
 	fn check_quit_controls(key: &KeyEvent) -> bool {
-		let quit_controls = vec![
+		let quit_controls = [
 			KeyEvent::new(KeyCode::Char('q'), KeyModifiers::CONTROL),
 			KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
 			KeyEvent::new(KeyCode::F(4), KeyModifiers::ALT),

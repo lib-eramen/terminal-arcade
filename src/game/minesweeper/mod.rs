@@ -9,10 +9,7 @@ use crate::{
 		Game,
 		GameMetadata,
 	},
-	ui::{
-		games::minesweeper::minesweeper_setup_screen::MinesweeperSetupScreen,
-		Screen,
-	},
+	ui::Screen,
 };
 
 /// The struct containing the implementation for the game Minesweeper.
@@ -43,6 +40,6 @@ impl Game for Minesweeper {
 	}
 
 	fn screen_created(&self) -> Box<dyn Screen> {
-		Box::<MinesweeperSetupScreen>::default()
+		todo!()
 	}
 }
