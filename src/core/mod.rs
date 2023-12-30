@@ -139,7 +139,6 @@ impl Handler {
 			get_mut_terminal().backend_mut(),
 			DisableBracketedPaste,
 			DisableFocusChange,
-			DisableMouseCapture,
 			DisableBlinking,
 			EnterAlternateScreen,
 			Hide,
@@ -154,8 +153,8 @@ impl Handler {
 			get_mut_terminal().backend_mut(),
 			EnableBracketedPaste,
 			EnableFocusChange,
-			EnableMouseCapture,
 			EnableBlinking,
+			DisableMouseCapture,
 			LeaveAlternateScreen,
 			Show,
 		)?)
