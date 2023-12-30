@@ -1,7 +1,7 @@
 //! # Terminal Arcade
 //!
 //! Terminal Arcade is an arcade machine
-//! replica-concept-reinvention-do-it-myself thingymajingy of the arcade
+//! replica-concept-reinvention-do-it-myself thingymajig of the arcade
 //! machine! The preceding sentence should have already given a solid indication
 //! of the quality of this crate.
 //!

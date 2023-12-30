@@ -360,12 +360,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "new"
-version = "0.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6449be85417aae365ae2380f74e135e5e1ddc7a51c85b2c171f6e71c044d5ea7"
-
-[[package]]
 name = "nom"
 version = "7.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -636,7 +630,6 @@ dependencies = [
  "derive_builder",
  "git_info",
  "home",
- "new",
  "once_cell",
  "pluralizer",
  "rand",
