@@ -29,6 +29,8 @@ use crossterm::{
 		DisableFocusChange,
 		DisableMouseCapture,
 		EnableBracketedPaste,
+		EnableFocusChange,
+		EnableMouseCapture,
 		Event,
 		KeyCode,
 		KeyEvent,
@@ -151,6 +153,8 @@ impl Handler {
 		Ok(execute!(
 			get_mut_terminal().backend_mut(),
 			EnableBracketedPaste,
+			EnableFocusChange,
+			EnableMouseCapture,
 			EnableBlinking,
 			LeaveAlternateScreen,
 			Show,

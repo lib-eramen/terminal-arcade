@@ -32,7 +32,7 @@ pub const UC_BANNER: &str = r#"
         /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾/  "When they tell you to build stuff, build bomb-ass
        /  /‾‾‾‾‾‾‾‾‾‾/  /  banners in place of it. At least you'll have some- 
       /  /  ##  ##  /  /  thing to show when HR inevitably writes you up for  
-     /  /  ##  ##  /  /  not being productive."                 Ramen, 2023   
+     /  /  ##  ##  /  /  not being productive."            some dev in 2023   
     /  /          /  /  /‾‾‾‾‾‾‾‾/ /‾‾‾‾‾‾‾\  /‾‾‾‾‾‾‾/  /‾‾/ /‾‾/ /‾‾/ /‾‾/  
    /  /  ######  /  /  /  /‾‾/  / /  /‾‾/  / / /‾‾‾‾‾   /  / /  / /  / /  /   
   /  /  ##  ##  /  /  /  /  /  / /  /  /  / /  ‾‾‾‾‾\  /  / /  / /  / /  /    
@@ -49,8 +49,8 @@ pub fn render_under_construction_block(frame: &mut Frame<'_, BackendType>) {
 		.margin(1)
 		.constraints(
 			[
-				Constraint::Max(13), // Banner height
-				Constraint::Max(0),  // Prevents blocks from taking up all remaining space
+				Constraint::Max(13),
+				Constraint::Max(0),
 			]
 			.as_ref(),
 		)
