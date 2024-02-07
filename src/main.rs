@@ -28,8 +28,7 @@ pub mod core;
 pub mod game;
 pub mod ui;
 
-/// Entry point of a program! What, you expected a `main` function to be
-/// documented well?
+/// Entry point of the program.
 #[must_use = "I have no idea why rust-analyzer made me put this here"]
 fn main() -> Outcome<()> {
 	Handler::new().startup()

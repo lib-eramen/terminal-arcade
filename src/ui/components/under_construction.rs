@@ -32,14 +32,14 @@ pub const UC_BANNER: &str = r#"
         /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾/  "When they tell you to build stuff, build bomb-ass
        /  /‾‾‾‾‾‾‾‾‾‾/  /  banners in place of it. At least you'll have some- 
       /  /  ##  ##  /  /  thing to show when HR inevitably writes you up for  
-     /  /  ##  ##  /  /  not being productive."            some dev in 2023   
+     /  /  ##  ##  /  /  not being productive."            silly me in 2023   
     /  /          /  /  /‾‾‾‾‾‾‾‾/ /‾‾‾‾‾‾‾\  /‾‾‾‾‾‾‾/  /‾‾/ /‾‾/ /‾‾/ /‾‾/  
    /  /  ######  /  /  /  /‾‾/  / /  /‾‾/  / / /‾‾‾‾‾   /  / /  / /  / /  /   
   /  /  ##  ##  /  /  /  /  /  / /  /  /  / /  ‾‾‾‾‾\  /  / /  / /  / /  /    
  /  /          /  /  /  /  /  / /   ‾‾‾  /  ‾‾‾‾‾/  /  ‾‾‾  ‾‾‾  ‾‾‾  ‾‾‾     
 /   ‾‾‾‾‾‾‾‾‾‾‾  /  /   ‾‾‾  / /  /‾‾‾‾‾  /‾‾‾‾‾‾  / /‾‾/ /‾‾/ /‾‾/ /‾‾/      
 ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾   ‾‾‾‾‾‾‾‾‾  ‾‾‾        ‾‾‾‾‾‾‾‾‾  ‾‾‾  ‾‾‾  ‾‾‾  ‾‾‾       
-⚠ Sorry! This page is under construction! I promise it's coming soon (read: probably not for a while)! Press [ESC] to leave for now..."#;
+⚠ Sorry, this page is under construction! I promise it's coming soon (read: probably not for a while)! Press [ESC] to leave for now..."#;
 
 /// Renders the [under construction](UC_BANNER) in a block.
 pub fn render_under_construction_block(frame: &mut Frame<'_, BackendType>) {

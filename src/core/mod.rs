@@ -250,10 +250,10 @@ impl Handler {
 	/// shortcuts), are passed to the last screen (which is the only active
 	/// screen anyways, see the struct documentation for more information).
 	fn run(&mut self) -> Outcome<()> {
-		let sixty_fps_in_ms = 16;
+		let one_twenty_fps_in_ms = 8; // 120 FPS
 		loop {
 			self.draw_active_screen_ui()?;
-			let poll_status = poll(Duration::from_millis(sixty_fps_in_ms))?; // 60 FPS
+			let poll_status = poll(Duration::from_millis(one_twenty_fps_in_ms))?;
 			if poll_status && self.event_loop(&read()?)? {
 				break;
 			}

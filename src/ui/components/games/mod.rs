@@ -2,4 +2,3 @@
 //! displays, cards, etc.
 
 pub mod minesweeper;
-pub mod setup;

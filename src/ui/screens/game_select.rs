@@ -2,13 +2,7 @@
 //! Users can scroll through the list with arrows to look for a game they want,
 //! search a game by its name, or pick a game at random.
 //!
-//! # JANKY CODE WARNING!
-//!
-//! The functions that control the scrolling of the game
-//! list is quite janky, to say the least. Beware of burning your eyes! Use a
-//! pair of protective lab goggles to protect yourself from the eye-scorchingly
-//! horrible code quality! I as the author of the code is not responsible for
-//! any kinds of impact to physical health caused by looking at said janky code!
+//! oh jank warning btw
 
 use std::cmp::{
 	max,
