@@ -4,7 +4,7 @@ use crossterm::event::Event;
 
 use crate::{
 	core::Outcome,
-	game::{
+	games::{
 		authors::ramendev,
 		Game,
 		GameMetadata,

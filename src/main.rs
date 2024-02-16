@@ -25,11 +25,10 @@ use crate::core::{
 };
 
 pub mod core;
-pub mod game;
+pub mod games;
 pub mod ui;
 
 /// Entry point of the program.
-#[must_use = "I have no idea why rust-analyzer made me put this here"]
 fn main() -> Outcome<()> {
 	Handler::new().startup()
 }

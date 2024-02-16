@@ -30,7 +30,7 @@ use crate::{
 		terminal::BackendType,
 		Outcome,
 	},
-	game::{
+	games::{
 		all_games,
 		games_by_keyword,
 		get_game_by_name,

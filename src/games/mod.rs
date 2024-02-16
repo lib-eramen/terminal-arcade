@@ -25,7 +25,7 @@ use crate::{
 		get_save_dir,
 		Outcome,
 	},
-	game::minesweeper::Minesweeper,
+	games::minesweeper::Minesweeper,
 	ui::Screen,
 };
 

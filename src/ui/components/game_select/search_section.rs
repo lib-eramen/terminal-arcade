@@ -18,7 +18,7 @@ use ratatui::{
 
 use crate::{
 	core::terminal::BackendType,
-	game::Game,
+	games::Game,
 	ui::{
 		components::ui_presets::{
 			titled_ui_block,

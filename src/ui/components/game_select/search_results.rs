@@ -39,7 +39,7 @@ use ratatui::{
 
 use crate::{
 	core::terminal::BackendType,
-	game::{
+	games::{
 		Game,
 		GameMetadata,
 	},
