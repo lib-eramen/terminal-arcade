@@ -8,7 +8,7 @@ use crossterm::event::{
 	KeyCode,
 	KeyModifiers,
 };
-use ratatui::Frame;
+use ratatui::{text::Text, widgets::Table, Frame};
 
 use crate::core::{
 	terminal::BackendType,
@@ -60,6 +60,12 @@ pub trait Screen {
 	/// If the window wants to create another screen, this function should
 	/// return [Some], with the window inside it. Otherwise, return [None].
 	fn screen_created(&mut self) -> Option<Box<dyn Screen>> {
+		None
+	}
+
+	/// Text to be displayed when the user uses the [Tab] shortcut.
+	/// This is intended for specifying the controls of the page.
+	fn controls_popup_text(&self) -> Option<Table<'_>> {
 		None
 	}
 
