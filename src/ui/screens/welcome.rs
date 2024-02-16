@@ -31,7 +31,7 @@ use crate::{
 				untitled_ui_block,
 			},
 			welcome::{
-				welcome_bottom_bar::render_welcome_bottom_bar,
+				info_footer::render_welcome_bottom_bar,
 				welcome_controls_list::render_wcl_block,
 			},
 		},

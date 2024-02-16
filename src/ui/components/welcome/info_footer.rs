@@ -7,7 +7,10 @@ use ratatui::{
 		Rect,
 	},
 	text::Text,
-	widgets::Paragraph,
+	widgets::{
+		Paragraph,
+		Wrap,
+	},
 	Frame,
 };
 
@@ -58,7 +61,9 @@ pub fn bottom_bar_text() -> Text<'static> {
 
 /// Renders the bottom bar at the welcome screen.
 pub fn render_welcome_bottom_bar(frame: &mut Frame<'_, BackendType>, size: Rect) {
-	let bottom_bar_paragraph =
-		Paragraph::new(bottom_bar_text()).alignment(Alignment::Center).block(untitled_ui_block());
+	let bottom_bar_paragraph = Paragraph::new(bottom_bar_text())
+		.alignment(Alignment::Center)
+		.wrap(Wrap { trim: true })
+		.block(untitled_ui_block());
 	frame.render_widget(bottom_bar_paragraph, size);
 }

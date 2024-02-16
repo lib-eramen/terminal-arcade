@@ -1,3 +1,5 @@
 # Terminal Arcade 🕹️
 
-Basically a bunch of games that you can play in your terminal. Beautiful UI complimentary.
+a bunch of games that you can play in the terminal
+
+will someone save me from ui design pls i am TIRED

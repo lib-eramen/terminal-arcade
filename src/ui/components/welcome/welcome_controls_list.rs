@@ -107,7 +107,7 @@ pub fn wcl_paragraphs(selected: Option<u64>) -> Vec<Paragraph<'static>> {
 					if matches {
 						untitled_ui_block()
 							.border_type(BorderType::Thick)
-							.border_style(Style::default().fg(Color::LightRed))
+							.border_style(Style::default().fg(Color::White))
 					} else {
 						untitled_ui_block()
 					},
