@@ -2,6 +2,11 @@
 
 #![allow(clippy::needless_pass_by_value)]
 
+use std::time::{
+	SystemTime,
+	UNIX_EPOCH,
+};
+
 use ansi_to_tui::IntoText;
 use crossterm::{
 	execute,
@@ -17,12 +22,34 @@ use ratatui::text::{
 use tiny_gradient::{
 	Gradient,
 	GradientStr,
+	RGB,
 };
 
 use crate::core::{
 	terminal::get_mut_terminal,
 	Outcome,
 };
+
+/// A list of colors used for the rainbow gradient.
+static RAINBOW_GRADIENT_COLORS: [RGB; 6] = [
+	RGB::new(255, 102, 99),  // red
+	RGB::new(254, 177, 68),  // orange
+	RGB::new(253, 253, 151), // yellow
+	RGB::new(158, 224, 158), // green
+	RGB::new(158, 193, 207), // blue
+	RGB::new(204, 153, 201), // purple
+];
+
+/// Based on the system time, provides a shifted version
+/// of the rainbow gradient colors in order to provide the illusion of moving
+/// gradients.
+pub fn get_gradient_colors() -> [RGB; 6] {
+	let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
+	let remainder = current_time % 1200;
+	let mut new_gradient = RAINBOW_GRADIENT_COLORS.clone();
+	new_gradient.rotate_right((remainder / 200) as usize);
+	new_gradient
+}
 
 /// Stylizes text with a gradient, converting them
 /// into [`ratatui`]'s [Text] form for wider usage.
@@ -34,7 +61,7 @@ pub fn stylize<T: ToString>(text: T) -> Text<'static> {
 /// Stylizes text with a gradient.
 #[must_use]
 pub fn stylize_raw<T: ToString>(text: T) -> String {
-	text.to_string().gradient(Gradient::Fruit).to_string()
+	text.to_string().gradient(get_gradient_colors()).to_string()
 }
 
 /// Stylizes text with a gradient, immediately returning the first line.
@@ -45,8 +72,7 @@ pub fn stylize_first<T: ToString>(text: T) -> Line<'static> {
 
 /// Clears the terminal.
 pub fn clear_terminal() -> Outcome<()> {
-	get_mut_terminal().clear()?;
-	Ok(())
+	Ok(get_mut_terminal().clear()?)
 }
 
 /// ANSI-parses a [`Vec`] of [String] lines into individual [Text] objects.

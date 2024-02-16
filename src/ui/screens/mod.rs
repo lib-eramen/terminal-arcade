@@ -8,7 +8,11 @@ use crossterm::event::{
 	KeyCode,
 	KeyModifiers,
 };
-use ratatui::{text::Text, widgets::Table, Frame};
+use ratatui::{
+	text::Text,
+	widgets::Table,
+	Frame,
+};
 
 use crate::core::{
 	terminal::BackendType,

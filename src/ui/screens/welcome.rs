@@ -108,7 +108,7 @@ impl Screen for WelcomeScreen {
 			.margin(1)
 			.constraints(
 				[
-					Constraint::Max(17), // Banner's height + borders
+					Constraint::Max(16), // Banner's height + borders
 					Constraint::Max(11), // Controls list block's height
 					Constraint::Max(empty_space_height),
 					Constraint::Max(5), // Bottom bar
@@ -116,13 +116,8 @@ impl Screen for WelcomeScreen {
 				.as_ref(),
 			)
 			.split(size);
-		let banner_text = stylize(format!(
-			"{}\nTerminal Arcade, {}",
-			BANNER,
-			get_crate_version()
-		));
 		let banner =
-			Paragraph::new(banner_text).block(untitled_ui_block()).alignment(Alignment::Center);
+			Paragraph::new(stylize(BANNER)).block(untitled_ui_block()).alignment(Alignment::Center);
 		frame.render_widget(banner, chunks[0]);
 		render_wcl_block(chunks[1], frame, self.tracker.selected);
 		render_welcome_bottom_bar(frame, chunks[3]);
