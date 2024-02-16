@@ -26,6 +26,7 @@ use ratatui::{
 	},
 	style::{
 		Color,
+		Modifier,
 		Style,
 	},
 	text::Text,
@@ -131,6 +132,7 @@ pub fn render_search_result(
 	let mut result_block = titled_ui_block(format!("[{}]", result_index + 1));
 	if selected_index.map_or(false, |index| index == result_index) {
 		result_block = result_block
+			.style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
 			.border_style(Style::default().fg(Color::LightRed))
 			.border_type(BorderType::Thick);
 	}

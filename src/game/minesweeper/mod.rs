@@ -9,7 +9,10 @@ use crate::{
 		Game,
 		GameMetadata,
 	},
-	ui::Screen,
+	ui::{
+		games::minesweeper::board_setup::MinesweeperBoardSetup,
+		Screen,
+	},
 };
 
 /// The struct containing the implementation for the game Minesweeper.
@@ -21,8 +24,7 @@ impl Game for Minesweeper {
 		GameMetadata::new(|info| {
 			info.authors(vec![ramendev.to_string()])
 				.description(
-					"A tile-based game of looking for mines and avoiding responsibilities. On \
-					 that note, get back to work, devs."
+					"A tile-based game of looking for mines and avoiding responsibilities."
 						.to_string(),
 				)
 				.name("Minesweeper".to_string())
@@ -32,14 +34,14 @@ impl Game for Minesweeper {
 	}
 
 	fn is_finished(&self) -> bool {
-		todo!()
+		false
 	}
 
 	fn event(&mut self, _event: &Event) -> Outcome<()> {
-		todo!()
+		Ok(())
 	}
 
 	fn screen_created(&self) -> Box<dyn Screen> {
-		todo!()
+		Box::new(MinesweeperBoardSetup::new())
 	}
 }

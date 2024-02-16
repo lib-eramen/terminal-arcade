@@ -43,7 +43,7 @@ pub trait Screen {
 	}
 
 	/// Called when the screen is being closed.
-	/// This can be called when the entire application is being quitted (in the
+	/// This can be called when the entire application is being quit (in the
 	/// proper manner, of course, not through a crash or a panic).
 	fn close(&mut self) -> Outcome<()> {
 		Ok(())
