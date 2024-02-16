@@ -24,22 +24,6 @@ use crate::core::{
 	Outcome,
 };
 
-/// [Disables raw mode](crossterm::terminal::disable_raw_mode), executes the
-/// statements provided, and [enable raw
-/// mode](crossterm::terminal::enable_raw_mode).
-///
-/// Note that this macro does make use of the `?`
-/// operator to propagate errors in functions that expect a [Result] or a
-/// [Result] equivalent.
-#[macro_export]
-macro_rules! disable_raw_mode {
-	($($p:expr),*) => {
-		crossterm::terminal::disable_raw_mode()?;
-		$($p)*;
-		crossterm::terminal::enable_raw_mode()?;
-	};
-}
-
 /// Stylizes text with a gradient, converting them
 /// into [`ratatui`]'s [Text] form for wider usage.
 #[must_use]
