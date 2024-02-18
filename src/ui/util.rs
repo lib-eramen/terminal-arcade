@@ -43,12 +43,12 @@ static RAINBOW_GRADIENT_COLORS: [RGB; 6] = [
 /// Based on the system time, provides a shifted version
 /// of the rainbow gradient colors in order to provide the illusion of moving
 /// gradients.
-pub fn get_gradient_colors() -> [RGB; 6] {
+pub fn get_gradient_colors() -> Vec<RGB> {
 	let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
-	let remainder = current_time % 1200;
+	let remainder = current_time % 600;
 	let mut new_gradient = RAINBOW_GRADIENT_COLORS.clone();
-	new_gradient.rotate_right((remainder / 200) as usize);
-	new_gradient
+	new_gradient.rotate_right((remainder / 100) as usize);
+	new_gradient[0..4].into()
 }
 
 /// Stylizes text with a gradient, converting them
