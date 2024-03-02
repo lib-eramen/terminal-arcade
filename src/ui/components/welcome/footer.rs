@@ -25,9 +25,8 @@ use crate::{
 	},
 };
 
-/// Returns the VCS info string.
 #[must_use]
-pub fn vcs_info_string() -> String {
+fn git_info_string() -> String {
 	let git_info = git_info::get();
 	let current_branch =
 		git_info.current_branch.unwrap_or_else(|| "of an unknown tree".to_string());
@@ -44,14 +43,13 @@ pub fn vcs_info_string() -> String {
 	)
 }
 
-/// Returns the bottom bar text.
 #[must_use]
-pub fn bottom_bar_text() -> Text<'static> {
+fn bottom_bar_text() -> Text<'static> {
 	format!(
 		"Time: {}\n{}\n{} is a {}! If you would like to contribute, please do!
         ",
 		stylize_raw(chrono::Local::now().format("%d/%m/%Y %H:%M:%S").to_string()),
-		vcs_info_string(),
+		git_info_string(),
 		stylize_raw("Terminal Arcade"),
 		stylize_raw("work-in-progress")
 	)

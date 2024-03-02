@@ -2,3 +2,5 @@
 //! See [`crate::game`] for more information.
 
 pub mod minesweeper;
+
+pub use minesweeper::board_setup::MinesweeperSetupScreen;

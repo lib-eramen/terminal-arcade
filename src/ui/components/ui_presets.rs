@@ -1,7 +1,4 @@
-//! A collection of [`ratatui`] widget presets that I (the author and senior
-//! engineer of this thing) think looks good. You, dear collaborator, can
-//! propose a change via a PR, but unless it makes the UI look so *objetively*
-//! better than without the change, this module shall stay as it is.
+//! A collection of [`ratatui`] widget presets.
 
 #![allow(clippy::needless_pass_by_value)]
 

@@ -19,10 +19,7 @@ use ratatui::{
 };
 
 use crate::{
-	core::{
-		terminal::BackendType,
-		Outcome,
-	},
+	core::terminal::BackendType,
 	ui::{
 		components::{
 			scroll_tracker::ScrollTracker,
@@ -31,8 +28,8 @@ use crate::{
 				untitled_ui_block,
 			},
 			welcome::{
-				info_footer::render_welcome_bottom_bar,
-				welcome_controls_list::render_wcl_block,
+				controls::render_welcome_controls_block,
+				footer::render_welcome_bottom_bar,
 			},
 		},
 		screens::{
@@ -119,11 +116,11 @@ impl Screen for WelcomeScreen {
 		let banner =
 			Paragraph::new(stylize(BANNER)).block(untitled_ui_block()).alignment(Alignment::Center);
 		frame.render_widget(banner, chunks[0]);
-		render_wcl_block(chunks[1], frame, self.tracker.selected);
+		render_welcome_controls_block(chunks[1], frame, self.tracker.selected);
 		render_welcome_bottom_bar(frame, chunks[3]);
 	}
 
-	fn event(&mut self, event: &Event) -> Outcome<()> {
+	fn event(&mut self, event: &Event) -> anyhow::Result<()> {
 		if let Event::Key(key) = event {
 			match key.code {
 				KeyCode::Char(character) => {

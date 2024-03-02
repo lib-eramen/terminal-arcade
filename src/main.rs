@@ -19,16 +19,12 @@
 	unused_imports
 )]
 
-use crate::core::{
-	Handler,
-	Outcome,
-};
+use crate::core::Handler;
 
 pub mod core;
 pub mod games;
 pub mod ui;
 
-/// Entry point of the program.
-fn main() -> Outcome<()> {
+fn main() -> anyhow::Result<()> {
 	Handler::new().startup()
 }

@@ -1,6 +1,5 @@
 //! A paragraph with a banner and a short message indicating that a
 //! screen/component is not ready yet. Useful as a `todo!()` replacer.
-//! Note that in here, UC stands for "under construction".
 
 use ratatui::{
 	layout::{
@@ -28,20 +27,20 @@ use crate::{
 };
 
 /// A banner for an under construction message.
-pub const UC_BANNER: &str = r#"
-        /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾/  "When they tell you to build stuff, build bomb-ass
-       /  /‾‾‾‾‾‾‾‾‾‾/  /  banners in place of it. At least you'll have some- 
-      /  /  ##  ##  /  /  thing to show when HR inevitably writes you up for  
-     /  /  ##  ##  /  /  not being productive."            silly me in 2023   
+pub const UNDER_CONSTRUCTION_BANNER: &str = r#"
+        /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾/
+       /  /‾‾‾‾‾‾‾‾‾‾/  /
+      /  /  ##  ##  /  /
+     /  /  ##  ##  /  /
     /  /          /  /  /‾‾‾‾‾‾‾‾/ /‾‾‾‾‾‾‾\  /‾‾‾‾‾‾‾/  /‾‾/ /‾‾/ /‾‾/ /‾‾/  
    /  /  ######  /  /  /  /‾‾/  / /  /‾‾/  / / /‾‾‾‾‾   /  / /  / /  / /  /   
   /  /  ##  ##  /  /  /  /  /  / /  /  /  / /  ‾‾‾‾‾\  /  / /  / /  / /  /    
  /  /          /  /  /  /  /  / /   ‾‾‾  /  ‾‾‾‾‾/  /  ‾‾‾  ‾‾‾  ‾‾‾  ‾‾‾     
 /   ‾‾‾‾‾‾‾‾‾‾‾  /  /   ‾‾‾  / /  /‾‾‾‾‾  /‾‾‾‾‾‾  / /‾‾/ /‾‾/ /‾‾/ /‾‾/      
 ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾   ‾‾‾‾‾‾‾‾‾  ‾‾‾        ‾‾‾‾‾‾‾‾‾  ‾‾‾  ‾‾‾  ‾‾‾  ‾‾‾       
-⚠ Sorry, this page is under construction! I promise it's coming soon (read: probably not for a while)! Press [ESC] to leave for now..."#;
+⚠ Sorry, this page is under construction!"#;
 
-/// Renders the [under construction](UC_BANNER) in a block.
+/// Renders the [under construction](UNDER_CONSTRUCTION_BANNER) in a block.
 pub fn render_under_construction_block(frame: &mut Frame<'_, BackendType>) {
 	let size = frame.size();
 	let chunks = Layout::default()
@@ -54,7 +53,7 @@ pub fn render_under_construction_block(frame: &mut Frame<'_, BackendType>) {
 		size,
 	);
 
-	let message = Paragraph::new(stylize(UC_BANNER))
+	let message = Paragraph::new(stylize(UNDER_CONSTRUCTION_BANNER))
 		.alignment(Alignment::Center)
 		.block(untitled_ui_block().borders(Borders::NONE));
 	frame.render_widget(message, chunks[0]);

@@ -25,10 +25,7 @@ use tiny_gradient::{
 	RGB,
 };
 
-use crate::core::{
-	terminal::get_mut_terminal,
-	Outcome,
-};
+use crate::core::terminal::get_mut_terminal;
 
 /// A list of colors used for the rainbow gradient.
 static RAINBOW_GRADIENT_COLORS: [RGB; 6] = [
@@ -40,14 +37,11 @@ static RAINBOW_GRADIENT_COLORS: [RGB; 6] = [
 	RGB::new(204, 153, 201), // purple
 ];
 
-/// Based on the system time, provides a shifted version
-/// of the rainbow gradient colors in order to provide the illusion of moving
-/// gradients.
-pub fn get_gradient_colors() -> Vec<RGB> {
+fn get_gradient_colors() -> Vec<RGB> {
 	let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
-	let remainder = current_time % 600;
-	let mut new_gradient = RAINBOW_GRADIENT_COLORS.clone();
-	new_gradient.rotate_right((remainder / 100) as usize);
+	let remainder = current_time % 900;
+	let mut new_gradient = RAINBOW_GRADIENT_COLORS;
+	new_gradient.rotate_right((remainder / 150) as usize);
 	new_gradient[0..4].into()
 }
 
@@ -71,7 +65,7 @@ pub fn stylize_first<T: ToString>(text: T) -> Line<'static> {
 }
 
 /// Clears the terminal.
-pub fn clear_terminal() -> Outcome<()> {
+pub fn clear_terminal() -> anyhow::Result<()> {
 	Ok(get_mut_terminal().clear()?)
 }
 
@@ -82,12 +76,12 @@ pub fn ansi_parse_lines(lines: Vec<String>) -> Vec<Text<'static>> {
 	lines.iter().map(String::into_text).map(Result::unwrap).collect()
 }
 
-/// Gets the version of the crate, or returns "version... not found :(" if one
+/// Gets the version of the crate, or returns "NOT.FOUND" if one
 /// was unable to be retrieved.
 #[must_use]
 pub fn get_crate_version() -> String {
 	format!(
 		"v{}",
-		std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "ersion... not found :(".to_string())
+		std::env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "NOT.FOUND".to_string())
 	)
 }

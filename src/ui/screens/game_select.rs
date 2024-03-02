@@ -26,10 +26,7 @@ use ratatui::{
 };
 
 use crate::{
-	core::{
-		terminal::BackendType,
-		Outcome,
-	},
+	core::terminal::BackendType,
 	games::{
 		all_games,
 		games_by_keyword,
@@ -107,7 +104,7 @@ impl Default for GameSelectionScreen {
 }
 
 impl Screen for GameSelectionScreen {
-	fn event(&mut self, event: &Event) -> Outcome<()> {
+	fn event(&mut self, event: &Event) -> anyhow::Result<()> {
 		if let Event::Key(key) = event {
 			match key.code {
 				KeyCode::Char('r') if key.modifiers == KeyModifiers::CONTROL => {

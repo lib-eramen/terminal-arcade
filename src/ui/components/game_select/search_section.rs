@@ -31,18 +31,6 @@ use crate::{
 	},
 };
 
-/// Returns the text used in the back "button".
-#[must_use]
-pub fn back_button_text() -> Text<'static> {
-	stylize("← Back ([Esc])")
-}
-
-/// Returns the default text used in the search bar.
-#[must_use]
-pub fn search_bar_default_text() -> Text<'static> {
-	stylize(" 🔎︎ Search... ([Ctrl-D to clear]")
-}
-
 /// Returns the I'm Feeling Lucky help text.
 #[must_use]
 pub fn im_feeling_lucky_text() -> Text<'static> {
@@ -64,18 +52,8 @@ pub fn im_feeling_lucky_text() -> Text<'static> {
 	.unwrap()
 }
 
-/// Returns the layout for a search bar.
 #[must_use]
-pub fn search_bar_layout() -> Layout {
-	Layout::default().direction(Direction::Horizontal).margin(0).constraints([
-		Constraint::Ratio(1, 7), // Back "button"
-		Constraint::Ratio(6, 7), // Search area
-	])
-}
-
-/// Returns the layout for the general search bar section.
-#[must_use]
-pub fn search_section_layout(display_help_text: bool) -> Layout {
+fn search_section_layout(display_help_text: bool) -> Layout {
 	let mut constraints = vec![
 		Constraint::Max(3), // Back "button" and search bar
 		Constraint::Max(5), // Controls help text
@@ -98,15 +76,24 @@ pub fn render_search_bar_top_row(
 	size: Rect,
 	search_term: Option<&str>,
 ) {
-	let chunks = search_bar_layout().split(size);
+	let chunks = Layout::default()
+		.direction(Direction::Horizontal)
+		.margin(0)
+		.constraints([
+			Constraint::Ratio(1, 7), // Back "button"
+			Constraint::Ratio(6, 7), // Search area
+		])
+		.split(size);
 
-	let back_button =
-		Paragraph::new(back_button_text()).alignment(Alignment::Center).block(untitled_ui_block());
+	let back_button = Paragraph::new(stylize("← Back ([Esc])"))
+		.alignment(Alignment::Center)
+		.block(untitled_ui_block());
 	frame.render_widget(back_button, chunks[0]);
 
-	let search_bar_text = search_term.map_or_else(search_bar_default_text, |term| {
-		stylize(format!(" 🔎︎ {term}█"))
-	});
+	let search_bar_text = search_term.map_or_else(
+		|| stylize(" 🔎︎ Search... ([Ctrl-D to clear]"),
+		|term| stylize(format!(" 🔎︎ {term}█")),
+	);
 	let search_bar =
 		Paragraph::new(search_bar_text).alignment(Alignment::Left).block(untitled_ui_block());
 	frame.render_widget(search_bar, chunks[1]);

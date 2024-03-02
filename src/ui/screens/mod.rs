@@ -14,10 +14,7 @@ use ratatui::{
 	Frame,
 };
 
-use crate::core::{
-	terminal::BackendType,
-	Outcome,
-};
+use crate::core::terminal::BackendType;
 
 pub mod config;
 pub mod game_select;
@@ -42,14 +39,14 @@ pub trait Screen {
 	/// Called when an event is passed along to the screen,
 	/// possibly from [`crate::TerminalArcade`], but also from whatever screen
 	/// spawned this screen.
-	fn event(&mut self, _event: &Event) -> Outcome<()> {
+	fn event(&mut self, _event: &Event) -> anyhow::Result<()> {
 		Ok(())
 	}
 
 	/// Called when the screen is being closed.
 	/// This can be called when the entire application is being quit (in the
 	/// proper manner, of course, not through a crash or a panic).
-	fn close(&mut self) -> Outcome<()> {
+	fn close(&mut self) -> anyhow::Result<()> {
 		Ok(())
 	}
 
@@ -78,4 +75,7 @@ pub trait Screen {
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>);
 }
 
+pub use config::ConfigScreen;
+pub use game_select::GameSelectionScreen;
+pub use games::*;
 pub use welcome::WelcomeScreen;

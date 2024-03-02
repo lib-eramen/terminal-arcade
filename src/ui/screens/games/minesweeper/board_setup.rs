@@ -16,10 +16,7 @@ use ratatui::{
 };
 
 use crate::{
-	core::{
-		terminal::BackendType,
-		Outcome,
-	},
+	core::terminal::BackendType,
 	ui::{
 		components::ui_presets::titled_ui_block,
 		Screen,
@@ -28,12 +25,12 @@ use crate::{
 
 /// A setup screen for a board of Minesweeper.
 #[derive(new)]
-pub struct MinesweeperBoardSetup {
+pub struct MinesweeperSetupScreen {
 	#[new(default)]
 	setup_complete: bool,
 }
 
-impl MinesweeperBoardSetup {
+impl MinesweeperSetupScreen {
 	/// Returns the layout for the minesweeper board setup screen.
 	#[must_use]
 	fn board_setup_layout() -> Layout {
@@ -47,7 +44,7 @@ impl MinesweeperBoardSetup {
 	}
 }
 
-impl Screen for MinesweeperBoardSetup {
+impl Screen for MinesweeperSetupScreen {
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
 		let size = frame.size();
 		frame.render_widget(titled_ui_block("Mine your field!"), size);
@@ -56,7 +53,7 @@ impl Screen for MinesweeperBoardSetup {
 		frame.render_widget(titled_ui_block("Controls"), chunks[0]);
 	}
 
-	fn event(&mut self, event: &Event) -> Outcome<()> {
+	fn event(&mut self, event: &Event) -> anyhow::Result<()> {
 		if let Event::Key(key) = event {
 			match key.code {
 				KeyCode::Enter => self.setup_complete = true,

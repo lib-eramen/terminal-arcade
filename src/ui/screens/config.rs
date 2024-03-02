@@ -20,10 +20,7 @@ use ratatui::{
 };
 
 use crate::{
-	core::{
-		terminal::BackendType,
-		Outcome,
-	},
+	core::terminal::BackendType,
 	ui::{
 		components::{
 			ui_presets::{

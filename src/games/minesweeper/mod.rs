@@ -3,14 +3,12 @@
 use crossterm::event::Event;
 
 use crate::{
-	core::Outcome,
 	games::{
-		authors::ramendev,
 		Game,
 		GameMetadata,
 	},
 	ui::{
-		games::minesweeper::board_setup::MinesweeperBoardSetup,
+		games::minesweeper::board_setup::MinesweeperSetupScreen,
 		Screen,
 	},
 };
@@ -22,13 +20,11 @@ pub struct Minesweeper;
 impl Game for Minesweeper {
 	fn metadata(&self) -> GameMetadata {
 		GameMetadata::new(|info| {
-			info.authors(vec![ramendev.to_string()])
-				.description(
-					"A tile-based game of looking for mines and avoiding responsibilities."
-						.to_string(),
-				)
-				.name("Minesweeper".to_string())
-				.version_created("0.0.1".to_string())
+			info.description(
+				"A tile-based game of looking for mines and avoiding responsibilities.".to_string(),
+			)
+			.name("Minesweeper".to_string())
+			.version_created("0.0.1".to_string())
 		})
 		.unwrap()
 	}
@@ -37,11 +33,11 @@ impl Game for Minesweeper {
 		false
 	}
 
-	fn event(&mut self, _event: &Event) -> Outcome<()> {
+	fn event(&mut self, _event: &Event) -> anyhow::Result<()> {
 		Ok(())
 	}
 
 	fn screen_created(&self) -> Box<dyn Screen> {
-		Box::new(MinesweeperBoardSetup::new())
+		Box::new(MinesweeperSetupScreen::new())
 	}
 }

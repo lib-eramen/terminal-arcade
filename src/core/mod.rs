@@ -44,7 +44,6 @@ use crossterm::{
 		LeaveAlternateScreen,
 	},
 };
-pub use outcomes::Outcome;
 use ratatui::{
 	layout::{
 		Constraint,
@@ -66,7 +65,6 @@ use crate::{
 	},
 };
 
-pub mod outcomes;
 pub mod terminal;
 
 /// The directory where Terminal Arcade saves all of its data.
@@ -126,14 +124,14 @@ impl Handler {
 	/// Closes the active screen.
 	/// In detail, this function pops the screen from the screen hierarchy in
 	/// Terminal Arcade, and calls its [`Screen::close`] function.
-	pub fn close_screen(&mut self) -> Outcome<()> {
+	pub fn close_screen(&mut self) -> anyhow::Result<()> {
 		self.get_mut_active_screen().close()?;
 		let _ = self.screens.pop();
 		Ok(())
 	}
 
 	/// Sets global terminal rules.
-	fn set_global_terminal_rules() -> Outcome<()> {
+	fn set_global_terminal_rules() -> anyhow::Result<()> {
 		enable_raw_mode()?;
 		Ok(execute!(
 			get_mut_terminal().backend_mut(),
@@ -147,7 +145,7 @@ impl Handler {
 	}
 
 	/// Unsets the global terminal rules set in [`set_global_terminal_rules`].
-	fn unset_global_terminal_rules() -> Outcome<()> {
+	fn unset_global_terminal_rules() -> anyhow::Result<()> {
 		disable_raw_mode()?;
 		Ok(execute!(
 			get_mut_terminal().backend_mut(),
@@ -171,7 +169,7 @@ impl Handler {
 	}
 
 	/// Draws the UI of the active screen.
-	fn draw_active_screen_ui(&mut self) -> Outcome<()> {
+	fn draw_active_screen_ui(&mut self) -> anyhow::Result<()> {
 		get_mut_terminal().draw(|frame| self.get_active_screen().draw_ui(frame))?;
 		Ok(())
 	}
@@ -179,7 +177,7 @@ impl Handler {
 	/// Quits when the screen has no more screens to draw.
 	/// Also returns if there are no screens, and by proxy, if the application
 	/// has been quit.
-	fn quit_when_no_screens(&mut self) -> Outcome<bool> {
+	fn quit_when_no_screens(&mut self) -> anyhow::Result<bool> {
 		Ok(if self.screens.is_empty() {
 			self.quit()?;
 			true
@@ -189,7 +187,7 @@ impl Handler {
 	}
 
 	/// The function to be called when Terminal Arcade starts up.
-	pub fn startup(&mut self) -> Outcome<()> {
+	pub fn startup(&mut self) -> anyhow::Result<()> {
 		let _ = get_terminal(); // This call will initialize the global TERMINAL static variable.
 		Self::set_global_terminal_rules()?;
 		self.spawn_screen(Box::<WelcomeScreen>::default());
@@ -199,7 +197,7 @@ impl Handler {
 
 	/// Handles the information provided by the active screen,
 	/// also returning if the event loop calling this function should quit.
-	fn handle_active_screen(&mut self) -> Outcome<bool> {
+	fn handle_active_screen(&mut self) -> anyhow::Result<bool> {
 		if self.quit_when_no_screens()? {
 			return Ok(true);
 		}
@@ -216,7 +214,7 @@ impl Handler {
 
 	/// Handles an event read from the terminal.
 	/// also returning if the event loop calling this function should quit.
-	fn handle_terminal_event(&mut self, event: &Event) -> Outcome<bool> {
+	fn handle_terminal_event(&mut self, event: &Event) -> anyhow::Result<bool> {
 		match event {
 			Event::Key(ref key) if Self::check_quit_controls(key) => {
 				self.quit()?;
@@ -238,7 +236,7 @@ impl Handler {
 	}
 
 	/// Runs the event loop, also returning whether the loop should break.
-	fn event_loop(&mut self, event: &Event) -> Outcome<bool> {
+	fn event_loop(&mut self, event: &Event) -> anyhow::Result<bool> {
 		Ok(self.handle_terminal_event(event)? || self.handle_active_screen()?)
 	}
 
@@ -248,7 +246,7 @@ impl Handler {
 	/// Events, once handled by Terminal Arcade (for things like global
 	/// shortcuts), are passed to the last screen (which is the only active
 	/// screen anyways, see the struct documentation for more information).
-	fn run(&mut self) -> Outcome<()> {
+	fn run(&mut self) -> anyhow::Result<()> {
 		let sixty_fps_in_ms = 16;
 		loop {
 			self.draw_active_screen_ui()?;
@@ -261,7 +259,7 @@ impl Handler {
 	}
 
 	/// The function to be called when Terminal Arcade is being quitted.
-	fn quit(&mut self) -> Outcome<()> {
+	fn quit(&mut self) -> anyhow::Result<()> {
 		while !self.screens.is_empty() {
 			self.close_screen()?;
 		}

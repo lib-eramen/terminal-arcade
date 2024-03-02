@@ -52,10 +52,8 @@ use crate::{
 	},
 };
 
-/// Highlights the keyword in the word (ANSI-colors the keyword substring in
-/// it).
 #[must_use]
-pub fn highlight_keyword(keyword: Option<&str>, word: &str) -> String {
+fn highlight_keyword(keyword: Option<&str>, word: &str) -> String {
 	if keyword.is_none() {
 		return word.to_string();
 	}
@@ -77,11 +75,10 @@ pub fn highlight_keyword(keyword: Option<&str>, word: &str) -> String {
 	new_string
 }
 
-/// Returns the text that displays the play status.
 #[must_use]
 #[allow(clippy::cast_possible_truncation)]
 #[allow(clippy::cast_possible_wrap)]
-pub fn play_status_text(metadata: &GameMetadata) -> String {
+fn play_status_text(metadata: &GameMetadata) -> String {
 	let play_count = metadata.play_count();
 	let last_played = metadata.last_played();
 	if metadata.played() {
@@ -100,18 +97,15 @@ pub fn play_status_text(metadata: &GameMetadata) -> String {
 	}
 }
 
-/// Formats the game metadata into a search result.
 #[must_use]
-pub fn search_result_text(search_term: Option<&str>, metadata: &GameMetadata) -> Text<'static> {
+fn search_result_text(search_term: Option<&str>, metadata: &GameMetadata) -> Text<'static> {
 	format!(
-		"{}: {}\n{}: {}\n{}: {}, {}: v{}\n{}",
+		"{}: {}\n{}: {}\n{}: v{}\n{}",
 		stylize_raw("Name"),
 		highlight_keyword(search_term, metadata.name()),
 		stylize_raw("Description"),
 		highlight_keyword(search_term, metadata.description()),
-		stylize_raw("Made by"),
-		highlight_keyword(search_term, metadata.authors_string().as_str()),
-		stylize_raw("created at"),
+		stylize_raw("Created at"),
 		highlight_keyword(search_term, metadata.version_created()),
 		play_status_text(metadata),
 	)
@@ -119,8 +113,7 @@ pub fn search_result_text(search_term: Option<&str>, metadata: &GameMetadata) ->
 	.unwrap()
 }
 
-/// Render a search result.
-pub fn render_search_result(
+fn render_search_result(
 	frame: &mut Frame<'_, BackendType>,
 	size: Rect,
 	search_term: Option<&str>,
@@ -143,10 +136,8 @@ pub fn render_search_result(
 	frame.render_widget(result_paragraph, size);
 }
 
-/// Returns the layout of the search results. This layout handles 5 results at
-/// once.
 #[must_use]
-pub fn search_results_layout(count: u64) -> Layout {
+fn search_results_layout(count: u64) -> Layout {
 	let mut constraints = vec![Constraint::Max(6); count as usize];
 	constraints.push(Constraint::Max(0));
 

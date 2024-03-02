@@ -21,15 +21,11 @@ use serde_derive::{
 };
 
 use crate::{
-	core::{
-		get_save_dir,
-		Outcome,
-	},
+	core::get_save_dir,
 	games::minesweeper::Minesweeper,
 	ui::Screen,
 };
 
-pub mod authors;
 pub mod minesweeper;
 
 /// Gets the current UNIX time as seconds.
@@ -61,7 +57,7 @@ impl<'a> GameMetadata {
 	/// Creates a new metadata object from a closure that builds the
 	/// [`GameStaticInfo`] object, and a [`GameDynamicInfo`] object fetched by
 	/// the function itself.
-	pub fn new<F>(static_info: F) -> Outcome<Self>
+	pub fn new<F>(static_info: F) -> anyhow::Result<Self>
 	where
 		F: FnOnce(&mut GameStaticInfoBuilder) -> &mut GameStaticInfoBuilder, {
 		let static_info = static_info(&mut GameStaticInfoBuilder::create_empty()).build().unwrap();
@@ -90,17 +86,6 @@ impl<'a> GameMetadata {
 		&self.static_info.description
 	}
 
-	/// Gets the authors of the game.
-	pub fn authors(&'a self) -> Vec<&'a str> {
-		self.static_info.authors.iter().map(String::as_str).collect()
-	}
-
-	/// Gets the authors of the game, as a string.
-	#[must_use]
-	pub fn authors_string(&self) -> String {
-		self.authors().join(", ")
-	}
-
 	/// Gets the version string that the game was created in.
 	#[must_use]
 	pub fn version_created(&'a self) -> &'a str {
@@ -127,7 +112,7 @@ impl<'a> GameMetadata {
 }
 
 /// A [Game]'s static, unchanging info/data. This includes things like the
-/// game's name, description, and authors.
+/// game's name and description.
 #[derive(Debug, Clone, Builder, Default, Serialize, Deserialize)]
 #[must_use]
 pub struct GameStaticInfo {
@@ -136,9 +121,6 @@ pub struct GameStaticInfo {
 
 	/// The game's description.
 	pub description: String,
-
-	/// Authors of the game.
-	pub authors: Vec<String>,
 
 	/// The version that the game was created on.
 	pub version_created: String,
@@ -158,19 +140,19 @@ pub struct GameDynamicInfo {
 
 impl GameDynamicInfo {
 	/// Loads the game metadata.
-	pub fn load(name: &str) -> Outcome<Self> {
+	pub fn load(name: &str) -> anyhow::Result<Self> {
 		let metadata_file = std::fs::read_to_string(meta_file_path(name))?;
 		Ok(toml::from_str::<Self>(&metadata_file)?)
 	}
 
 	/// Saves the current configuration, in TOML format.
-	pub fn save(&self, name: &str) -> Outcome<()> {
+	pub fn save(&self, name: &str) -> anyhow::Result<()> {
 		let toml_string = toml::to_string_pretty(self)?;
 		Ok(std::fs::write(meta_file_path(name), toml_string)?)
 	}
 
 	/// Loads this struct from the specified location, or creates a default.
-	pub fn load_or_default(name: &str) -> Outcome<Self> {
+	pub fn load_or_default(name: &str) -> anyhow::Result<Self> {
 		let load_results = Self::load(name);
 		Ok(if let Ok(info) = load_results {
 			info
@@ -209,7 +191,7 @@ pub trait Game {
 	fn is_finished(&self) -> bool;
 
 	/// Called when an event is passed to the game.
-	fn event(&mut self, event: &Event) -> Outcome<()>;
+	fn event(&mut self, event: &Event) -> anyhow::Result<()>;
 
 	/// The screen for the game to create.
 	/// This can be either a setup screen (that can create the game screen on
