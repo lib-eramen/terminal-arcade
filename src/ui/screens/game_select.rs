@@ -188,7 +188,7 @@ impl GameSelectionScreen {
 		Layout::default()
 			.direction(Direction::Vertical)
 			.vertical_margin(1)
-			.horizontal_margin(1)
+			.horizontal_margin(2)
 			.constraints(constraints)
 	}
 

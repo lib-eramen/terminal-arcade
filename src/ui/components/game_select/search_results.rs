@@ -126,8 +126,7 @@ fn render_search_result(
 	if selected_index.map_or(false, |index| index == result_index) {
 		result_block = result_block
 			.style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
-			.border_style(Style::default().fg(Color::White))
-			.border_type(BorderType::Thick);
+			.border_style(Style::default().fg(Color::White));
 	}
 	let result_paragraph = Paragraph::new(result_contents)
 		.alignment(Alignment::Center)

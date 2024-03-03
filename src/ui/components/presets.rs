@@ -4,6 +4,10 @@
 
 use ratatui::{
 	layout::Alignment,
+	style::{
+		Color,
+		Style,
+	},
 	widgets::{
 		Block,
 		BorderType,
@@ -28,6 +32,7 @@ pub fn titled_ui_block<'a, T: ToString>(title: T) -> Block<'a> {
 pub fn untitled_ui_block<'a>() -> Block<'a> {
 	Block::default()
 		.borders(Borders::ALL)
+		.border_style(Style::default().fg(Color::DarkGray))
 		.border_type(BorderType::Rounded)
 		.padding(Padding::horizontal(1))
 }

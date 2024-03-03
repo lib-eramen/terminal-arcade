@@ -115,6 +115,7 @@ impl Screen for WelcomeScreen {
 				]
 				.as_ref(),
 			)
+			.horizontal_margin(2)
 			.split(size);
 		let banner =
 			Paragraph::new(stylize(BANNER)).block(untitled_ui_block()).alignment(Alignment::Center);

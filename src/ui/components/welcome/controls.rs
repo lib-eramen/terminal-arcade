@@ -75,9 +75,7 @@ fn controls_paragraphs(selected: Option<u64>) -> Vec<Paragraph<'static>> {
 			Paragraph::new(text)
 				.block(
 					if matches {
-						untitled_ui_block()
-							.border_type(BorderType::Thick)
-							.border_style(Style::default().fg(Color::White))
+						untitled_ui_block().border_style(Style::default().fg(Color::White))
 					} else {
 						untitled_ui_block()
 					},
@@ -93,7 +91,7 @@ pub fn render_welcome_controls_block(
 	frame: &mut Frame<'_, BackendType>,
 	selected: Option<u64>,
 ) {
-	frame.render_widget(titled_ui_block("Controls").borders(Borders::NONE), size);
+	frame.render_widget(titled_ui_block("Options").borders(Borders::NONE), size);
 	let chunks = controls_layout().split(size);
 	let widget_config = controls_paragraphs(selected).into_iter().zip(chunks.iter());
 	for (paragraph, chunk) in widget_config {
