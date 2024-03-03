@@ -14,6 +14,7 @@ use std::{
 	time::Duration,
 };
 
+use bool_toggle::Toggler;
 use crossterm::{
 	cursor::{
 		DisableBlinking,
@@ -98,12 +99,18 @@ pub struct Handler {
 	/// it will be the only screen visible on the terminal, aside from its
 	/// nesting root block that is globally visible.
 	screens: Vec<Box<dyn Screen>>,
+
+	/// A flag controlling whether the controls popup is showing.
+	showing_controls_popup: bool,
 }
 
 impl Handler {
 	/// Constructs a new Terminal Arcade object.
 	pub fn new() -> Self {
-		Self { screens: vec![] }
+		Self {
+			screens: vec![],
+			showing_controls_popup: false,
+		}
 	}
 
 	/// Gets the current active screen.
@@ -170,7 +177,13 @@ impl Handler {
 
 	/// Draws the UI of the active screen.
 	fn draw_active_screen_ui(&mut self) -> anyhow::Result<()> {
-		get_mut_terminal().draw(|frame| self.get_active_screen().draw_ui(frame))?;
+		let screen = self.get_active_screen();
+		get_mut_terminal().draw(|frame| {
+			screen.draw_ui(frame);
+			if self.showing_controls_popup {
+				screen.draw_controls_popup(frame, get_mut_terminal().current_buffer_mut());
+			}
+		})?;
 		Ok(())
 	}
 
@@ -216,14 +229,22 @@ impl Handler {
 	/// also returning if the event loop calling this function should quit.
 	fn handle_terminal_event(&mut self, event: &Event) -> anyhow::Result<bool> {
 		match event {
-			Event::Key(ref key) if Self::check_quit_controls(key) => {
-				self.quit()?;
-				return Ok(true);
-			},
-			Event::Key(ref key) if key.code == KeyCode::Esc => {
-				self.close_screen()?;
-				if self.quit_when_no_screens()? {
+			Event::Key(ref key) => {
+				if Self::check_quit_controls(key) {
+					self.quit()?;
 					return Ok(true);
+				}
+				match key.code {
+					KeyCode::Esc => {
+						self.close_screen()?;
+						if self.quit_when_no_screens()? {
+							return Ok(true);
+						}
+					},
+					KeyCode::Tab => {
+						self.showing_controls_popup.toggle();
+					},
+					_ => {},
 				}
 			},
 			Event::Resize(..) => {

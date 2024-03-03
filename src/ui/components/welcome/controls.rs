@@ -28,6 +28,7 @@ use crate::{
 	core::terminal::BackendType,
 	ui::{
 		components::presets::{
+			highlight_block,
 			titled_ui_block,
 			untitled_ui_block,
 		},
@@ -75,7 +76,7 @@ fn controls_paragraphs(selected: Option<u64>) -> Vec<Paragraph<'static>> {
 			Paragraph::new(text)
 				.block(
 					if matches {
-						untitled_ui_block().border_style(Style::default().fg(Color::White))
+						highlight_block(untitled_ui_block())
 					} else {
 						untitled_ui_block()
 					},
