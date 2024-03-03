@@ -45,8 +45,8 @@ use crate::{
 	},
 	ui::{
 		components::{
+			presets::titled_ui_block,
 			scroll_tracker::ScrollTracker,
-			ui_presets::titled_ui_block,
 		},
 		util::stylize_raw,
 	},

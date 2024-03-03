@@ -18,7 +18,7 @@ use ratatui::{
 use crate::{
 	core::terminal::BackendType,
 	ui::{
-		components::ui_presets::{
+		components::presets::{
 			titled_ui_block,
 			untitled_ui_block,
 		},
@@ -27,18 +27,18 @@ use crate::{
 };
 
 /// A banner for an under construction message.
-pub const UNDER_CONSTRUCTION_BANNER: &str = r#"
-        /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾/
-       /  /‾‾‾‾‾‾‾‾‾‾/  /
-      /  /  ##  ##  /  /
-     /  /  ##  ##  /  /
-    /  /          /  /  /‾‾‾‾‾‾‾‾/ /‾‾‾‾‾‾‾\  /‾‾‾‾‾‾‾/  /‾‾/ /‾‾/ /‾‾/ /‾‾/  
-   /  /  ######  /  /  /  /‾‾/  / /  /‾‾/  / / /‾‾‾‾‾   /  / /  / /  / /  /   
-  /  /  ##  ##  /  /  /  /  /  / /  /  /  / /  ‾‾‾‾‾\  /  / /  / /  / /  /    
- /  /          /  /  /  /  /  / /   ‾‾‾  /  ‾‾‾‾‾/  /  ‾‾‾  ‾‾‾  ‾‾‾  ‾‾‾     
-/   ‾‾‾‾‾‾‾‾‾‾‾  /  /   ‾‾‾  / /  /‾‾‾‾‾  /‾‾‾‾‾‾  / /‾‾/ /‾‾/ /‾‾/ /‾‾/      
-‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾   ‾‾‾‾‾‾‾‾‾  ‾‾‾        ‾‾‾‾‾‾‾‾‾  ‾‾‾  ‾‾‾  ‾‾‾  ‾‾‾       
-⚠ Sorry, this page is under construction!"#;
+pub const UNDER_CONSTRUCTION_BANNER: &str = r"
+        /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾/                                   /‾‾/
+       /  /‾‾‾‾‾‾‾‾‾‾/  /                                   /  / 
+      /  /  ##  ##  /  /                                   /  /  
+     /  /  ##  ##  /  /                                   /  /   
+    /  /          /  /  /‾‾‾‾‾‾‾‾/ /‾‾‾‾‾‾‾\  /‾‾‾‾‾‾‾/  /  /    
+   /  /  ######  /  /  /  /‾‾/  / /  /‾‾/  / / /‾‾‾‾‾   /  /     
+  /  /  ##  ##  /  /  /  /  /  / /  /  /  / /  ‾‾‾‾‾\  /  /      
+ /  /          /  /  /  /  /  / /   ‾‾‾  /  ‾‾‾‾‾/  /  ‾‾‾       
+/   ‾‾‾‾‾‾‾‾‾‾‾  /  /   ‾‾‾  / /  /‾‾‾‾‾  /‾‾‾‾‾‾  / /‾‾/        
+‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾   ‾‾‾‾‾‾‾‾‾  ‾‾‾        ‾‾‾‾‾‾‾‾‾  ‾‾‾         
+⚠ Sorry, this page is under construction!";
 
 /// Renders the [under construction](UNDER_CONSTRUCTION_BANNER) in a block.
 pub fn render_under_construction_block(frame: &mut Frame<'_, BackendType>) {

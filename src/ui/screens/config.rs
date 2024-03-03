@@ -23,7 +23,7 @@ use crate::{
 	core::terminal::BackendType,
 	ui::{
 		components::{
-			ui_presets::{
+			presets::{
 				titled_ui_block,
 				untitled_ui_block,
 			},
@@ -39,7 +39,7 @@ use crate::{
 pub struct ConfigScreen;
 
 impl Screen for ConfigScreen {
-	// TODO: I don't think this is getting implemented anytime soon...
+	// TODO: why are there only 24 hours in a day
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
 		render_under_construction_block(frame);
 	}

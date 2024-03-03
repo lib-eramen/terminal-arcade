@@ -41,17 +41,19 @@ use crate::{
 				search_results::render_search_results,
 				search_section::render_search_section,
 			},
-			scroll_tracker::ScrollTracker,
-			ui_presets::{
+			presets::{
 				titled_ui_block,
 				untitled_ui_block,
 			},
+			scroll_tracker::ScrollTracker,
 		},
 		Screen,
 	},
 };
 
 /// Turns a character uppercase.
+/// Take care not to use this function beyond normal characters with known
+/// uppercase forms like those found in ASCII.
 fn uppercase_char(c: char) -> char {
 	c.to_uppercase().to_string().chars().next().unwrap()
 }
@@ -79,9 +81,6 @@ pub struct GameSelectionScreen {
 	/// The scroll tracker of this screen.
 	scroll_tracker: ScrollTracker,
 
-	/// Controls whether the controls help text are displayed.
-	display_help_text: bool,
-
 	/// The time spent to search and filter the results, in seconds.
 	time_to_search_secs: f64,
 }
@@ -97,7 +96,6 @@ impl Default for GameSelectionScreen {
 			search_results: all_game_meta,
 			selected_game: false,
 			scroll_tracker: ScrollTracker::new(length as u64, Some(5)),
-			display_help_text: true,
 			time_to_search_secs: 0.0,
 		}
 	}
@@ -123,7 +121,6 @@ impl Screen for GameSelectionScreen {
 				KeyCode::Down => self.scroll_tracker.scroll_down(),
 				KeyCode::Left => self.decrease_searches_shown(),
 				KeyCode::Right => self.increase_searches_shown(),
-				KeyCode::Tab => self.display_help_text = !self.display_help_text,
 				KeyCode::Enter if self.scroll_tracker.is_selected() => self.selected_game = true,
 				_ => {},
 			}
@@ -134,10 +131,10 @@ impl Screen for GameSelectionScreen {
 	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
 		let size = frame.size();
 		frame.render_widget(titled_ui_block("Select a game!"), size);
-		let chunks = self.game_selection_layout(size).split(size);
+		let chunks = Self::game_selection_layout(size).split(size);
 
 		let search_term = self.search_term.as_deref();
-		render_search_section(frame, chunks[0], search_term, self.display_help_text);
+		render_search_section(frame, chunks[0], search_term);
 		render_search_results(
 			frame,
 			chunks[1],
@@ -175,8 +172,8 @@ impl Screen for GameSelectionScreen {
 impl GameSelectionScreen {
 	/// Returns the layout for the game selection screen.
 	#[must_use]
-	fn game_selection_layout(&self, size: Rect) -> Layout {
-		let search_section_height = if self.display_help_text { 8 } else { 3 };
+	fn game_selection_layout(size: Rect) -> Layout {
+		let search_section_height = 3;
 		let used_ui_height = search_section_height + 3 + 2;
 		let search_results_height =
 			if used_ui_height >= size.height { 10 } else { size.height - used_ui_height };

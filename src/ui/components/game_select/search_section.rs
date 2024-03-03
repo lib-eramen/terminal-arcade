@@ -20,7 +20,7 @@ use crate::{
 	core::terminal::BackendType,
 	games::Game,
 	ui::{
-		components::ui_presets::{
+		components::presets::{
 			titled_ui_block,
 			untitled_ui_block,
 		},
@@ -31,43 +31,16 @@ use crate::{
 	},
 };
 
-/// Returns the I'm Feeling Lucky help text.
 #[must_use]
-pub fn im_feeling_lucky_text() -> Text<'static> {
-	let reset = Attribute::Reset;
-	format!(
-		r#"Feeling {}? {} for a {} game!{reset}
-		Search page {}? {}? Use {} to adjust the density! ({}){reset}
-		Feeling kind of annoyed with this popup taking space? Toggle with {}!{reset}"#,
-		stylize_raw("lucky"),
-		stylize_raw("[Ctrl-R]"),
-		stylize_raw("random"),
-		stylize_raw("too dense"),
-		stylize_raw("Not dense enough"),
-		stylize_raw("<- and ->"),
-		stylize_raw("5 <= density <= 10"),
-		stylize_raw("[Tab]"),
-	)
-	.into_text()
-	.unwrap()
-}
-
-#[must_use]
-fn search_section_layout(display_help_text: bool) -> Layout {
-	let mut constraints = vec![
-		Constraint::Max(3), // Back "button" and search bar
-		Constraint::Max(5), // Controls help text
-		Constraint::Max(0), // Prevent blocks from taking up remaining space
-	];
-	if !display_help_text {
-		constraints.remove(1);
-	}
-
+fn search_section_layout() -> Layout {
 	Layout::default()
 		.direction(Direction::Vertical)
 		.vertical_margin(0)
 		.horizontal_margin(0)
-		.constraints(constraints)
+		.constraints(vec![
+			Constraint::Max(3), // Back "button" and search bar
+			Constraint::Max(0), // Prevent blocks from taking up remaining space
+		])
 }
 
 /// Renders the top row of the search bar section.
@@ -80,18 +53,17 @@ pub fn render_search_bar_top_row(
 		.direction(Direction::Horizontal)
 		.margin(0)
 		.constraints([
-			Constraint::Ratio(1, 7), // Back "button"
-			Constraint::Ratio(6, 7), // Search area
+			Constraint::Min(13), // Back button (does nothing)
+			Constraint::Min(1),  // Search area
 		])
 		.split(size);
 
-	let back_button = Paragraph::new(stylize("← Back ([Esc])"))
-		.alignment(Alignment::Center)
-		.block(untitled_ui_block());
+	let back_button =
+		Paragraph::new(stylize("⏪ Back")).alignment(Alignment::Center).block(untitled_ui_block());
 	frame.render_widget(back_button, chunks[0]);
 
 	let search_bar_text = search_term.map_or_else(
-		|| stylize(" 🔎︎ Search... ([Ctrl-D to clear]"),
+		|| stylize(" 🔎︎ Search..."),
 		|term| stylize(format!(" 🔎︎ {term}█")),
 	);
 	let search_bar =
@@ -99,23 +71,11 @@ pub fn render_search_bar_top_row(
 	frame.render_widget(search_bar, chunks[1]);
 }
 
-fn render_search_bar_bottom_row(frame: &mut Frame<'_, BackendType>, size: Rect) {
-	let bottom_row = Paragraph::new(im_feeling_lucky_text())
-		.alignment(Alignment::Center)
-		.block(titled_ui_block("Controls"));
-	frame.render_widget(bottom_row, size);
-}
-
 /// Renders the search section.
 pub fn render_search_section(
 	frame: &mut Frame<'_, BackendType>,
 	size: Rect,
 	search_term: Option<&str>,
-	display_help_text: bool,
 ) {
-	let chunks = search_section_layout(display_help_text).split(size);
-	render_search_bar_top_row(frame, chunks[0], search_term);
-	if display_help_text {
-		render_search_bar_bottom_row(frame, chunks[1]);
-	}
+	render_search_bar_top_row(frame, search_section_layout().split(size)[0], search_term);
 }

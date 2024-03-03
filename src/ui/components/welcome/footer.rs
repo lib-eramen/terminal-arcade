@@ -17,7 +17,7 @@ use ratatui::{
 use crate::{
 	core::terminal::BackendType,
 	ui::{
-		components::ui_presets::untitled_ui_block,
+		components::presets::untitled_ui_block,
 		util::{
 			get_crate_version,
 			stylize_raw,

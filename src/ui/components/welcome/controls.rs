@@ -27,7 +27,7 @@ use ratatui::{
 use crate::{
 	core::terminal::BackendType,
 	ui::{
-		components::ui_presets::{
+		components::presets::{
 			titled_ui_block,
 			untitled_ui_block,
 		},

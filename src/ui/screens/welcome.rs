@@ -14,7 +14,10 @@ use ratatui::{
 		Direction,
 		Layout,
 	},
-	widgets::Paragraph,
+	widgets::{
+		Padding,
+		Paragraph,
+	},
 	Frame,
 };
 
@@ -22,11 +25,11 @@ use crate::{
 	core::terminal::BackendType,
 	ui::{
 		components::{
-			scroll_tracker::ScrollTracker,
-			ui_presets::{
+			presets::{
 				titled_ui_block,
 				untitled_ui_block,
 			},
+			scroll_tracker::ScrollTracker,
 			welcome::{
 				controls::render_welcome_controls_block,
 				footer::render_welcome_bottom_bar,

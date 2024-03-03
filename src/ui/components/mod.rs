@@ -7,7 +7,7 @@ use ratatui::layout::Layout;
 
 pub mod game_select;
 pub mod games;
+pub mod presets;
 pub mod scroll_tracker;
-pub mod ui_presets;
 pub mod under_construction;
 pub mod welcome;

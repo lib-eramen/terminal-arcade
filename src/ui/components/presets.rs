@@ -8,6 +8,7 @@ use ratatui::{
 		Block,
 		BorderType,
 		Borders,
+		Padding,
 	},
 };
 
@@ -25,5 +26,8 @@ pub fn titled_ui_block<'a, T: ToString>(title: T) -> Block<'a> {
 /// preset), untitled.
 #[must_use]
 pub fn untitled_ui_block<'a>() -> Block<'a> {
-	Block::default().borders(Borders::ALL).border_type(BorderType::Rounded)
+	Block::default()
+		.borders(Borders::ALL)
+		.border_type(BorderType::Rounded)
+		.padding(Padding::horizontal(1))
 }
