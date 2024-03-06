@@ -65,14 +65,16 @@ pub fn get_controls_table<'a>(extra_entries: Option<Vec<ControlsEntry>>) -> Tabl
 		("Ctrl-Q".to_string(), "Quits the application".to_string()),
 	];
 	entries.append(&mut default_shortcuts);
-	Table::new(entries.into_iter().map(|entry| Row::new([stylize(entry.0), Text::from(entry.1)])))
-		.block(highlight_block(titled_ui_block("Controls")))
-		.widths(&[
+	Table::new(
+		entries.into_iter().map(|entry| Row::new([stylize(entry.0), Text::from(entry.1)])),
+		&[
 			Constraint::Ratio(1, 5), // shortcut
 			Constraint::Ratio(4, 5), // function
-		])
-		.column_spacing(3)
-		.header(Row::new(["Shortcut", "Function"]))
+		],
+	)
+	.block(highlight_block(titled_ui_block("Controls")))
+	.column_spacing(3)
+	.header(Row::new(["Shortcut", "Function"]))
 }
 
 /// The trait for handling drawing on the terminal and receiving events from the
@@ -117,11 +119,11 @@ pub trait Screen {
 
 	/// Paints some UI to the screen.
 	/// This method is also called when a resize event is triggered.
-	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>);
+	fn draw_ui(&self, frame: &mut Frame<'_>);
 
 	/// Draws the controls popup to the screen.
 	/// This method is intended to be called whenever a shortcut is
-	fn draw_controls_popup(&self, frame: &mut Frame<'_, BackendType>, buffer: &mut Buffer) {
+	fn draw_controls_popup(&self, frame: &mut Frame<'_>, buffer: &mut Buffer) {
 		let frame_area = frame.size();
 		let area = Rect {
 			x: frame_area.width / 5,

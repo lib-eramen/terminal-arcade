@@ -87,11 +87,7 @@ fn controls_paragraphs(selected: Option<u64>) -> Vec<Paragraph<'static>> {
 }
 
 /// Renders the welcome list block.
-pub fn render_welcome_controls_block(
-	size: Rect,
-	frame: &mut Frame<'_, BackendType>,
-	selected: Option<u64>,
-) {
+pub fn render_welcome_controls_block(size: Rect, frame: &mut Frame<'_>, selected: Option<u64>) {
 	frame.render_widget(titled_ui_block("Options").borders(Borders::NONE), size);
 	let chunks = controls_layout().split(size);
 	let widget_config = controls_paragraphs(selected).into_iter().zip(chunks.iter());

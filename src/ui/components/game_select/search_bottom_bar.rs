@@ -7,7 +7,10 @@ use ratatui::{
 	layout::{
 		Alignment,
 		Rect,
-	}, text::Text, widgets::Paragraph, Frame
+	},
+	text::Text,
+	widgets::Paragraph,
+	Frame,
 };
 
 use crate::{
@@ -20,7 +23,7 @@ use crate::{
 
 /// Renders the bottom bar of the game selection screen.
 pub fn render_search_bottom_bar(
-	frame: &mut Frame<'_, BackendType>,
+	frame: &mut Frame<'_>,
 	size: Rect,
 	results_count: usize,
 	time_to_search: f64,

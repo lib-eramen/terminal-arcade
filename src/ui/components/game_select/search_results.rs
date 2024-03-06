@@ -117,7 +117,7 @@ fn search_result_text(search_term: Option<&str>, metadata: &GameMetadata) -> Tex
 }
 
 fn render_search_result(
-	frame: &mut Frame<'_, BackendType>,
+	frame: &mut Frame<'_>,
 	size: Rect,
 	search_term: Option<&str>,
 	result_index: u64,
@@ -150,7 +150,7 @@ fn search_results_layout(count: u64) -> Layout {
 
 /// Renders the search results.
 pub fn render_search_results(
-	frame: &mut Frame<'_, BackendType>,
+	frame: &mut Frame<'_>,
 	size: Rect,
 	search_term: Option<&str>,
 	results: &[GameMetadata],

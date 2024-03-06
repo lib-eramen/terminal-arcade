@@ -128,7 +128,7 @@ impl Screen for GameSelectionScreen {
 		Ok(())
 	}
 
-	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
+	fn draw_ui(&self, frame: &mut Frame<'_>) {
 		let size = frame.size();
 		frame.render_widget(titled_ui_block("Select a game!"), size);
 		let chunks = Self::game_selection_layout(size).split(size);

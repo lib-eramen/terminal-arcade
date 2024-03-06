@@ -17,7 +17,7 @@ categories = ["arcade", "terminal", "games"]
 
 [dependencies]
 aho-corasick = "1.1.2"
-ansi-to-tui = "3.0.0"
+ansi-to-tui = "4.0.1"
 anyhow = "1.0.70"
 bool-toggle = "1.1.1"
 chrono = "0.4.24"

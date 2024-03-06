@@ -44,11 +44,7 @@ fn search_section_layout() -> Layout {
 }
 
 /// Renders the top row of the search bar section.
-pub fn render_search_bar_top_row(
-	frame: &mut Frame<'_, BackendType>,
-	size: Rect,
-	search_term: Option<&str>,
-) {
+pub fn render_search_bar_top_row(frame: &mut Frame<'_>, size: Rect, search_term: Option<&str>) {
 	let chunks = Layout::default()
 		.direction(Direction::Horizontal)
 		.margin(0)
@@ -72,10 +68,6 @@ pub fn render_search_bar_top_row(
 }
 
 /// Renders the search section.
-pub fn render_search_section(
-	frame: &mut Frame<'_, BackendType>,
-	size: Rect,
-	search_term: Option<&str>,
-) {
+pub fn render_search_section(frame: &mut Frame<'_>, size: Rect, search_term: Option<&str>) {
 	render_search_bar_top_row(frame, search_section_layout().split(size)[0], search_term);
 }

@@ -40,7 +40,7 @@ pub struct ConfigScreen;
 
 impl Screen for ConfigScreen {
 	// TODO: why are there only 24 hours in a day
-	fn draw_ui(&self, frame: &mut Frame<'_, BackendType>) {
+	fn draw_ui(&self, frame: &mut Frame<'_>) {
 		render_under_construction_block(frame);
 	}
 }

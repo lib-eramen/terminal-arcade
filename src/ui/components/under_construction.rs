@@ -41,7 +41,7 @@ pub const UNDER_CONSTRUCTION_BANNER: &str = r"
 ⚠ Sorry, this page is under construction!";
 
 /// Renders the [under construction](UNDER_CONSTRUCTION_BANNER) in a block.
-pub fn render_under_construction_block(frame: &mut Frame<'_, BackendType>) {
+pub fn render_under_construction_block(frame: &mut Frame<'_>) {
 	let size = frame.size();
 	let chunks = Layout::default()
 		.direction(Direction::Vertical)

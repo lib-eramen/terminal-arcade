@@ -58,7 +58,7 @@ fn bottom_bar_text() -> Text<'static> {
 }
 
 /// Renders the bottom bar at the welcome screen.
-pub fn render_welcome_bottom_bar(frame: &mut Frame<'_, BackendType>, size: Rect) {
+pub fn render_welcome_bottom_bar(frame: &mut Frame<'_>, size: Rect) {
 	let bottom_bar_paragraph = Paragraph::new(bottom_bar_text())
 		.alignment(Alignment::Center)
 		.wrap(Wrap { trim: true })
