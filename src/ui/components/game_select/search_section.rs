@@ -49,7 +49,7 @@ pub fn render_search_bar_top_row(frame: &mut Frame<'_>, size: Rect, search_term:
 		.direction(Direction::Horizontal)
 		.margin(0)
 		.constraints([
-			Constraint::Min(13), // Back button (does nothing)
+			Constraint::Max(13), // Back button (does nothing)
 			Constraint::Min(1),  // Search area
 		])
 		.split(size);
