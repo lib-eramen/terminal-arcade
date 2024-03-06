@@ -7,9 +7,7 @@ use ratatui::{
 	layout::{
 		Alignment,
 		Rect,
-	},
-	widgets::Paragraph,
-	Frame,
+	}, text::Text, widgets::Paragraph, Frame
 };
 
 use crate::{
