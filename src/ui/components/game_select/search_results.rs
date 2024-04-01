@@ -1,16 +1,11 @@
 //! A search results panel, displaying 10 results at a time.
 //! Search results when lacking space will scroll.
 
-use std::{
-	fmt::format,
-	time::{
-		Duration,
-		SystemTime,
-		UNIX_EPOCH,
-	},
+use std::time::{
+	Duration,
+	UNIX_EPOCH,
 };
 
-use ansi_to_tui::IntoText;
 use chrono::{
 	DateTime,
 	Utc,
@@ -43,15 +38,12 @@ use crate::{
 		Game,
 		GameMetadata,
 	},
-	ui::{
-		components::{
-			presets::{
-				highlight_block,
-				titled_ui_block,
-			},
-			scroll_tracker::ScrollTracker,
+	ui::components::{
+		presets::{
+			highlight_block,
+			titled_ui_block,
 		},
-		util::stylize_raw,
+		scroll_tracker::ScrollTracker,
 	},
 };
 
@@ -72,7 +64,7 @@ fn highlight_keyword(keyword: Option<&str>, word: &str) -> String {
 	let new_string = format!(
 		"{}{}{}",
 		&word[..keyword_index],
-		stylize_raw(&word[highlighted_range]),
+		&word[highlighted_range],
 		&word[(keyword_index + keyword.len())..]
 	);
 	new_string
@@ -91,29 +83,27 @@ fn play_status_text(metadata: &GameMetadata) -> String {
 
 		format!(
 			"Played {} {}, last played at {}",
-			stylize_raw(play_count),
+			play_count,
 			pluralize("time", play_count as isize, false),
-			stylize_raw(date_str),
+			date_str,
 		)
 	} else {
-		stylize_raw("Never played before!")
+		"Never played before!".to_string()
 	}
 }
 
 #[must_use]
-fn search_result_text(search_term: Option<&str>, metadata: &GameMetadata) -> Text<'static> {
+fn search_result_text(search_term: Option<&str>, metadata: &GameMetadata) -> String {
 	format!(
 		"{}: {}\n{}: {}\n{}: v{}\n{}",
-		stylize_raw("Name"),
+		"Name",
 		highlight_keyword(search_term, metadata.name()),
-		stylize_raw("Description"),
+		"Description",
 		highlight_keyword(search_term, metadata.description()),
-		stylize_raw("Created at"),
+		"Created at",
 		highlight_keyword(search_term, metadata.version_created()),
 		play_status_text(metadata),
 	)
-	.into_text()
-	.unwrap()
 }
 
 fn render_search_result(

@@ -27,10 +27,7 @@ use ratatui::{
 
 use crate::{
 	core::terminal::BackendType,
-	ui::{
-		components::presets::highlight_block,
-		util::stylize,
-	},
+	ui::components::presets::highlight_block,
 };
 
 pub mod config;
@@ -66,7 +63,7 @@ pub fn get_controls_table<'a>(extra_entries: Option<Vec<ControlsEntry>>) -> Tabl
 	];
 	entries.append(&mut default_shortcuts);
 	Table::new(
-		entries.into_iter().map(|entry| Row::new([stylize(entry.0), Text::from(entry.1)])),
+		entries.into_iter().map(|entry| Row::new([entry.0, entry.1])),
 		&[
 			Constraint::Ratio(1, 5), // shortcut
 			Constraint::Ratio(4, 5), // function

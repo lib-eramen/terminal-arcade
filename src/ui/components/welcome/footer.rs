@@ -1,6 +1,5 @@
 //! A bottom bar for the welcome screen.
 
-use ansi_to_tui::IntoText;
 use ratatui::{
 	layout::{
 		Alignment,
@@ -18,10 +17,7 @@ use crate::{
 	core::terminal::BackendType,
 	ui::{
 		components::presets::untitled_ui_block,
-		util::{
-			get_crate_version,
-			stylize_raw,
-		},
+		util::get_crate_version,
 	},
 };
 
@@ -36,25 +32,20 @@ fn git_info_string() -> String {
 
 	format!(
 		"Terminal Arcade {}, on branch {}, commit hash {}; at remote {}",
-		stylize_raw(version),
-		stylize_raw(current_branch),
-		stylize_raw(commit_hash),
-		stylize_raw(remote_link)
+		version, current_branch, commit_hash, remote_link
 	)
 }
 
 #[must_use]
-fn bottom_bar_text() -> Text<'static> {
+fn bottom_bar_text() -> String {
 	format!(
 		"Time: {}\n{}\n{} is a {}! If you would like to contribute, please do!
         ",
-		stylize_raw(chrono::Local::now().format("%d/%m/%Y %H:%M:%S").to_string()),
+		chrono::Local::now().format("%d/%m/%Y %H:%M:%S").to_string(),
 		git_info_string(),
-		stylize_raw("Terminal Arcade"),
-		stylize_raw("work-in-progress")
+		"Terminal Arcade",
+		"work-in-progress"
 	)
-	.into_text()
-	.unwrap()
 }
 
 /// Renders the bottom bar at the welcome screen.

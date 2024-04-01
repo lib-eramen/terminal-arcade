@@ -71,7 +71,7 @@ pub mod terminal;
 /// The directory where Terminal Arcade saves all of its data.
 /// NOT TO BE USED DIRECTLY. This path does not include the home dir.
 /// Use [`get_save_dir`] for this instead.
-pub const SAVE_DIR: &str = ".local/share/terminal-arcade/";
+pub const SAVE_DIR: &str = ".terminal-arcade";
 
 /// Gets the save directory of Terminal Arcade.
 /// Always use this function over the constant [`SAVE_DIR`].
@@ -80,9 +80,7 @@ pub fn get_save_dir() -> PathBuf {
 	home::home_dir().unwrap().as_path().to_owned().join(SAVE_DIR)
 }
 
-/// The core struct to all inner workings in Terminal Arcade.
-/// Terminal Arcade has one encompassing UI construct - the root block. It is
-/// instantiated first hand, and it nests all UI components and child screens.
+/// Core struct to all inner workings in Terminal Arcade.
 /// This struct mostly handles rendering that and managing screens.
 #[derive(Default)]
 #[must_use]
@@ -94,13 +92,13 @@ pub struct Handler {
 	/// yet), and it moves on to game screens, setting screens, etc. Simple,
 	/// one-time popups can also take advantage of this structure.
 	///
-	/// According to how this should be implemented, the screen with the highest
-	/// index in this hierarchy will be the only screen painted - in particular,
-	/// it will be the only screen visible on the terminal, aside from its
-	/// nesting root block that is globally visible.
+	/// The screen with the highest index in this hierarchy will be the only
+	/// screen visible on the terminal.
 	screens: Vec<Box<dyn Screen>>,
 
 	/// A flag controlling whether the controls popup is showing.
+	/// Every screen has (or should have) a controls popup that alleviates the
+	/// need to directly add controls information onto the screen itself.
 	showing_controls_popup: bool,
 }
 

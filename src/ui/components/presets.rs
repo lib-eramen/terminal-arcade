@@ -8,6 +8,7 @@ use ratatui::{
 		Color,
 		Modifier,
 		Style,
+		Stylize,
 	},
 	text::Line,
 	widgets::{
@@ -18,14 +19,10 @@ use ratatui::{
 	},
 };
 
-use crate::ui::util::stylize_first;
-
 /// The default [`ratatui`] block template, with a styled title.
 #[must_use]
 pub fn titled_ui_block<'a, T: ToString>(title: T) -> Block<'a> {
-	untitled_ui_block()
-		.title_alignment(Alignment::Center)
-		.title(stylize_first(title.to_string().as_str()))
+	untitled_ui_block().title_alignment(Alignment::Center).title(title.to_string())
 }
 
 /// The default [`ratatui`] block template (no borders, but rounded border type
@@ -45,4 +42,5 @@ pub fn highlight_block(block: Block<'_>) -> Block<'_> {
 	block
 		.border_style(Style::default().fg(Color::White))
 		.style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
+		.rapid_blink()
 }

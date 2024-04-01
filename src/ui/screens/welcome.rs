@@ -39,10 +39,7 @@ use crate::{
 			config::ConfigScreen,
 			game_select::GameSelectionScreen,
 		},
-		util::{
-			get_crate_version,
-			stylize,
-		},
+		util::get_crate_version,
 		Screen,
 	},
 };
@@ -100,7 +97,7 @@ impl Screen for WelcomeScreen {
 	fn draw_ui(&self, frame: &mut Frame<'_>) {
 		let size = frame.size();
 		frame.render_widget(titled_ui_block("Welcome to Terminal Arcade!"), size);
-		let used_ui_height = 17 + 11 + 5 + 2;
+		let used_ui_height = 17 + 11 + 5 + 1;
 		let empty_space_height =
 			if size.height <= used_ui_height { 0 } else { size.height - used_ui_height };
 		let chunks = Layout::default()
@@ -117,8 +114,7 @@ impl Screen for WelcomeScreen {
 			)
 			.horizontal_margin(2)
 			.split(size);
-		let banner =
-			Paragraph::new(stylize(BANNER)).block(untitled_ui_block()).alignment(Alignment::Center);
+		let banner = Paragraph::new(BANNER).block(untitled_ui_block()).alignment(Alignment::Center);
 		frame.render_widget(banner, chunks[0]);
 		render_welcome_controls_block(chunks[1], frame, self.tracker.selected);
 		render_welcome_bottom_bar(frame, chunks[3]);

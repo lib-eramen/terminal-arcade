@@ -1,7 +1,6 @@
 //! A search bar with a back "button" (in actuality it's just help text)
 //! and another row with the help text for the random selection function.
 
-use ansi_to_tui::IntoText;
 use crossterm::style::Attribute;
 use ratatui::{
 	layout::{
@@ -19,15 +18,9 @@ use ratatui::{
 use crate::{
 	core::terminal::BackendType,
 	games::Game,
-	ui::{
-		components::presets::{
-			titled_ui_block,
-			untitled_ui_block,
-		},
-		util::{
-			stylize,
-			stylize_raw,
-		},
+	ui::components::presets::{
+		titled_ui_block,
+		untitled_ui_block,
 	},
 };
 
@@ -55,12 +48,12 @@ pub fn render_search_bar_top_row(frame: &mut Frame<'_>, size: Rect, search_term:
 		.split(size);
 
 	let back_button =
-		Paragraph::new(stylize("⏪ Back")).alignment(Alignment::Center).block(untitled_ui_block());
+		Paragraph::new("⏪ Back").alignment(Alignment::Center).block(untitled_ui_block());
 	frame.render_widget(back_button, chunks[0]);
 
 	let search_bar_text = search_term.map_or_else(
-		|| stylize(" 🔎︎ Search..."),
-		|term| stylize(format!(" 🔎︎ {term}█")),
+		|| " 🔎︎ Search...".to_string(),
+		|term| format!(" 🔎︎ {term}█"),
 	);
 	let search_bar =
 		Paragraph::new(search_bar_text).alignment(Alignment::Left).block(untitled_ui_block());

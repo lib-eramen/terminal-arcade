@@ -17,12 +17,9 @@ use ratatui::{
 
 use crate::{
 	core::terminal::BackendType,
-	ui::{
-		components::presets::{
-			titled_ui_block,
-			untitled_ui_block,
-		},
-		util::stylize,
+	ui::components::presets::{
+		titled_ui_block,
+		untitled_ui_block,
 	},
 };
 
@@ -53,7 +50,7 @@ pub fn render_under_construction_block(frame: &mut Frame<'_>) {
 		size,
 	);
 
-	let message = Paragraph::new(stylize(UNDER_CONSTRUCTION_BANNER))
+	let message = Paragraph::new(UNDER_CONSTRUCTION_BANNER)
 		.alignment(Alignment::Center)
 		.block(untitled_ui_block().borders(Borders::NONE));
 	frame.render_widget(message, chunks[0]);
