@@ -3,6 +3,7 @@
 //! started. It also contains the various screens that the game uses to present
 //! itself on the terminal.
 
+pub mod color_scheme;
 pub mod components;
 pub mod screens;
 pub mod util;

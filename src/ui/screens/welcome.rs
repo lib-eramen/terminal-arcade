@@ -94,7 +94,7 @@ impl Default for WelcomeScreen {
 }
 
 impl Screen for WelcomeScreen {
-	fn draw_ui(&self, frame: &mut Frame<'_>) {
+	fn render(&mut self, frame: &mut Frame<'_>) {
 		let size = frame.size();
 		frame.render_widget(titled_ui_block("Welcome to Terminal Arcade!"), size);
 		let used_ui_height = 17 + 11 + 5 + 1;

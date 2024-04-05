@@ -26,10 +26,8 @@ pub fn render_search_bottom_bar(
 	results_per_page: u64,
 ) {
 	let bottom_bar_text = format!(
-		"{}, in {}, displaying {} at once.",
+		"{time_to_search} seconds, in {}, displaying {results_per_page} results at once.",
 		pluralize("result", results_count as isize, true),
-		format!("{time_to_search} seconds"),
-		format!("{results_per_page} results"),
 	);
 	let bottom_bar_paragraph =
 		Paragraph::new(bottom_bar_text).block(untitled_ui_block()).alignment(Alignment::Center);

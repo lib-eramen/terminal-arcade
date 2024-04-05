@@ -114,9 +114,9 @@ pub trait Screen {
 		None
 	}
 
-	/// Paints some UI to the screen.
+	/// Renders some UI to the screen.
 	/// This method is also called when a resize event is triggered.
-	fn draw_ui(&self, frame: &mut Frame<'_>);
+	fn render(&mut self, frame: &mut Frame<'_>);
 
 	/// Draws the controls popup to the screen.
 	/// This method is intended to be called whenever a shortcut is

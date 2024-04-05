@@ -111,11 +111,6 @@ impl Handler {
 		}
 	}
 
-	/// Gets the current active screen.
-	fn get_active_screen(&self) -> &dyn Screen {
-		self.screens.last().unwrap().as_ref()
-	}
-
 	/// Gets the current active screen ***mutably***.
 	fn get_mut_active_screen(&mut self) -> &mut dyn Screen {
 		self.screens.last_mut().unwrap().as_mut()
@@ -175,11 +170,11 @@ impl Handler {
 
 	/// Draws the UI of the active screen.
 	fn draw_active_screen_ui(&mut self) -> anyhow::Result<()> {
-		let screen = self.get_active_screen();
 		get_mut_terminal().draw(|frame| {
-			screen.draw_ui(frame);
+			self.get_mut_active_screen().render(frame);
 			if self.showing_controls_popup {
-				screen.draw_controls_popup(frame, get_mut_terminal().current_buffer_mut());
+				self.get_mut_active_screen()
+					.draw_controls_popup(frame, get_mut_terminal().current_buffer_mut());
 			}
 		})?;
 		Ok(())
