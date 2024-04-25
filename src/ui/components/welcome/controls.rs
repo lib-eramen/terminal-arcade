@@ -51,7 +51,7 @@ fn controls_layout() -> Layout {
 }
 
 #[must_use]
-fn controls_paragraphs(selected: Option<u64>) -> Vec<Paragraph<'static>> {
+fn controls_paragraphs(selected: Option<usize>) -> Vec<Paragraph<'static>> {
 	[
 		"Hop into a game and play!",
 		"View your configurations...",
@@ -60,7 +60,7 @@ fn controls_paragraphs(selected: Option<u64>) -> Vec<Paragraph<'static>> {
 	.into_iter()
 	.enumerate()
 	.map(|(index, text)| {
-		let matches = selected.map_or(false, |selected_index| index as u64 == selected_index);
+		let matches = selected.map_or(false, |selected_index| index == selected_index);
 		Paragraph::new(text)
 			.block(if matches { highlight_block(untitled_ui_block()) } else { untitled_ui_block() })
 			.alignment(Alignment::Center)
@@ -69,7 +69,7 @@ fn controls_paragraphs(selected: Option<u64>) -> Vec<Paragraph<'static>> {
 }
 
 /// Renders the welcome list block.
-pub fn render_welcome_controls_block(size: Rect, frame: &mut Frame<'_>, selected: Option<u64>) {
+pub fn render_welcome_controls_block(size: Rect, frame: &mut Frame<'_>, selected: Option<usize>) {
 	frame.render_widget(titled_ui_block("Options").borders(Borders::NONE), size);
 	let chunks = controls_layout().split(size);
 	let widget_config = controls_paragraphs(selected).into_iter().zip(chunks.iter());

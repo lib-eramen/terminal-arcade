@@ -23,11 +23,11 @@ pub fn render_search_bottom_bar(
 	size: Rect,
 	results_count: usize,
 	time_to_search: f64,
-	results_per_page: u64,
+	results_per_page: usize,
 ) {
 	let bottom_bar_text = format!(
-		"{time_to_search} seconds, in {}, displaying {results_per_page} results at once.",
-		pluralize("result", results_count as isize, true),
+		"{time_to_search} seconds, found {}, displaying {results_per_page} results at once.",
+		pluralize("game", results_count as isize, true),
 	);
 	let bottom_bar_paragraph =
 		Paragraph::new(bottom_bar_text).block(untitled_ui_block()).alignment(Alignment::Center);

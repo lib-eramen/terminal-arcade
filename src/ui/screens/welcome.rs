@@ -129,8 +129,8 @@ impl Screen for WelcomeScreen {
 					}
 					self.handle_char_shortcut(character);
 				},
-				KeyCode::Up => self.tracker.scroll_up(),
-				KeyCode::Down => self.tracker.scroll_down(),
+				KeyCode::Up => self.tracker.scroll_forward(),
+				KeyCode::Down => self.tracker.scroll_backward(),
 				KeyCode::Enter => self.handle_enter_shortcut(),
 				_ => {},
 			}

@@ -42,5 +42,4 @@ pub fn highlight_block(block: Block<'_>) -> Block<'_> {
 	block
 		.border_style(Style::default().fg(Color::White))
 		.style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
-		.rapid_blink()
 }

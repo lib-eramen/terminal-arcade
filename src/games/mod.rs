@@ -8,13 +8,20 @@
 use std::{
 	path::PathBuf,
 	time::{
+		Duration,
 		SystemTime,
 		UNIX_EPOCH,
 	},
 };
 
+use chrono::{
+	DateTime,
+	Local,
+	Utc,
+};
 use crossterm::event::Event;
 use derive_builder::Builder;
+use pluralizer::pluralize;
 use serde_derive::{
 	Deserialize,
 	Serialize,
@@ -23,10 +30,16 @@ use serde_derive::{
 use crate::{
 	core::get_save_dir,
 	games::minesweeper::Minesweeper,
-	ui::Screen,
+	ui::{
+		components::scrollable_list::ItemData,
+		Screen,
+	},
 };
 
 pub mod minesweeper;
+
+/// A [Vec] of games.
+pub type Games = Vec<Box<dyn Game>>;
 
 /// Gets the current UNIX time as seconds.
 #[must_use]
@@ -67,41 +80,36 @@ impl<'a> GameMetadata {
 		})
 	}
 
+	/// Returns an entry string that contains all of the metadata properties.
+	#[must_use]
+	pub fn get_entry_text(&self) -> String {
+		format!(
+			"{}: {}\n{}: {}\n{}: v{}\n{}",
+			"Name",
+			self.static_info.name,
+			"Description",
+			self.static_info.description,
+			"Created at",
+			self.static_info.version_created,
+			self.dynamic_info.get_status_text(),
+		)
+	}
+
+	/// Returns a list item usable with the [`ui::components::ScrollableList`]
+	/// widget.
+	#[must_use]
+	pub fn get_list_entry(&self) -> ItemData {
+		(
+			Some(self.static_info.name.to_string()),
+			self.get_entry_text(),
+		)
+	}
+
 	/// Adds 1 play count and updates the last playtime, while also saving the
 	/// metadata.
-	pub fn play(&mut self) {
+	pub fn play(&mut self) -> anyhow::Result<()> {
 		self.dynamic_info.play();
-		let _ = self.dynamic_info.save(self.name());
-	}
-
-	/// Gets the name of the game.
-	#[must_use]
-	pub fn name(&'a self) -> &'a str {
-		&self.static_info.name
-	}
-
-	/// Gets the description of the game.
-	#[must_use]
-	pub fn description(&'a self) -> &'a str {
-		&self.static_info.description
-	}
-
-	/// Gets the version string that the game was created in.
-	#[must_use]
-	pub fn version_created(&'a self) -> &'a str {
-		&self.static_info.version_created
-	}
-
-	/// Gets the number of times this game has been played.
-	#[must_use]
-	pub fn play_count(&'a self) -> u64 {
-		self.dynamic_info.play_count
-	}
-
-	/// Gets the UNIX timestamp at which this game was last played.
-	#[must_use]
-	pub fn last_played(&'a self) -> Option<u64> {
-		self.dynamic_info.last_played
+		self.dynamic_info.save(&self.static_info.name)
 	}
 
 	/// Returns whether this game has been played.
@@ -139,6 +147,29 @@ pub struct GameDynamicInfo {
 }
 
 impl GameDynamicInfo {
+	/// Formats dynamic game metadata into a human-readable string,
+	#[must_use]
+	#[allow(clippy::cast_possible_truncation)]
+	#[allow(clippy::cast_possible_wrap)]
+	pub fn get_status_text(&self) -> String {
+		let play_count = self.play_count;
+		let last_played = self.last_played;
+		if self.played() {
+			let system_time = UNIX_EPOCH + Duration::from_secs(last_played.unwrap());
+			let datetime = DateTime::<Local>::from(system_time);
+			let date_str = datetime.format("%d/%m/%Y");
+
+			format!(
+				"Played {} {}, last played at {}",
+				play_count,
+				pluralize("time", play_count as isize, false),
+				date_str,
+			)
+		} else {
+			"Never played before!".to_string()
+		}
+	}
+
 	/// Loads the game metadata.
 	pub fn load(name: &str) -> anyhow::Result<Self> {
 		let metadata_file = std::fs::read_to_string(meta_file_path(name))?;
@@ -201,21 +232,33 @@ pub trait Game {
 
 /// Returns a list of all games.
 #[must_use]
-pub fn all_games() -> Vec<Box<dyn Game>> {
+pub fn all_games() -> Games {
 	vec![Box::new(Minesweeper)]
 }
 
 /// Returns a list of games that match the keyword in their name.
 #[must_use]
-pub fn games_by_keyword(keyword: &str) -> Vec<Box<dyn Game>> {
+pub fn get_games_by_keyword(keyword: &str) -> Games {
 	all_games()
 		.into_iter()
-		.filter(|game| game.metadata().name().to_lowercase().contains(keyword))
+		.filter(|game| game.metadata().static_info.name.to_lowercase().contains(keyword))
 		.collect()
+}
+
+/// Returns a list of games that match the search term. Identical to
+/// [`games_by_keyword`], but if the search term is [`None`], the list of all
+/// games are returned.
+#[must_use]
+pub fn get_games_by_search_term(term: Option<String>) -> Games {
+	if let Some(ref term) = term {
+		get_games_by_keyword(term)
+	} else {
+		all_games()
+	}
 }
 
 /// Gets a game by its name.
 #[must_use]
 pub fn get_game_by_name(name: &str) -> Option<Box<dyn Game>> {
-	all_games().into_iter().find(|game| game.metadata().name() == name)
+	all_games().into_iter().find(|game| game.metadata().static_info.name == name)
 }

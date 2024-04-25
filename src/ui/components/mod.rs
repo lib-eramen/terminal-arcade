@@ -9,5 +9,6 @@ pub mod game_select;
 pub mod games;
 pub mod presets;
 pub mod scroll_tracker;
+pub mod scrollable_list;
 pub mod under_construction;
 pub mod welcome;

@@ -1,8 +1,6 @@
 //! A game-selection screen.
 //! Users can scroll through the list with arrows to look for a game they want,
 //! search a game by its name, or pick a game at random.
-//!
-//! oh jank warning btw
 
 use std::cmp::{
 	max,
@@ -17,6 +15,7 @@ use crossterm::event::{
 use rand::Rng;
 use ratatui::{
 	layout::{
+		Alignment,
 		Constraint,
 		Direction,
 		Layout,
@@ -29,8 +28,9 @@ use crate::{
 	core::terminal::BackendType,
 	games::{
 		all_games,
-		games_by_keyword,
 		get_game_by_name,
+		get_games_by_keyword,
+		get_games_by_search_term,
 		Game,
 		GameMetadata,
 	},
@@ -38,7 +38,6 @@ use crate::{
 		components::{
 			game_select::{
 				search_bottom_bar::render_search_bottom_bar,
-				search_results::render_search_results,
 				search_section::render_search_section,
 			},
 			presets::{
@@ -46,6 +45,7 @@ use crate::{
 				untitled_ui_block,
 			},
 			scroll_tracker::ScrollTracker,
+			scrollable_list::ScrollableList,
 		},
 		Screen,
 	},
@@ -53,49 +53,48 @@ use crate::{
 
 /// Turns a character uppercase.
 /// Take care not to use this function beyond normal characters with known
-/// uppercase forms like those found in ASCII.
+/// uppercase forms like those found in ASCII. If an uppercase character is not
+/// found, the lowercase character is returned instead.
 fn uppercase_char(c: char) -> char {
-	c.to_uppercase().to_string().chars().next().unwrap()
-}
-
-/// Slices a, well, slice, getting the elements until there is no more to get,
-/// or the slice range ends.
-fn slice_until_end<T>(slice: &[T], start: usize, amount: usize) -> &[T] {
-	if start >= slice.len() {
-		return &[];
-	}
-	&slice[start..min(slice.len(), start + amount)]
+	c.to_uppercase().to_string().chars().next().unwrap_or(c)
 }
 
 /// The struct for the game selection screen.
 pub struct GameSelectionScreen {
-	/// The search term inputted by the user.
+	/// Search term, inputted by the user.
 	search_term: Option<String>,
 
-	/// The search results.
+	/// Search results.
 	search_results: Vec<GameMetadata>,
 
 	/// Indicates whether a game has been chosen.
 	selected_game: bool,
 
-	/// The scroll tracker of this screen.
-	scroll_tracker: ScrollTracker,
+	/// Scrollable list widget for display.
+	game_results_list: ScrollableList,
 
-	/// The time spent to search and filter the results, in seconds.
+	/// Time spent to search and filter the results, in seconds.
 	time_to_search_secs: f64,
 }
 
 impl Default for GameSelectionScreen {
 	fn default() -> Self {
-		let all_game_meta: Vec<GameMetadata> =
-			all_games().into_iter().map(|game| game.metadata()).collect();
-		let length = all_game_meta.len();
+		let all_game_metadata: Vec<GameMetadata> =
+			all_games().iter().map(|game| game.metadata()).collect();
+		let list_entries = all_game_metadata.iter().map(GameMetadata::get_list_entry).collect();
 
 		Self {
 			search_term: None,
-			search_results: all_game_meta,
+			search_results: all_game_metadata,
 			selected_game: false,
-			scroll_tracker: ScrollTracker::new(length as u64, Some(5)),
+			game_results_list: ScrollableList::new(
+				list_entries,
+				Some(5),
+				4,
+				Direction::Vertical,
+				Alignment::Center,
+				None,
+			),
 			time_to_search_secs: 0.0,
 		}
 	}
@@ -106,22 +105,24 @@ impl Screen for GameSelectionScreen {
 		if let Event::Key(key) = event {
 			match key.code {
 				KeyCode::Char('r') if key.modifiers == KeyModifiers::CONTROL => {
-					self.scroll_tracker.scroll_to_random();
+					self.game_results_list.scroll_tracker.scroll_to_random();
 				},
 				KeyCode::Char('d') if key.modifiers == KeyModifiers::CONTROL => {
 					self.clear_search_term();
 				},
-				KeyCode::Backspace => self.remove_one_character(),
+				KeyCode::Backspace => self.pop_one_character(),
 				KeyCode::Char(character)
 					if [KeyModifiers::SHIFT, KeyModifiers::NONE].contains(&key.modifiers) =>
 				{
 					self.add_character_to_term(character, key.modifiers);
 				},
-				KeyCode::Up => self.scroll_tracker.scroll_up(),
-				KeyCode::Down => self.scroll_tracker.scroll_down(),
+				KeyCode::Up => self.game_results_list.scroll_tracker.scroll_forward(),
+				KeyCode::Down => self.game_results_list.scroll_tracker.scroll_backward(),
 				KeyCode::Left => self.decrease_searches_shown(),
 				KeyCode::Right => self.increase_searches_shown(),
-				KeyCode::Enter if self.scroll_tracker.is_selected() => self.selected_game = true,
+				KeyCode::Enter if self.game_results_list.scroll_tracker.is_selected() => {
+					self.selected_game = true
+				},
 				_ => {},
 			}
 		}
@@ -135,33 +136,23 @@ impl Screen for GameSelectionScreen {
 
 		let search_term = self.search_term.as_deref();
 		render_search_section(frame, chunks[0], search_term);
-		render_search_results(
-			frame,
-			chunks[1],
-			search_term,
-			slice_until_end(
-				&self.search_results,
-				self.scroll_tracker.start as usize,
-				self.scroll_tracker.range.unwrap() as usize,
-			),
-			&self.scroll_tracker,
-		);
+		self.game_results_list.render(frame, chunks[1]);
 		render_search_bottom_bar(
 			frame,
 			chunks[2],
-			self.search_results_length(),
+			self.get_results_length(),
 			self.time_to_search_secs,
-			max(self.scroll_tracker.range.unwrap(), 5),
+			max(self.game_results_list.scroll_tracker.count.unwrap(), 5),
 		);
 	}
 
 	fn screen_created(&mut self) -> Option<Box<dyn Screen>> {
-		if !self.selected_game {
+		let selected_game = self.game_results_list.get_selected();
+		if !self.selected_game || selected_game.is_none() {
 			return None;
 		}
-		let selected_index = self.scroll_tracker.selected?;
-		let selection = &self.search_results[selected_index as usize];
-		Some(get_game_by_name(selection.name())?.screen_created())
+		let selection = selected_game.unwrap();
+		Some(get_game_by_name(selection.0.as_ref().unwrap())?.screen_created())
 	}
 
 	fn is_closing(&self) -> bool {
@@ -193,23 +184,26 @@ impl GameSelectionScreen {
 	}
 
 	/// Gets the length of the search results.
-	fn search_results_length(&self) -> usize {
+	fn get_results_length(&self) -> usize {
 		self.search_results.len()
 	}
 
 	/// Updates the search results.
 	fn update_search_results(&mut self) {
 		let timer = std::time::Instant::now();
-		self.search_results = if let Some(ref term) = self.search_term {
-			games_by_keyword(term.to_lowercase().as_str())
-		} else {
-			all_games()
-		}
-		.into_iter()
-		.map(|game| game.metadata())
-		.collect();
-		self.scroll_tracker.set_length(self.search_results_length() as u64);
+		self.search_results = get_games_by_search_term(self.search_term.clone())
+			.into_iter()
+			.map(|game| game.metadata())
+			.collect();
+		self.update_results_list();
 		self.time_to_search_secs = timer.elapsed().as_secs_f64();
+	}
+
+	/// Updates the [`self::game_results_list`] property from the
+	/// [`self::search_results`] property.
+	fn update_results_list(&mut self) {
+		self.game_results_list
+			.update_items(self.search_results.iter().map(GameMetadata::get_list_entry).collect());
 	}
 
 	/// Adds the character to the search term object, capping out at 256
@@ -231,9 +225,9 @@ impl GameSelectionScreen {
 		self.update_search_results();
 	}
 
-	/// Pops one character from the search term (the top one), or does
-	/// nothing if the term is empty.
-	fn remove_one_character(&mut self) {
+	/// Pops one character from the search term, or does nothing if the term is
+	/// empty.
+	fn pop_one_character(&mut self) {
 		if let Some(ref mut term) = self.search_term {
 			term.pop();
 			if term.is_empty() {
@@ -245,17 +239,17 @@ impl GameSelectionScreen {
 
 	/// Increases the number of shown searches, capping out at 10.
 	fn increase_searches_shown(&mut self) {
-		let count = self.scroll_tracker.range.unwrap();
+		let count = self.game_results_list.scroll_tracker.count.unwrap();
 		if count < 10 {
-			self.scroll_tracker.set_range(count + 1);
+			self.game_results_list.scroll_tracker.set_range(count + 1);
 		}
 	}
 
 	/// Decreases the number of shown searches, capping out at 5.
 	fn decrease_searches_shown(&mut self) {
-		let count = self.scroll_tracker.range.unwrap();
+		let count = self.game_results_list.scroll_tracker.count.unwrap();
 		if count > 5 {
-			self.scroll_tracker.set_range(count - 1);
+			self.game_results_list.scroll_tracker.set_range(count - 1);
 		}
 	}
 }
