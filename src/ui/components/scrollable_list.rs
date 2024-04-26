@@ -59,13 +59,13 @@ impl ScrollableList {
 	/// Create a new scrollable list.
 	pub fn new(
 		items: Vec<(Option<String>, String)>,
-		display_range: Option<usize>,
+		display_count: Option<usize>,
 		max_item_lines: u64,
 		direction: Direction,
 		text_alignment: Alignment,
 		custom_margins: Option<(u16, u16)>,
 	) -> Self {
-		let tracker = ScrollTracker::new(items.len(), display_range);
+		let tracker = ScrollTracker::new(items.len(), display_count);
 		let margins = custom_margins.unwrap_or((1, 2));
 		Self {
 			items,

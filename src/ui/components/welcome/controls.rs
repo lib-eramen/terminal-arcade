@@ -55,7 +55,7 @@ fn controls_paragraphs(selected: Option<usize>) -> Vec<Paragraph<'static>> {
 	[
 		"Hop into a game and play!",
 		"View your configurations...",
-		"Quit the game",
+		"Quit the game...",
 	]
 	.into_iter()
 	.enumerate()

@@ -54,8 +54,7 @@ pub fn meta_file_path(name: &str) -> PathBuf {
 }
 
 /// A [Game]'s metadata. Note that this does not include the game's settings.
-/// This struct reads and writes from [`SAVE_DIR`]. Check out [`Self::load`]
-/// and [`Self::save`] for more information.
+/// Check out [`Self::new`] and [`Self::save`] for more information.
 #[derive(Debug, Clone, Builder, Default, Serialize, Deserialize)]
 #[must_use]
 pub struct GameMetadata {
@@ -78,6 +77,11 @@ impl<'a> GameMetadata {
 			static_info: static_info.clone(),
 			dynamic_info: GameDynamicInfo::load_or_default(&static_info.name)?,
 		})
+	}
+
+	/// Saves this metadata object as a readable format.
+	pub fn save(&self) -> anyhow::Result<()> {
+		todo!()
 	}
 
 	/// Returns an entry string that contains all of the metadata properties.
@@ -233,7 +237,15 @@ pub trait Game {
 /// Returns a list of all games.
 #[must_use]
 pub fn all_games() -> Games {
-	vec![Box::new(Minesweeper)]
+	vec![
+		Box::new(Minesweeper),
+		Box::new(Minesweeper),
+		Box::new(Minesweeper),
+		Box::new(Minesweeper),
+		Box::new(Minesweeper),
+		Box::new(Minesweeper),
+		Box::new(Minesweeper),
+	]
 }
 
 /// Returns a list of games that match the keyword in their name.

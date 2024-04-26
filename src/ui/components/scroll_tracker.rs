@@ -7,6 +7,7 @@ use std::{
 	ops::Range,
 };
 
+use anyhow::bail;
 use rand::Rng;
 
 /// Keeps track of scroll position.
@@ -22,7 +23,7 @@ pub struct ScrollTracker {
 	pub end: usize,
 
 	/// The range of the scroll list that is displayed.
-	pub count: Option<usize>,
+	pub display_count: Option<usize>,
 
 	/// The length of the scroll list.
 	pub length: usize,
@@ -36,7 +37,7 @@ impl ScrollTracker {
 			selected: None,
 			start: 0,
 			end: length - 1,
-			count: Some(min(range.unwrap_or(length), length)),
+			display_count: Some(min(range.unwrap_or(length), length)),
 			length,
 		}
 	}
@@ -51,7 +52,7 @@ impl ScrollTracker {
 	#[must_use]
 	pub fn get_displayed_range(&self) -> Range<usize> {
 		let range_to_end = self.start..self.length;
-		if let Some(count) = self.count {
+		if let Some(count) = self.display_count {
 			if self.start + count > self.length {
 				range_to_end
 			} else {
@@ -73,15 +74,18 @@ impl ScrollTracker {
 		let selected = self.selected.unwrap();
 		if selected == 0 {
 			let location = self.length - 1;
-			if let Some(range) = self.count {
+			if let Some(range) = self.display_count {
 				self.start = location - (range - 1);
 			}
 			self.selected = Some(self.length - 1);
 		} else {
 			self.selected = Some(selected - 1);
-			if self.count.is_some() && selected == self.start {
-				self.start =
-					if selected < self.count.unwrap() { 0 } else { selected - self.count.unwrap() }
+			if self.display_count.is_some() && selected == self.start {
+				self.start = if selected < self.display_count.unwrap() {
+					0
+				} else {
+					selected - self.display_count.unwrap()
+				}
 			}
 		}
 	}
@@ -100,8 +104,10 @@ impl ScrollTracker {
 			self.selected = Some(0);
 		} else {
 			self.selected = Some(selected + 1);
-			if self.count.is_some() && selected == self.start + self.count.unwrap() - 1 {
-				self.start = min(self.start + self.count.unwrap(), self.end);
+			if self.display_count.is_some()
+				&& selected == self.start + self.display_count.unwrap() - 1
+			{
+				self.start = min(self.start + self.display_count.unwrap(), self.end);
 			}
 		}
 	}
@@ -111,11 +117,12 @@ impl ScrollTracker {
 		let mut rng = rand::thread_rng();
 		self.start = rng.gen_range(0..self.length);
 		self.selected = Some(self.start);
-		self.end = std::cmp::min(self.end + self.count.unwrap_or(0), self.length - 1);
+		self.end = std::cmp::min(self.end + self.display_count.unwrap_or(0), self.length - 1);
 	}
 
 	/// Sets a new length of the scroll tracker, also resetting the selected
-	/// index.
+	/// index. This function does not update the [`Self::display_count`]
+	/// property.
 	pub fn set_length(&mut self, new_length: usize) {
 		self.length = new_length;
 		self.start = 0;
@@ -123,10 +130,25 @@ impl ScrollTracker {
 		self.selected = None;
 	}
 
-	/// Sets the range of the scroll tracker.
-	/// Note that if the new range value is larger than the tracker's length,
-	/// the range will be set to the tracker's length instead.
-	pub fn set_range(&mut self, new_range: usize) {
-		self.count = Some(min(self.length, new_range));
+	/// Sets the display count of the scroll tracker.
+	/// Note that if the new count value is larger than the tracker's length,
+	/// the count will be set to the tracker's length instead.
+	pub fn set_display_count(&mut self, new_range: usize) {
+		self.display_count = Some(min(self.length, new_range));
+	}
+
+	/// Modifies the number of items shown at once by the offset given.
+	pub fn modify_display_range(&mut self, offset: i64) -> anyhow::Result<()> {
+		Ok(if let Some(ref mut count) = self.display_count {
+			if offset.is_negative() && offset.abs() > *count as i64 {
+				bail!("Offset turns display count negative")
+			}
+			*count = if offset.is_negative() {
+				count.checked_sub(offset.wrapping_abs() as u32 as usize)
+			} else {
+				count.checked_add(offset as usize)
+			}
+			.unwrap()
+		})
 	}
 }

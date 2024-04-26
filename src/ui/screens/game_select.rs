@@ -140,9 +140,12 @@ impl Screen for GameSelectionScreen {
 		render_search_bottom_bar(
 			frame,
 			chunks[2],
-			self.get_results_length(),
+			self.search_results.len(),
 			self.time_to_search_secs,
-			max(self.game_results_list.scroll_tracker.count.unwrap(), 5),
+			max(
+				self.game_results_list.scroll_tracker.display_count.unwrap(),
+				5,
+			),
 		);
 	}
 
@@ -183,11 +186,6 @@ impl GameSelectionScreen {
 			.constraints(constraints)
 	}
 
-	/// Gets the length of the search results.
-	fn get_results_length(&self) -> usize {
-		self.search_results.len()
-	}
-
 	/// Updates the search results.
 	fn update_search_results(&mut self) {
 		let timer = std::time::Instant::now();
@@ -199,8 +197,8 @@ impl GameSelectionScreen {
 		self.time_to_search_secs = timer.elapsed().as_secs_f64();
 	}
 
-	/// Updates the [`self::game_results_list`] property from the
-	/// [`self::search_results`] property.
+	/// Updates the [`Self::game_results_list`] property from the
+	/// [`Self::search_results`] property.
 	fn update_results_list(&mut self) {
 		self.game_results_list
 			.update_items(self.search_results.iter().map(GameMetadata::get_list_entry).collect());
@@ -239,17 +237,17 @@ impl GameSelectionScreen {
 
 	/// Increases the number of shown searches, capping out at 10.
 	fn increase_searches_shown(&mut self) {
-		let count = self.game_results_list.scroll_tracker.count.unwrap();
-		if count < 10 {
-			self.game_results_list.scroll_tracker.set_range(count + 1);
+		let count = self.game_results_list.scroll_tracker.display_count.unwrap();
+		if count < min(10, self.search_results.len()) {
+			self.game_results_list.scroll_tracker.modify_display_range(1).unwrap();
 		}
 	}
 
 	/// Decreases the number of shown searches, capping out at 5.
 	fn decrease_searches_shown(&mut self) {
-		let count = self.game_results_list.scroll_tracker.count.unwrap();
-		if count > 5 {
-			self.game_results_list.scroll_tracker.set_range(count - 1);
+		let count = self.game_results_list.scroll_tracker.display_count.unwrap();
+		if count > min(5, self.search_results.len()) {
+			self.game_results_list.scroll_tracker.modify_display_range(-1).unwrap();
 		}
 	}
 }

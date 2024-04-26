@@ -33,13 +33,17 @@ pub fn untitled_ui_block<'a>() -> Block<'a> {
 		.borders(Borders::ALL)
 		.border_style(Style::default().fg(Color::DarkGray))
 		.border_type(BorderType::Rounded)
+		.style(Style::default().fg(Color::DarkGray))
 		.padding(Padding::horizontal(1))
 }
 
 /// Highlights a block by setting the borders to [`Color::White`]
 #[must_use]
 pub fn highlight_block(block: Block<'_>) -> Block<'_> {
-	block
-		.border_style(Style::default().fg(Color::White))
-		.style(Style::default().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC))
+	block.border_style(Style::default().fg(Color::White)).style(
+		Style::default()
+			.fg(Color::White)
+			.add_modifier(Modifier::BOLD)
+			.add_modifier(Modifier::ITALIC),
+	)
 }
