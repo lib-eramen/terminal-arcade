@@ -5,6 +5,7 @@ use crossterm::event::Event;
 use crate::{
 	games::{
 		Game,
+		GameIdentifier,
 		GameMetadata,
 	},
 	ui::{
@@ -13,7 +14,7 @@ use crate::{
 	},
 };
 
-/// The struct containing the implementation for the game Minesweeper.
+/// The game [Minesweeper](https://en.wikipedia.org/wiki/Minesweeper_(video_game)).
 #[derive(Clone)]
 pub struct Minesweeper;
 
@@ -25,6 +26,7 @@ impl Game for Minesweeper {
 			)
 			.name("Minesweeper".to_string())
 			.version_created("0.0.1".to_string())
+			.identifier(GameIdentifier::Minesweeper)
 		})
 		.unwrap()
 	}

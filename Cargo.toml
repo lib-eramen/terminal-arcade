@@ -32,5 +32,6 @@ rand = "0.8.5"
 ratatui = "0.26.1"
 serde = "1.0.160"
 serde_derive = "1.0.160"
+strum = { version = "0.26.2", features = ["derive"] }
 thiserror = "1.0.40"
 toml = "0.7.3"

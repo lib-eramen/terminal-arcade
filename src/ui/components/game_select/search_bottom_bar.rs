@@ -26,7 +26,8 @@ pub fn render_search_bottom_bar(
 	results_per_page: usize,
 ) {
 	let bottom_bar_text = format!(
-		"{time_to_search} seconds, found {}, displaying {results_per_page} results at once.",
+		"Finished in {time_to_search} seconds, found {}, displaying {results_per_page} results at \
+		 once.",
 		pluralize("game", results_count as isize, true),
 	);
 	let bottom_bar_paragraph =

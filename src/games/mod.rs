@@ -26,12 +26,13 @@ use serde_derive::{
 	Deserialize,
 	Serialize,
 };
+use strum::Display;
 
 use crate::{
 	core::get_save_dir,
 	games::minesweeper::Minesweeper,
 	ui::{
-		components::scrollable_list::ItemData,
+		components::scrollable_list::ListItem,
 		Screen,
 	},
 };
@@ -45,6 +46,13 @@ pub type Games = Vec<Box<dyn Game>>;
 #[must_use]
 pub fn all_games() -> Games {
 	vec![Box::new(Minesweeper)]
+}
+
+/// Enum for uniquely identifying a game in Terminal Arcade.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Display)]
+pub enum GameIdentifier {
+	/// [Minesweeper]
+	Minesweeper,
 }
 
 /// A trait for a game in Terminal Arcade.
@@ -92,8 +100,8 @@ pub fn get_games_by_search_term(term: &Option<String>) -> Games {
 
 /// Gets a game by its name.
 #[must_use]
-pub fn get_game_by_name(name: &str) -> Option<Box<dyn Game>> {
-	all_games().into_iter().find(|game| game.metadata().static_info.name == name)
+pub fn get_game_by_identifier(identifier: GameIdentifier) -> Option<Box<dyn Game>> {
+	all_games().into_iter().find(|game| game.metadata().static_info.identifier == identifier)
 }
 
 /// Gets the current UNIX time as seconds.
@@ -110,7 +118,7 @@ pub fn meta_file_path(name: &str) -> PathBuf {
 
 /// A [Game]'s metadata. Note that this does not include the game's settings.
 /// Check out [`Self::new`] and [`Self::save`] for more information.
-#[derive(Debug, Clone, Builder, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Builder, Serialize, Deserialize)]
 #[must_use]
 pub struct GameMetadata {
 	/// The game's static information.
@@ -144,12 +152,9 @@ impl<'a> GameMetadata {
 	#[must_use]
 	pub fn get_entry_text(&self) -> String {
 		format!(
-			"{}: {}\n{}: {}\n{}: v{}\n{}",
-			"Name",
+			"📛 Name: {}\n📄 Description: {}\n👷 Created at: v{}\n{}",
 			self.static_info.name,
-			"Description",
 			self.static_info.description,
-			"Created at",
 			self.static_info.version_created,
 			self.dynamic_info.get_status_text(),
 		)
@@ -157,11 +162,11 @@ impl<'a> GameMetadata {
 
 	/// Returns a list item usable with the [`ui::components::ScrollableList`]
 	/// widget.
-	#[must_use]
-	pub fn get_list_entry(&self) -> ItemData {
-		(
+	pub fn get_list_entry(&self) -> ListItem<GameIdentifier> {
+		ListItem::new(
 			Some(self.static_info.name.to_string()),
-			self.get_entry_text(),
+			self.static_info.identifier,
+			Some(self.get_entry_text()),
 		)
 	}
 
@@ -181,17 +186,20 @@ impl<'a> GameMetadata {
 
 /// A [Game]'s static, unchanging info/data. This includes things like the
 /// game's name and description.
-#[derive(Debug, Clone, Builder, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Builder, Serialize, Deserialize)]
 #[must_use]
 pub struct GameStaticInfo {
-	/// The game's name.
+	/// Name of the game
 	pub name: String,
 
-	/// The game's description.
+	/// Description of the game.
 	pub description: String,
 
-	/// The version that the game was created on.
+	/// Version that the game was created on.
 	pub version_created: String,
+
+	/// Unique identifier of the game.
+	pub identifier: GameIdentifier,
 }
 
 impl GameStaticInfo {
@@ -230,13 +238,13 @@ impl GameDynamicInfo {
 			let date_str = datetime.format("%d/%m/%Y");
 
 			format!(
-				"Played {} {}, last played at {}",
+				"🕹️ Played {} {}, 🌗 last played at {}",
 				play_count,
 				pluralize("time", play_count as isize, false),
 				date_str,
 			)
 		} else {
-			"Never played before!".to_string()
+			"🆕 Never played before!".to_string()
 		}
 	}
 

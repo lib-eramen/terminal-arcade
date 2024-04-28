@@ -31,7 +31,7 @@ fn git_info_string() -> String {
 	let remote_link = "https://github.com/developer-ramen/terminal-arcade";
 
 	format!(
-		"Terminal Arcade {version}, on branch {current_branch}, commit hash {commit_hash}; at \
+		"🎮 Terminal Arcade {version}, on branch {current_branch}, commit hash {commit_hash}; at \
 		 remote {remote_link}",
 	)
 }
@@ -39,12 +39,11 @@ fn git_info_string() -> String {
 #[must_use]
 fn bottom_bar_text() -> String {
 	format!(
-		"Time: {}\n{}\n{} is a {}! If you would like to contribute, please do!
+		"⏰ Time: {}\n🎋 {}\n🏗️ Terminal Arcade is a work-in-progress! If you would like to \
+		 contribute, please do!
         ",
 		chrono::Local::now().format("%d/%m/%Y %H:%M:%S"),
 		git_info_string(),
-		"Terminal Arcade",
-		"work-in-progress"
 	)
 }
 

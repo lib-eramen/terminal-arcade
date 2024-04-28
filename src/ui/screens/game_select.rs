@@ -29,10 +29,11 @@ use crate::{
 	core::terminal::BackendType,
 	games::{
 		all_games,
-		get_game_by_name,
+		get_game_by_identifier,
 		get_games_by_keyword,
 		get_games_by_search_term,
 		Game,
+		GameIdentifier,
 		GameMetadata,
 	},
 	ui::{
@@ -72,7 +73,7 @@ pub struct GameSelectionScreen {
 	selected_game: bool,
 
 	/// Scrollable list widget for display.
-	game_results_list: ScrollableList,
+	game_results_list: ScrollableList<GameIdentifier>,
 
 	/// Time spent to search and filter the results, in seconds.
 	time_to_search_secs: f64,
@@ -156,7 +157,7 @@ impl Screen for GameSelectionScreen {
 			return None;
 		}
 		let selection = selected_game.unwrap();
-		Some(get_game_by_name(selection.0.as_ref().unwrap())?.screen_created())
+		Some(get_game_by_identifier(selection.1.data)?.screen_created())
 	}
 
 	fn is_closing(&self) -> bool {

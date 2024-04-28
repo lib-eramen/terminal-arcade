@@ -20,6 +20,10 @@ use ratatui::{
 	},
 	Frame,
 };
+use strum::{
+	Display,
+	EnumString,
+};
 
 use crate::{
 	core::terminal::BackendType,
@@ -30,6 +34,10 @@ use crate::{
 				untitled_ui_block,
 			},
 			scroll_tracker::ScrollTracker,
+			scrollable_list::{
+				ListItem,
+				ScrollableList,
+			},
 			welcome::{
 				controls::render_welcome_controls_block,
 				footer::render_welcome_bottom_bar,
@@ -63,11 +71,16 @@ pub const BANNER: &str = r"/‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾�
 /// Screens that can be created by the welcome screen.
 #[derive(PartialEq, Eq, Clone, Copy)]
 enum ScreenCreated {
-	/// The game selection screen.
-	GameSelection,
-
-	/// The settings screen.
+	GameSearch,
 	Settings,
+}
+
+/// Control options available at the welcome screen.
+#[derive(Clone, Copy, PartialEq, Eq, Display)]
+enum ControlOptions {
+	SearchGames,
+	ViewSettings,
+	QuitApplication,
 }
 
 /// The struct that welcomes the user to Terminal Arcade. To be presented every
@@ -76,19 +89,43 @@ pub struct WelcomeScreen {
 	/// Whether this screen is closing or not.
 	closing: bool,
 
-	/// The screen that this screen is spawning.
+	/// Screen that this screen is spawning.
 	screen_created: Option<ScreenCreated>,
 
-	/// The scroll tracker for this screen.
-	tracker: ScrollTracker,
+	/// Scrollable list widget for options.
+	controls_list: ScrollableList<ControlOptions>,
 }
 
 impl Default for WelcomeScreen {
 	fn default() -> Self {
+		let controls_list = ScrollableList::new(
+			vec![
+				ListItem::new(
+					None,
+					ControlOptions::SearchGames,
+					Some("🎮 Hop into a game and play!".to_string()),
+				),
+				ListItem::new(
+					None,
+					ControlOptions::ViewSettings,
+					Some("⚙️ View your settings...".to_string()),
+				),
+				ListItem::new(
+					None,
+					ControlOptions::QuitApplication,
+					Some("🛑 Quit the application...".to_string()),
+				),
+			],
+			None,
+			1,
+			Direction::Vertical,
+			Alignment::Center,
+			None,
+		);
 		Self {
 			closing: false,
 			screen_created: None,
-			tracker: ScrollTracker::new(3, None),
+			controls_list,
 		}
 	}
 }
@@ -97,7 +134,7 @@ impl Screen for WelcomeScreen {
 	fn render(&mut self, frame: &mut Frame<'_>) {
 		let size = frame.size();
 		frame.render_widget(titled_ui_block("Welcome to Terminal Arcade!"), size);
-		let used_ui_height = 17 + 11 + 5 + 1;
+		let used_ui_height = 16 + 11 + 5 + 6;
 		let empty_space_height =
 			if size.height <= used_ui_height { 0 } else { size.height - used_ui_height };
 		let chunks = Layout::default()
@@ -106,14 +143,14 @@ impl Screen for WelcomeScreen {
 			.constraints([
 				Constraint::Max(16), // Banner's height + borders
 				Constraint::Max(11), // Controls list block's height
-				Constraint::Max(empty_space_height),
-				Constraint::Max(5), // Bottom bar
+				Constraint::Min(empty_space_height),
+				Constraint::Max(6), // Bottom bar
 			])
 			.horizontal_margin(2)
 			.split(size);
 		let banner = Paragraph::new(BANNER).block(untitled_ui_block()).alignment(Alignment::Center);
 		frame.render_widget(banner, chunks[0]);
-		render_welcome_controls_block(chunks[1], frame, self.tracker.selected);
+		self.controls_list.render(frame, chunks[1]);
 		render_welcome_bottom_bar(frame, chunks[3]);
 	}
 
@@ -126,8 +163,8 @@ impl Screen for WelcomeScreen {
 					}
 					self.handle_char_shortcut(character);
 				},
-				KeyCode::Up => self.tracker.scroll_forward(),
-				KeyCode::Down => self.tracker.scroll_backward(),
+				KeyCode::Up => self.controls_list.scroll_tracker.scroll_forward(),
+				KeyCode::Down => self.controls_list.scroll_tracker.scroll_backward(),
 				KeyCode::Enter => self.handle_enter_shortcut(),
 				_ => {},
 			}
@@ -138,7 +175,7 @@ impl Screen for WelcomeScreen {
 	fn screen_created(&mut self) -> Option<Box<dyn Screen>> {
 		if let Some(screen) = self.screen_created {
 			let screen_created = match screen {
-				ScreenCreated::GameSelection => Self::create_game_selection_screen(),
+				ScreenCreated::GameSearch => Self::create_game_selection_screen(),
 				ScreenCreated::Settings => Self::create_settings_screen(),
 			};
 			self.screen_created = None;
@@ -164,13 +201,11 @@ impl WelcomeScreen {
 		self.screen_created = Some(screen_created);
 	}
 
-	// TODO: Game selection screen.
 	/// Creates the game selection screen to switch to from this screen.
 	fn create_game_selection_screen() -> Box<dyn Screen> {
 		Box::<GameSelectionScreen>::default()
 	}
 
-	// TODO: Game selection screen.
 	/// Creates the settings screen to switch to from this screen.
 	fn create_settings_screen() -> Box<dyn Screen> {
 		Box::<ConfigScreen>::default()
@@ -179,7 +214,7 @@ impl WelcomeScreen {
 	/// Handles the shortcut associated with the character inputted.
 	fn handle_char_shortcut(&mut self, character: char) {
 		match character {
-			'1' | 'p' => self.set_screen_created(ScreenCreated::GameSelection),
+			'1' | 'p' => self.set_screen_created(ScreenCreated::GameSearch),
 			'2' | 'c' => self.set_screen_created(ScreenCreated::Settings),
 			'0' | 'q' => self.mark_closed(),
 			_ => {},
@@ -189,12 +224,11 @@ impl WelcomeScreen {
 	/// Handles the ENTER shortcut, which executes the function that the UI
 	/// selector is pointing at.
 	fn handle_enter_shortcut(&mut self) {
-		if let Some(index) = self.tracker.selected {
-			match index {
-				0 => self.set_screen_created(ScreenCreated::GameSelection),
-				1 => self.set_screen_created(ScreenCreated::Settings),
-				2 => self.mark_closed(),
-				_ => panic!("Index not in predefined range (0..2) of welcome controls"),
+		if let Some((_, item)) = self.controls_list.get_selected() {
+			match item.data {
+				ControlOptions::SearchGames => self.set_screen_created(ScreenCreated::GameSearch),
+				ControlOptions::ViewSettings => self.set_screen_created(ScreenCreated::Settings),
+				ControlOptions::QuitApplication => self.mark_closed(),
 			}
 		}
 	}

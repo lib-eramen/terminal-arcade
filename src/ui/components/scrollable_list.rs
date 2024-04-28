@@ -1,8 +1,12 @@
 //! A scrollable list. See [`ScrollableList`] for the struct this module
 //! exports.
 
-use std::cmp::min;
+use std::{
+	cmp::min,
+	fmt::Display,
+};
 
+use derive_new::new;
 use ratatui::{
 	layout::{
 		Alignment,
@@ -23,10 +27,26 @@ use crate::ui::components::{
 	scroll_tracker::ScrollTracker,
 };
 
-/// A list item to be displayed. The first element is the title of a block that
-/// wraps the item, and can be left empty. The second is the block's items
-/// itself.
-pub type ItemData = (Option<String>, String);
+/// A list item to be displayed.
+#[derive(Clone, new)]
+#[must_use]
+pub struct ListItem<D: ToString> {
+	/// Title for a block that wraps the item when displayed.
+	pub name: Option<String>,
+
+	/// Data associated with this item.
+	pub data: D,
+
+	/// Content to be displayed on screen instead of the data.
+	pub displayed_content: Option<String>,
+}
+
+impl<D: ToString> ListItem<D> {
+	/// Returns data to be displayed for this list item.
+	pub fn get_displayed_data(&self) -> String {
+		self.displayed_content.clone().unwrap_or(self.data.to_string())
+	}
+}
 
 /// A scrollable list that highlights the chosen element, with adjustable view
 /// range.
@@ -35,9 +55,9 @@ pub type ItemData = (Option<String>, String);
 /// as well as scrolling.
 #[derive(Clone)]
 #[must_use]
-pub struct ScrollableList {
+pub struct ScrollableList<D: ToString> {
 	/// Items to be displayed.
-	pub items: Vec<ItemData>,
+	pub items: Vec<ListItem<D>>,
 
 	/// Scroll tracker for this list.
 	pub scroll_tracker: ScrollTracker,
@@ -55,10 +75,10 @@ pub struct ScrollableList {
 	pub margins: (u16, u16),
 }
 
-impl ScrollableList {
+impl<D: ToString> ScrollableList<D> {
 	/// Create a new scrollable list.
 	pub fn new(
-		items: Vec<(Option<String>, String)>,
+		items: Vec<ListItem<D>>,
 		display_count: Option<usize>,
 		max_item_lines: u16,
 		direction: Direction,
@@ -78,13 +98,13 @@ impl ScrollableList {
 	}
 
 	/// Returns the selected item in the list.
+	/// The first element in the returned tuple is the index where the element
+	/// was found.
 	#[must_use]
-	pub fn get_selected(&self) -> Option<&ItemData> {
-		if let Some(selected) = self.scroll_tracker.selected {
-			self.items.get(selected)
-		} else {
-			None
-		}
+	pub fn get_selected(&self) -> Option<(usize, &ListItem<D>)> {
+		let selected_index = self.scroll_tracker.selected?;
+		let item = self.items.get(selected_index)?;
+		Some((selected_index, item))
 	}
 
 	/// Renders this list.
@@ -99,7 +119,7 @@ impl ScrollableList {
 	/// displayed on the list.
 	pub fn render_processed<P>(&self, frame: &mut Frame<'_>, area: Rect, processor: P)
 	where
-		P: Fn(&str) -> Paragraph<'_>,
+		P: Fn(&ListItem<D>) -> Paragraph<'_>,
 	{
 		let chunks = self.get_layout().split(area);
 		for (position, index) in self.scroll_tracker.get_displayed_range().enumerate() {
@@ -121,15 +141,16 @@ impl ScrollableList {
 	) {
 		let item = self.items.get(index).expect("Index outside of list's range.");
 		let mut item_block = titled_ui_block(format!(
-			"{} ─ {}",
+			"{}{}",
 			index + 1,
-			item.0.as_ref().unwrap_or(&String::new())
+			item.name.as_ref().map_or(String::new(), |s| format!(" ─ {s}"))
 		))
 		.title_alignment(self.text_alignment);
 		if self.scroll_tracker.selected.map_or(false, |selected| selected == index) {
 			item_block = highlight_block(item_block);
 		}
-		let paragraph = custom_paragraph.unwrap_or_else(|| Paragraph::new::<&str>(item.1.as_ref()));
+		let paragraph =
+			custom_paragraph.unwrap_or_else(|| Paragraph::new(item.get_displayed_data()));
 		let item_paragraph = paragraph.alignment(self.text_alignment).block(item_block);
 		frame.render_widget(item_paragraph, area);
 	}
@@ -140,17 +161,17 @@ impl ScrollableList {
 	/// # Panics
 	///
 	/// This function panics when the index is outside of the list's items.
-	pub fn render_item_processed<P>(
+	fn render_item_processed<P>(
 		&self,
 		frame: &mut Frame<'_>,
 		area: Rect,
 		index: usize,
 		processor: P,
 	) where
-		P: Fn(&str) -> Paragraph<'_>,
+		P: Fn(&ListItem<D>) -> Paragraph<'_>,
 	{
 		let item = self.items.get(index).expect("Index outside of list's range.");
-		let paragraph = processor(item.1.as_ref());
+		let paragraph = processor(item);
 		self.render_raw_item(frame, area, index, Some(paragraph));
 	}
 
@@ -158,7 +179,7 @@ impl ScrollableList {
 	/// of vertically-scrolling boxes.
 	#[must_use]
 	pub fn get_layout(&self) -> Layout {
-		let mut constraints = vec![Constraint::Max(self.max_item_lines); self.items.len()];
+		let mut constraints = vec![Constraint::Max(self.max_item_lines + 2); self.items.len()];
 		constraints.push(Constraint::Max(0));
 
 		Layout::default()
@@ -170,7 +191,7 @@ impl ScrollableList {
 
 	/// Updates items this list displays as well as the length of the underlying
 	/// scroll tracker.
-	pub fn update_items(&mut self, items: Vec<ItemData>) {
+	pub fn update_items(&mut self, items: Vec<ListItem<D>>) {
 		self.items = items;
 		self.scroll_tracker.set_length(self.items.len());
 	}
