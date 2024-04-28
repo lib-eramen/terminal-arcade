@@ -41,6 +41,61 @@ pub mod minesweeper;
 /// A [Vec] of games.
 pub type Games = Vec<Box<dyn Game>>;
 
+/// Returns a list of all games.
+#[must_use]
+pub fn all_games() -> Games {
+	vec![Box::new(Minesweeper)]
+}
+
+/// A trait for a game in Terminal Arcade.
+/// This trait is not only for the game's logic implementation, it also dictates
+/// how it interacts with the rest of the Terminal Arcade UI, as well as how it
+/// handles events passed to it.
+/// When making a game with this trait, please also add the game to
+/// [`all_games`].
+pub trait Game {
+	/// Gets the metadata of the game.
+	fn metadata(&self) -> GameMetadata;
+
+	/// Indicates whether the game has finished or not.
+	fn is_finished(&self) -> bool;
+
+	/// Called when an event is passed to the game.
+	fn event(&mut self, event: &Event) -> anyhow::Result<()>;
+
+	/// The screen for the game to create.
+	/// This can be either a setup screen (that can create the game screen on
+	/// its own) or the game screen itself.
+	fn screen_created(&self) -> Box<dyn Screen>;
+}
+
+/// Returns a list of games that match the keyword in their name.
+#[must_use]
+pub fn get_games_by_keyword(keyword: &str) -> Games {
+	all_games()
+		.into_iter()
+		.filter(|game| game.metadata().static_info.matches_keyword(keyword))
+		.collect()
+}
+
+/// Returns a list of games that match the search term. Identical to
+/// [`games_by_keyword`], but if the search term is [`None`], the list of all
+/// games are returned.
+#[must_use]
+pub fn get_games_by_search_term(term: &Option<String>) -> Games {
+	if let Some(ref term) = term {
+		get_games_by_keyword(term)
+	} else {
+		all_games()
+	}
+}
+
+/// Gets a game by its name.
+#[must_use]
+pub fn get_game_by_name(name: &str) -> Option<Box<dyn Game>> {
+	all_games().into_iter().find(|game| game.metadata().static_info.name == name)
+}
+
 /// Gets the current UNIX time as seconds.
 #[must_use]
 pub fn get_unix_time_as_secs() -> u64 {
@@ -71,7 +126,8 @@ impl<'a> GameMetadata {
 	/// the function itself.
 	pub fn new<F>(static_info: F) -> anyhow::Result<Self>
 	where
-		F: FnOnce(&mut GameStaticInfoBuilder) -> &mut GameStaticInfoBuilder, {
+		F: FnOnce(&mut GameStaticInfoBuilder) -> &mut GameStaticInfoBuilder,
+	{
 		let static_info = static_info(&mut GameStaticInfoBuilder::create_empty()).build().unwrap();
 		Ok(Self {
 			static_info: static_info.clone(),
@@ -136,6 +192,16 @@ pub struct GameStaticInfo {
 
 	/// The version that the game was created on.
 	pub version_created: String,
+}
+
+impl GameStaticInfo {
+	/// Returns whether the game's metadata matches a certain term.
+	#[must_use]
+	pub fn matches_keyword(&self, keyword: &str) -> bool {
+		[&self.name, &self.description, &self.version_created]
+			.into_iter()
+			.any(|field| field.contains(keyword))
+	}
 }
 
 /// A [Game]'s dynamic info, such as the game's play count, or the last played
@@ -210,67 +276,4 @@ impl GameDynamicInfo {
 	pub fn played(&self) -> bool {
 		self.play_count > 0
 	}
-}
-
-/// A trait for a game in Terminal Arcade.
-/// This trait is not only for the game's logic implementation, it also dictates
-/// how it interacts with the rest of the Terminal Arcade UI, as well as how it
-/// handles events passed to it.
-/// When making a game with this trait, please also add the game to
-/// [`all_games`].
-pub trait Game {
-	/// Gets the metadata of the game.
-	fn metadata(&self) -> GameMetadata;
-
-	/// Indicates whether the game has finished or not.
-	fn is_finished(&self) -> bool;
-
-	/// Called when an event is passed to the game.
-	fn event(&mut self, event: &Event) -> anyhow::Result<()>;
-
-	/// The screen for the game to create.
-	/// This can be either a setup screen (that can create the game screen on
-	/// its own) or the game screen itself.
-	fn screen_created(&self) -> Box<dyn Screen>;
-}
-
-/// Returns a list of all games.
-#[must_use]
-pub fn all_games() -> Games {
-	vec![
-		Box::new(Minesweeper),
-		Box::new(Minesweeper),
-		Box::new(Minesweeper),
-		Box::new(Minesweeper),
-		Box::new(Minesweeper),
-		Box::new(Minesweeper),
-		Box::new(Minesweeper),
-	]
-}
-
-/// Returns a list of games that match the keyword in their name.
-#[must_use]
-pub fn get_games_by_keyword(keyword: &str) -> Games {
-	all_games()
-		.into_iter()
-		.filter(|game| game.metadata().static_info.name.to_lowercase().contains(keyword))
-		.collect()
-}
-
-/// Returns a list of games that match the search term. Identical to
-/// [`games_by_keyword`], but if the search term is [`None`], the list of all
-/// games are returned.
-#[must_use]
-pub fn get_games_by_search_term(term: Option<String>) -> Games {
-	if let Some(ref term) = term {
-		get_games_by_keyword(term)
-	} else {
-		all_games()
-	}
-}
-
-/// Gets a game by its name.
-#[must_use]
-pub fn get_game_by_name(name: &str) -> Option<Box<dyn Game>> {
-	all_games().into_iter().find(|game| game.metadata().static_info.name == name)
 }

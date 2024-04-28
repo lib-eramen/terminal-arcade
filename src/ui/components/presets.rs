@@ -19,6 +19,11 @@ use ratatui::{
 	},
 };
 
+/// A "highlighted" text [Style] (bold + italic + underlined).
+pub const HIGHLIGHTED: Style = Style::new()
+	.add_modifier(Modifier::BOLD)
+	.add_modifier(Modifier::ITALIC);
+
 /// The default [`ratatui`] block template, with a styled title.
 #[must_use]
 pub fn titled_ui_block<'a, T: ToString>(title: T) -> Block<'a> {
@@ -40,10 +45,5 @@ pub fn untitled_ui_block<'a>() -> Block<'a> {
 /// Highlights a block by setting the borders to [`Color::White`]
 #[must_use]
 pub fn highlight_block(block: Block<'_>) -> Block<'_> {
-	block.border_style(Style::default().fg(Color::White)).style(
-		Style::default()
-			.fg(Color::White)
-			.add_modifier(Modifier::BOLD)
-			.add_modifier(Modifier::ITALIC),
-	)
+	block.border_style(Style::default().fg(Color::White)).style(HIGHLIGHTED.fg(Color::White))
 }

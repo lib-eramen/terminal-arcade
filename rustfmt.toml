@@ -1,9 +1,9 @@
 attr_fn_like_width = 100
 blank_lines_lower_bound = 0
 blank_lines_upper_bound = 1
-brace_style = "PreferSameLine"
+brace_style = "SameLineWhere"
 chain_width = 100
-color = "always"
+color = "Always"
 combine_control_expr = false
 condense_wildcard_suffixes = true
 format_code_in_doc_comments = true

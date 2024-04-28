@@ -21,6 +21,7 @@ use ratatui::{
 		Layout,
 		Rect,
 	},
+	widgets::Paragraph,
 	Frame,
 };
 
@@ -121,7 +122,7 @@ impl Screen for GameSelectionScreen {
 				KeyCode::Left => self.decrease_searches_shown(),
 				KeyCode::Right => self.increase_searches_shown(),
 				KeyCode::Enter if self.game_results_list.scroll_tracker.is_selected() => {
-					self.selected_game = true
+					self.selected_game = true;
 				},
 				_ => {},
 			}
@@ -134,8 +135,8 @@ impl Screen for GameSelectionScreen {
 		frame.render_widget(titled_ui_block("Select a game!"), size);
 		let chunks = Self::game_selection_layout(size).split(size);
 
-		let search_term = self.search_term.as_deref();
-		render_search_section(frame, chunks[0], search_term);
+		render_search_section(frame, chunks[0], self.search_term.as_deref());
+
 		self.game_results_list.render(frame, chunks[1]);
 		render_search_bottom_bar(
 			frame,
@@ -189,7 +190,7 @@ impl GameSelectionScreen {
 	/// Updates the search results.
 	fn update_search_results(&mut self) {
 		let timer = std::time::Instant::now();
-		self.search_results = get_games_by_search_term(self.search_term.clone())
+		self.search_results = get_games_by_search_term(&self.search_term)
 			.into_iter()
 			.map(|game| game.metadata())
 			.collect();
@@ -239,7 +240,7 @@ impl GameSelectionScreen {
 	fn increase_searches_shown(&mut self) {
 		let count = self.game_results_list.scroll_tracker.display_count.unwrap();
 		if count < min(10, self.search_results.len()) {
-			self.game_results_list.scroll_tracker.modify_display_range(1).unwrap();
+			self.game_results_list.scroll_tracker.modify_display_range(1);
 		}
 	}
 
@@ -247,7 +248,7 @@ impl GameSelectionScreen {
 	fn decrease_searches_shown(&mut self) {
 		let count = self.game_results_list.scroll_tracker.display_count.unwrap();
 		if count > min(5, self.search_results.len()) {
-			self.game_results_list.scroll_tracker.modify_display_range(-1).unwrap();
+			self.game_results_list.scroll_tracker.modify_display_range(-1);
 		}
 	}
 }

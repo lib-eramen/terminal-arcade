@@ -103,15 +103,12 @@ impl Screen for WelcomeScreen {
 		let chunks = Layout::default()
 			.direction(Direction::Vertical)
 			.margin(1)
-			.constraints(
-				[
-					Constraint::Max(16), // Banner's height + borders
-					Constraint::Max(11), // Controls list block's height
-					Constraint::Max(empty_space_height),
-					Constraint::Max(5), // Bottom bar
-				]
-				.as_ref(),
-			)
+			.constraints([
+				Constraint::Max(16), // Banner's height + borders
+				Constraint::Max(11), // Controls list block's height
+				Constraint::Max(empty_space_height),
+				Constraint::Max(5), // Bottom bar
+			])
 			.horizontal_margin(2)
 			.split(size);
 		let banner = Paragraph::new(BANNER).block(untitled_ui_block()).alignment(Alignment::Center);

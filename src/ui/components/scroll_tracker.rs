@@ -138,17 +138,12 @@ impl ScrollTracker {
 	}
 
 	/// Modifies the number of items shown at once by the offset given.
-	pub fn modify_display_range(&mut self, offset: i64) -> anyhow::Result<()> {
-		Ok(if let Some(ref mut count) = self.display_count {
-			if offset.is_negative() && offset.abs() > *count as i64 {
-				bail!("Offset turns display count negative")
-			}
-			*count = if offset.is_negative() {
-				count.checked_sub(offset.wrapping_abs() as u32 as usize)
-			} else {
-				count.checked_add(offset as usize)
-			}
-			.unwrap()
-		})
+	/// If there is not a range set,
+	/// nothing happens.
+	#[allow(clippy::cast_sign_loss)]
+	pub fn modify_display_range(&mut self, offset: isize) {
+		if let Some(ref mut count) = self.display_count {
+			*count = (*count as isize + offset) as usize;
+		}
 	}
 }

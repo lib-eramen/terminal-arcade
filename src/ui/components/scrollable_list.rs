@@ -43,7 +43,7 @@ pub struct ScrollableList {
 	pub scroll_tracker: ScrollTracker,
 
 	/// Maximum number of lines allowed for one list item.
-	pub max_item_lines: u64,
+	pub max_item_lines: u16,
 
 	/// Direction this list goes in.
 	pub direction: Direction,
@@ -60,7 +60,7 @@ impl ScrollableList {
 	pub fn new(
 		items: Vec<(Option<String>, String)>,
 		display_count: Option<usize>,
-		max_item_lines: u64,
+		max_item_lines: u16,
 		direction: Direction,
 		text_alignment: Alignment,
 		custom_margins: Option<(u16, u16)>,
@@ -78,6 +78,7 @@ impl ScrollableList {
 	}
 
 	/// Returns the selected item in the list.
+	#[must_use]
 	pub fn get_selected(&self) -> Option<&ItemData> {
 		if let Some(selected) = self.scroll_tracker.selected {
 			self.items.get(selected)
@@ -90,7 +91,19 @@ impl ScrollableList {
 	pub fn render(&self, frame: &mut Frame<'_>, area: Rect) {
 		let chunks = self.get_layout().split(area);
 		for (position, index) in self.scroll_tracker.get_displayed_range().enumerate() {
-			self.render_item(frame, chunks[position], index);
+			self.render_raw_item(frame, chunks[position], index, None);
+		}
+	}
+
+	/// Renders this list with a custom closure to process the raw string
+	/// displayed on the list.
+	pub fn render_processed<P>(&self, frame: &mut Frame<'_>, area: Rect, processor: P)
+	where
+		P: Fn(&str) -> Paragraph<'_>,
+	{
+		let chunks = self.get_layout().split(area);
+		for (position, index) in self.scroll_tracker.get_displayed_range().enumerate() {
+			self.render_item_processed(frame, chunks[position], index, &processor);
 		}
 	}
 
@@ -99,24 +112,53 @@ impl ScrollableList {
 	/// # Panics
 	///
 	/// This function panics when the index is outside of the list's items.
-	pub fn render_item(&self, frame: &mut Frame<'_>, area: Rect, index: usize) {
+	fn render_raw_item(
+		&self,
+		frame: &mut Frame<'_>,
+		area: Rect,
+		index: usize,
+		custom_paragraph: Option<Paragraph<'_>>,
+	) {
 		let item = self.items.get(index).expect("Index outside of list's range.");
-		let mut item_block = titled_ui_block(item.0.as_ref().unwrap_or(&"".to_string()))
-			.title_alignment(self.text_alignment);
+		let mut item_block = titled_ui_block(format!(
+			"{} ─ {}",
+			index + 1,
+			item.0.as_ref().unwrap_or(&String::new())
+		))
+		.title_alignment(self.text_alignment);
 		if self.scroll_tracker.selected.map_or(false, |selected| selected == index) {
 			item_block = highlight_block(item_block);
 		}
-		let item_paragraph = Paragraph::new::<&str>(item.1.as_ref())
-			.alignment(self.text_alignment)
-			.block(item_block);
+		let paragraph = custom_paragraph.unwrap_or_else(|| Paragraph::new::<&str>(item.1.as_ref()));
+		let item_paragraph = paragraph.alignment(self.text_alignment).block(item_block);
 		frame.render_widget(item_paragraph, area);
+	}
+
+	/// Renders one item of this list after being passed through a processor
+	/// function.
+	///
+	/// # Panics
+	///
+	/// This function panics when the index is outside of the list's items.
+	pub fn render_item_processed<P>(
+		&self,
+		frame: &mut Frame<'_>,
+		area: Rect,
+		index: usize,
+		processor: P,
+	) where
+		P: Fn(&str) -> Paragraph<'_>,
+	{
+		let item = self.items.get(index).expect("Index outside of list's range.");
+		let paragraph = processor(item.1.as_ref());
+		self.render_raw_item(frame, area, index, Some(paragraph));
 	}
 
 	/// Returns the layout for this list. Put simply, the layout is only a list
 	/// of vertically-scrolling boxes.
+	#[must_use]
 	pub fn get_layout(&self) -> Layout {
-		let mut constraints =
-			vec![Constraint::Max(self.max_item_lines as u16); self.items.len() as usize];
+		let mut constraints = vec![Constraint::Max(self.max_item_lines); self.items.len()];
 		constraints.push(Constraint::Max(0));
 
 		Layout::default()
