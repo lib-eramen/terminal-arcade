@@ -14,8 +14,14 @@ use ratatui::{
 		Direction,
 		Layout,
 	},
-	prelude::Rect,
-	widgets::Paragraph,
+	prelude::{
+		Buffer,
+		Rect,
+	},
+	widgets::{
+		Paragraph,
+		Widget,
+	},
 	Frame,
 };
 

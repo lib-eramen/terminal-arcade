@@ -51,9 +51,9 @@ pub fn render_search_bar_top_row(frame: &mut Frame<'_>, size: Rect, search_term:
 		Paragraph::new("⏪ Back").alignment(Alignment::Center).block(untitled_ui_block());
 	frame.render_widget(back_button, chunks[0]);
 
-	let search_bar_text = search_term.map_or_else(
-		|| " 🔎︎ Search...".to_string(),
-		|term| format!(" 🔎︎ {term}█"),
+	let search_bar_text = format!(
+		"🔎︎ {}",
+		search_term.map_or_else(|| "Search...".to_string(), |term| format!("{term}█"),)
 	);
 	let search_bar =
 		Paragraph::new(search_bar_text).alignment(Alignment::Left).block(untitled_ui_block());

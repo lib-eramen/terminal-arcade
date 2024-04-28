@@ -38,10 +38,7 @@ use crate::{
 				ListItem,
 				ScrollableList,
 			},
-			welcome::{
-				controls::render_welcome_controls_block,
-				footer::render_welcome_bottom_bar,
-			},
+			welcome::footer::render_welcome_bottom_bar,
 		},
 		screens::{
 			config::ConfigScreen,
@@ -108,7 +105,7 @@ impl Default for WelcomeScreen {
 				ListItem::new(
 					None,
 					ControlOptions::ViewSettings,
-					Some("⚙️ View your settings...".to_string()),
+					Some("🗜️ View your settings...".to_string()),
 				),
 				ListItem::new(
 					None,

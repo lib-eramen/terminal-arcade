@@ -152,8 +152,7 @@ impl<'a> GameMetadata {
 	#[must_use]
 	pub fn get_entry_text(&self) -> String {
 		format!(
-			"📛 Name: {}\n📄 Description: {}\n👷 Created at: v{}\n{}",
-			self.static_info.name,
+			"📄 Description: {}\n👷 Created at: v{}\n{}",
 			self.static_info.description,
 			self.static_info.version_created,
 			self.dynamic_info.get_status_text(),
@@ -206,9 +205,10 @@ impl GameStaticInfo {
 	/// Returns whether the game's metadata matches a certain term.
 	#[must_use]
 	pub fn matches_keyword(&self, keyword: &str) -> bool {
+		let keyword = keyword.trim().to_lowercase();
 		[&self.name, &self.description, &self.version_created]
 			.into_iter()
-			.any(|field| field.contains(keyword))
+			.any(|field| field.to_lowercase().contains(&keyword))
 	}
 }
 

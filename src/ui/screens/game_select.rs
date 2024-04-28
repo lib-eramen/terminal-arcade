@@ -92,7 +92,7 @@ impl Default for GameSelectionScreen {
 			game_results_list: ScrollableList::new(
 				list_entries,
 				Some(5),
-				4,
+				3,
 				Direction::Vertical,
 				Alignment::Center,
 				None,
