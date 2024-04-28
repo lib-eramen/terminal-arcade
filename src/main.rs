@@ -27,5 +27,7 @@ pub mod ui;
 
 fn main() -> anyhow::Result<()> {
 	let _ = color_eyre::install();
-	Handler::new().startup()
+	Handler::new().startup()?;
+	println!("See you next time! 👋");
+	Ok(())
 }
