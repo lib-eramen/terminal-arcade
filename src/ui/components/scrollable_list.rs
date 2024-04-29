@@ -4,6 +4,7 @@
 use std::{
 	cmp::min,
 	fmt::Display,
+	time::Duration,
 };
 
 use derive_new::new;
@@ -18,10 +19,7 @@ use ratatui::{
 		Buffer,
 		Rect,
 	},
-	style::{
-		Modifier,
-		Styled,
-	},
+	style::Modifier,
 	widgets::{
 		Paragraph,
 		Widget,
@@ -30,7 +28,7 @@ use ratatui::{
 };
 
 use crate::ui::components::{
-	flicker_counter::GLOBAL_FLICKER_COUNTER,
+	flicker_counter::FlickerCounter,
 	presets::{
 		highlight_block,
 		titled_ui_block,
@@ -62,32 +60,35 @@ impl<D: ToString> ListItem<D> {
 
 /// A scrollable list that highlights the chosen element, with adjustable view
 /// range.
-/// This API exposes the underlying (scroll tracker)[ScrollTracker] for access
+/// This API exposes the underlying [scroll tracker](ScrollTracker) for access
 /// to its API as well, containing functionality for changing the size of the
 /// displayed list as well as scrolling.
 #[derive(Clone)]
 #[must_use]
-pub struct ScrollableList<D: ToString> {
+pub struct ScrollableList<D: ToString + Clone> {
 	/// Items to be displayed.
-	pub items: Vec<ListItem<D>>,
+	items: Vec<ListItem<D>>,
 
 	/// Scroll tracker for this list.
-	pub scroll_tracker: ScrollTracker,
+	scroll_tracker: ScrollTracker,
 
 	/// Maximum number of lines allowed for one list item.
-	pub max_item_lines: u16,
+	max_item_lines: u16,
 
 	/// Direction this list goes in.
-	pub direction: Direction,
+	direction: Direction,
 
 	/// Text alignment on the item blocks.
-	pub text_alignment: Alignment,
+	text_alignment: Alignment,
 
 	/// Margins for the list, vertically then horizontally.
-	pub margins: (u16, u16),
+	margins: (u16, u16),
+
+	/// Flicker counter for the list.
+	flicker_counter: FlickerCounter,
 }
 
-impl<D: ToString> ScrollableList<D> {
+impl<D: ToString + Clone> ScrollableList<D> {
 	/// Create a new scrollable list.
 	pub fn new(
 		items: Vec<ListItem<D>>,
@@ -96,16 +97,20 @@ impl<D: ToString> ScrollableList<D> {
 		direction: Direction,
 		text_alignment: Alignment,
 		custom_margins: Option<(u16, u16)>,
+		custom_flicker_duration: Option<Duration>,
 	) -> Self {
-		let tracker = ScrollTracker::new(items.len(), display_count);
+		let scroll_tracker = ScrollTracker::new(items.len(), display_count);
 		let margins = custom_margins.unwrap_or((1, 2));
+		let flicker_counter =
+			FlickerCounter::new(custom_flicker_duration.unwrap_or(Duration::from_secs_f32(0.5)));
 		Self {
 			items,
-			scroll_tracker: tracker,
+			scroll_tracker,
 			max_item_lines,
 			direction,
 			text_alignment,
 			margins,
+			flicker_counter,
 		}
 	}
 
@@ -120,7 +125,7 @@ impl<D: ToString> ScrollableList<D> {
 	}
 
 	/// Renders this list.
-	pub fn render(&self, frame: &mut Frame<'_>, area: Rect) {
+	pub fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
 		let chunks = self.get_layout().split(area);
 		for (position, index) in self.scroll_tracker.get_displayed_range().enumerate() {
 			self.render_raw_item(frame, chunks[position], index, None);
@@ -129,13 +134,15 @@ impl<D: ToString> ScrollableList<D> {
 
 	/// Renders this list with a custom closure to process the raw string
 	/// displayed on the list.
-	pub fn render_processed<P>(&self, frame: &mut Frame<'_>, area: Rect, processor: P)
+	pub fn render_processed<P>(&mut self, frame: &mut Frame<'_>, area: Rect, processor: P)
 	where
 		P: Fn(&ListItem<D>) -> Paragraph<'_>,
 	{
 		let chunks = self.get_layout().split(area);
+		let items = self.items.clone();
 		for (position, index) in self.scroll_tracker.get_displayed_range().enumerate() {
-			self.render_item_processed(frame, chunks[position], index, &processor);
+			let item = items.get(index).expect("Index outside of list's range.");
+			self.render_item_processed(frame, chunks[position], item, index, &processor);
 		}
 	}
 
@@ -145,7 +152,7 @@ impl<D: ToString> ScrollableList<D> {
 	///
 	/// This function panics when the index is outside of the list's items.
 	fn render_raw_item(
-		&self,
+		&mut self,
 		frame: &mut Frame<'_>,
 		area: Rect,
 		index: usize,
@@ -160,15 +167,16 @@ impl<D: ToString> ScrollableList<D> {
 		.title_alignment(self.text_alignment);
 		if self.get_selected().map_or(false, |(selected_index, _)| index == selected_index) {
 			let mut style = HIGHLIGHTED;
-			if GLOBAL_FLICKER_COUNTER.lock().unwrap().is_off() {
+			if self.flicker_counter.is_off() {
 				style = style.add_modifier(Modifier::DIM);
 			}
-			item_block = item_block.style(style);
+			item_block = highlight_block(item_block).style(style);
 		}
 		let paragraph =
 			custom_paragraph.unwrap_or_else(|| Paragraph::new(item.get_displayed_data()));
 		let item_paragraph = paragraph.alignment(self.text_alignment).block(item_block);
 		frame.render_widget(item_paragraph, area);
+		self.flicker_counter.update();
 	}
 
 	/// Renders one item of this list after being passed through a processor
@@ -178,15 +186,15 @@ impl<D: ToString> ScrollableList<D> {
 	///
 	/// This function panics when the index is outside of the list's items.
 	fn render_item_processed<P>(
-		&self,
+		&mut self,
 		frame: &mut Frame<'_>,
 		area: Rect,
+		item: &ListItem<D>,
 		index: usize,
 		processor: P,
 	) where
 		P: Fn(&ListItem<D>) -> Paragraph<'_>,
 	{
-		let item = self.items.get(index).expect("Index outside of list's range.");
 		let paragraph = processor(item);
 		self.render_raw_item(frame, area, index, Some(paragraph));
 	}
@@ -205,10 +213,42 @@ impl<D: ToString> ScrollableList<D> {
 			.constraints(constraints)
 	}
 
+	/// Returns
+
 	/// Updates items this list displays as well as the length of the underlying
 	/// scroll tracker.
 	pub fn update_items(&mut self, items: Vec<ListItem<D>>) {
 		self.items = items;
 		self.scroll_tracker.set_length(self.items.len());
+	}
+
+	/// Scrolls the list forward, or back to start if the list is at the end.
+	pub fn scroll_forward(&mut self) {
+		self.scroll_tracker.scroll_forward();
+		self.flicker_counter.reset();
+	}
+
+	/// Scrolls the list forward, or back to start if the list is at the end.
+	pub fn scroll_backward(&mut self) {
+		self.scroll_tracker.scroll_backward();
+		self.flicker_counter.reset();
+	}
+
+	/// Scrolls the list to a random position.
+	pub fn scroll_to_random(&mut self) {
+		self.scroll_tracker.scroll_to_random();
+		self.flicker_counter.reset();
+	}
+
+	/// Gets the list's display count.
+	#[must_use]
+	pub fn get_display_count(&self) -> Option<usize> {
+		self.scroll_tracker.display_count
+	}
+
+	/// Sets the list's display count.
+	pub fn set_display_count(&mut self, display_count: usize) {
+		assert!(display_count > 0);
+		self.scroll_tracker.set_display_count(display_count);
 	}
 }

@@ -10,13 +10,6 @@ use std::{
 
 use lazy_static::lazy_static;
 
-lazy_static! {
-	/// The global flicker counter with a 0.5s interval.
-	/// Use this instance and update this instance only if you want flicker effects
-	/// to sync together.
-	pub static ref GLOBAL_FLICKER_COUNTER: Mutex<FlickerCounter> = Mutex::new(FlickerCounter::new(Duration::from_secs_f32(0.5)));
-}
-
 /// A flicker state.
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -51,6 +44,16 @@ pub struct FlickerCounter {
 	pub state: FlickerState,
 }
 
+impl Default for FlickerCounter {
+	fn default() -> Self {
+		Self {
+			last_time: Instant::now(),
+			interval: Duration::from_secs_f32(0.5),
+			state: FlickerState::On,
+		}
+	}
+}
+
 impl FlickerCounter {
 	/// Creates a new flicker counter, the state initially being
 	/// [`FlickerState::Appearing`].
@@ -71,10 +74,9 @@ impl FlickerCounter {
 	}
 
 	/// Updates the counter with the [`Instant::now`] time.
-	pub fn update_by_now(&mut self) {
+	pub fn reset(&mut self) {
 		self.last_time = Instant::now();
 		self.state = FlickerState::On;
-		self.update();
 	}
 
 	/// [Updates the counter](update) with a given global time.

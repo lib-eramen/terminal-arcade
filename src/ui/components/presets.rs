@@ -44,5 +44,8 @@ pub fn untitled_ui_block<'a>() -> Block<'a> {
 /// Highlights a block by setting the borders to [`Color::White`]
 #[must_use]
 pub fn highlight_block(block: Block<'_>) -> Block<'_> {
-	block.border_style(Style::default().fg(Color::White)).style(HIGHLIGHTED.fg(Color::White))
+	block
+		.style(HIGHLIGHTED)
+		.title_style(HIGHLIGHTED.fg(Color::White))
+		.border_style(Style::new().fg(Color::White))
 }

@@ -118,6 +118,7 @@ impl Default for WelcomeScreen {
 			Direction::Vertical,
 			Alignment::Center,
 			None,
+			None,
 		);
 		Self {
 			closing: false,
@@ -160,8 +161,8 @@ impl Screen for WelcomeScreen {
 					}
 					self.handle_char_shortcut(character);
 				},
-				KeyCode::Up => self.controls_list.scroll_tracker.scroll_forward(),
-				KeyCode::Down => self.controls_list.scroll_tracker.scroll_backward(),
+				KeyCode::Up => self.controls_list.scroll_forward(),
+				KeyCode::Down => self.controls_list.scroll_backward(),
 				KeyCode::Enter => self.handle_enter_shortcut(),
 				_ => {},
 			}

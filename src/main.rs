@@ -23,10 +23,7 @@ use std::time::Duration;
 
 use crate::{
 	core::Handler,
-	ui::components::flicker_counter::{
-		FlickerCounter,
-		GLOBAL_FLICKER_COUNTER,
-	},
+	ui::components::flicker_counter::FlickerCounter,
 };
 
 pub mod core;

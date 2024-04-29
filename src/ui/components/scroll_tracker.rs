@@ -136,14 +136,4 @@ impl ScrollTracker {
 	pub fn set_display_count(&mut self, new_range: usize) {
 		self.display_count = Some(min(self.length, new_range));
 	}
-
-	/// Modifies the number of items shown at once by the offset given.
-	/// If there is not a range set,
-	/// nothing happens.
-	#[allow(clippy::cast_sign_loss)]
-	pub fn modify_display_range(&mut self, offset: isize) {
-		if let Some(ref mut count) = self.display_count {
-			*count = (*count as isize + offset) as usize;
-		}
-	}
 }

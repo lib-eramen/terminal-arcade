@@ -60,7 +60,6 @@ use self::terminal::get_terminal;
 use crate::{
 	core::terminal::get_mut_terminal,
 	ui::{
-		components::flicker_counter::GLOBAL_FLICKER_COUNTER,
 		util::clear_terminal,
 		Screen,
 		WelcomeScreen,
@@ -126,7 +125,6 @@ impl Handler {
 	fn run(&mut self) -> anyhow::Result<()> {
 		let sixty_fps_in_ms = 16;
 		loop {
-			GLOBAL_FLICKER_COUNTER.lock().unwrap().update();
 			self.draw_active_screen_ui()?;
 			let poll_status = poll(Duration::from_millis(sixty_fps_in_ms))?;
 			if poll_status && self.event_loop(&read()?)? {

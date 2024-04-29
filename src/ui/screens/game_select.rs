@@ -38,6 +38,7 @@ use crate::{
 	},
 	ui::{
 		components::{
+			flicker_counter::FlickerCounter,
 			game_select::{
 				search_bottom_bar::render_search_bottom_bar,
 				search_section::render_search_section,
@@ -96,6 +97,7 @@ impl Default for GameSelectionScreen {
 				Direction::Vertical,
 				Alignment::Center,
 				None,
+				None,
 			),
 			time_to_search_secs: 0.0,
 		}
@@ -107,7 +109,7 @@ impl Screen for GameSelectionScreen {
 		if let Event::Key(key) = event {
 			match key.code {
 				KeyCode::Char('r') if key.modifiers == KeyModifiers::CONTROL => {
-					self.game_results_list.scroll_tracker.scroll_to_random();
+					self.game_results_list.scroll_to_random();
 				},
 				KeyCode::Char('d') if key.modifiers == KeyModifiers::CONTROL => {
 					self.clear_search_term();
@@ -118,11 +120,15 @@ impl Screen for GameSelectionScreen {
 				{
 					self.add_character_to_term(character, key.modifiers);
 				},
-				KeyCode::Up => self.game_results_list.scroll_tracker.scroll_forward(),
-				KeyCode::Down => self.game_results_list.scroll_tracker.scroll_backward(),
+				KeyCode::Up => {
+					self.game_results_list.scroll_forward();
+				},
+				KeyCode::Down => {
+					self.game_results_list.scroll_backward();
+				},
 				KeyCode::Left => self.decrease_searches_shown(),
 				KeyCode::Right => self.increase_searches_shown(),
-				KeyCode::Enter if self.game_results_list.scroll_tracker.is_selected() => {
+				KeyCode::Enter if self.game_results_list.get_selected().is_some() => {
 					self.selected_game = true;
 				},
 				_ => {},
@@ -137,17 +143,13 @@ impl Screen for GameSelectionScreen {
 		let chunks = Self::game_selection_layout(size).split(size);
 
 		render_search_section(frame, chunks[0], self.search_term.as_deref());
-
 		self.game_results_list.render(frame, chunks[1]);
 		render_search_bottom_bar(
 			frame,
 			chunks[2],
 			self.search_results.len(),
 			self.time_to_search_secs,
-			max(
-				self.game_results_list.scroll_tracker.display_count.unwrap(),
-				5,
-			),
+			max(self.game_results_list.get_display_count().unwrap(), 5),
 		);
 	}
 
@@ -239,17 +241,17 @@ impl GameSelectionScreen {
 
 	/// Increases the number of shown searches, capping out at 10.
 	fn increase_searches_shown(&mut self) {
-		let count = self.game_results_list.scroll_tracker.display_count.unwrap();
+		let count = self.game_results_list.get_display_count().unwrap();
 		if count < min(10, self.search_results.len()) {
-			self.game_results_list.scroll_tracker.modify_display_range(1);
+			self.game_results_list.set_display_count(count + 1);
 		}
 	}
 
 	/// Decreases the number of shown searches, capping out at 5.
 	fn decrease_searches_shown(&mut self) {
-		let count = self.game_results_list.scroll_tracker.display_count.unwrap();
+		let count = self.game_results_list.get_display_count().unwrap();
 		if count > min(5, self.search_results.len()) {
-			self.game_results_list.scroll_tracker.modify_display_range(-1);
+			self.game_results_list.set_display_count(count - 1);
 		}
 	}
 }
