@@ -21,7 +21,7 @@ use ratatui::{
 
 /// A "highlighted" text [Style] (bold + italic + underlined).
 pub const HIGHLIGHTED: Style =
-	Style::new().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC);
+	Style::new().add_modifier(Modifier::BOLD).add_modifier(Modifier::ITALIC).fg(Color::White);
 
 /// The default [`ratatui`] block template, with a styled title.
 #[must_use]

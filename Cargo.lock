@@ -988,6 +988,7 @@ dependencies = [
  "derive_builder",
  "git_info",
  "home",
+ "lazy_static",
  "once_cell",
  "palette",
  "pluralizer",

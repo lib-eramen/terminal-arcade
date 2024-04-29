@@ -19,14 +19,26 @@
 	unused_imports
 )]
 
-use crate::core::Handler;
+use std::time::Duration;
+
+use crate::{
+	core::Handler,
+	ui::components::flicker_counter::{
+		FlickerCounter,
+		GLOBAL_FLICKER_COUNTER,
+	},
+};
 
 pub mod core;
 pub mod games;
 pub mod ui;
 
-fn main() -> anyhow::Result<()> {
+fn initialize() {
 	let _ = color_eyre::install();
+}
+
+fn main() -> anyhow::Result<()> {
+	initialize();
 	Handler::new().startup()?;
 	println!("See you next time! 👋");
 	Ok(())

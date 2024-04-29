@@ -18,6 +18,10 @@ use ratatui::{
 		Buffer,
 		Rect,
 	},
+	style::{
+		Modifier,
+		Styled,
+	},
 	widgets::{
 		Paragraph,
 		Widget,
@@ -26,9 +30,11 @@ use ratatui::{
 };
 
 use crate::ui::components::{
+	flicker_counter::GLOBAL_FLICKER_COUNTER,
 	presets::{
 		highlight_block,
 		titled_ui_block,
+		HIGHLIGHTED,
 	},
 	scroll_tracker::ScrollTracker,
 };
@@ -56,9 +62,9 @@ impl<D: ToString> ListItem<D> {
 
 /// A scrollable list that highlights the chosen element, with adjustable view
 /// range.
-/// This API exposes the underlying scroll tracker for access to its API as
-/// well, containing functionality for changing the size of the displayed list
-/// as well as scrolling.
+/// This API exposes the underlying (scroll tracker)[ScrollTracker] for access
+/// to its API as well, containing functionality for changing the size of the
+/// displayed list as well as scrolling.
 #[derive(Clone)]
 #[must_use]
 pub struct ScrollableList<D: ToString> {
@@ -152,8 +158,12 @@ impl<D: ToString> ScrollableList<D> {
 			item.name.as_ref().map_or(String::new(), |s| format!(" ─ {s}"))
 		))
 		.title_alignment(self.text_alignment);
-		if self.scroll_tracker.selected.map_or(false, |selected| selected == index) {
-			item_block = highlight_block(item_block);
+		if self.get_selected().map_or(false, |(selected_index, _)| index == selected_index) {
+			let mut style = HIGHLIGHTED;
+			if GLOBAL_FLICKER_COUNTER.lock().unwrap().is_off() {
+				style = style.add_modifier(Modifier::DIM);
+			}
+			item_block = item_block.style(style);
 		}
 		let paragraph =
 			custom_paragraph.unwrap_or_else(|| Paragraph::new(item.get_displayed_data()));
