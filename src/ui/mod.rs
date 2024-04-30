@@ -5,7 +5,10 @@
 
 pub mod color_scheme;
 pub mod components;
+pub mod popup;
+pub mod screen;
 pub mod screens;
 pub mod util;
 
+pub use screen::Screen;
 pub use screens::*;
