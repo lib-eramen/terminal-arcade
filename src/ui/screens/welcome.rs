@@ -40,9 +40,15 @@ use crate::{
 			},
 			welcome::footer::render_welcome_bottom_bar,
 		},
+		screen::{
+			OpenStatus,
+			ScreenKind,
+			ScreenState,
+			Screens,
+		},
 		screens::{
 			config::ConfigScreen,
-			game_select::GameSelectionScreen,
+			game_select::GameSearchScreen,
 		},
 		util::get_crate_version,
 		Screen,
@@ -65,30 +71,18 @@ pub const BANNER: &str = r"/‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾�
 /                             /  / /‾/ / / / / / /  ‾‾‾/ / /‾‾‾‾\ \ \  / /  ‾‾/  
 ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾   ‾‾  ‾‾  ‾‾  ‾‾  ‾‾‾‾‾‾  ‾‾      ‾‾  ‾‾  ‾‾‾‾‾   ";
 
-/// Screens that can be created by the welcome screen.
-#[derive(PartialEq, Eq, Clone, Copy)]
-enum ScreenCreated {
-	GameSearch,
-	Settings,
-}
-
 /// Control options available at the welcome screen.
 #[derive(Clone, Copy, PartialEq, Eq, Display)]
 enum ControlOptions {
 	SearchGames,
-	ViewSettings,
+	ViewConfigs,
 	QuitApplication,
 }
 
 /// The struct that welcomes the user to Terminal Arcade. To be presented every
 /// time Terminal Arcade is started.
+#[derive(Clone)]
 pub struct WelcomeScreen {
-	/// Whether this screen is closing or not.
-	closing: bool,
-
-	/// Screen that this screen is spawning.
-	screen_created: Option<ScreenCreated>,
-
 	/// Scrollable list widget for options.
 	controls_list: ScrollableList<ControlOptions>,
 }
@@ -104,7 +98,7 @@ impl Default for WelcomeScreen {
 				),
 				ListItem::new(
 					None,
-					ControlOptions::ViewSettings,
+					ControlOptions::ViewConfigs,
 					Some("🗜️ View your settings...".to_string()),
 				),
 				ListItem::new(
@@ -120,20 +114,16 @@ impl Default for WelcomeScreen {
 			None,
 			None,
 		);
-		Self {
-			closing: false,
-			screen_created: None,
-			controls_list,
-		}
+		Self { controls_list }
 	}
 }
 
 impl Screen for WelcomeScreen {
-	fn title(&self) -> &str {
-		"Terminal Arcade"
+	fn initial_state(&self) -> ScreenState {
+		ScreenState::new("Terminal Arcade", ScreenKind::Normal, None)
 	}
 
-	fn render_screen(&mut self, frame: &mut Frame<'_>) {
+	fn render_screen(&mut self, frame: &mut Frame<'_>, _state: &ScreenState) {
 		let size = frame.size();
 		let used_ui_height = 16 + 11 + 5 + 6;
 		let empty_space_height =
@@ -155,81 +145,32 @@ impl Screen for WelcomeScreen {
 		render_welcome_bottom_bar(frame, chunks[3]);
 	}
 
-	fn event(&mut self, event: &Event) -> anyhow::Result<()> {
+	fn event(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()> {
 		if let Event::Key(key) = event {
 			match key.code {
-				KeyCode::Char(character) => {
-					if key.modifiers != KeyModifiers::NONE {
-						return Ok(());
-					}
-					self.handle_char_shortcut(character);
-				},
 				KeyCode::Up => self.controls_list.scroll_forward(),
 				KeyCode::Down => self.controls_list.scroll_backward(),
-				KeyCode::Enter => self.handle_enter_shortcut(),
+				KeyCode::Enter => self.handle_enter_shortcut(state),
 				_ => {},
 			}
 		}
 		Ok(())
 	}
-
-	fn screen_created(&mut self) -> Option<Box<dyn Screen>> {
-		if let Some(screen) = self.screen_created {
-			let screen_created = match screen {
-				ScreenCreated::GameSearch => Self::create_game_selection_screen(),
-				ScreenCreated::Settings => Self::create_settings_screen(),
-			};
-			self.screen_created = None;
-			Some(screen_created)
-		} else {
-			None
-		}
-	}
-
-	fn is_closing(&self) -> bool {
-		self.closing
-	}
 }
 
 impl WelcomeScreen {
-	/// Marks the screen as closed.
-	fn mark_closed(&mut self) {
-		self.closing = true;
-	}
-
-	/// Sets the screen to be created from this welcome screen.
-	fn set_screen_created(&mut self, screen_created: ScreenCreated) {
-		self.screen_created = Some(screen_created);
-	}
-
-	/// Creates the game selection screen to switch to from this screen.
-	fn create_game_selection_screen() -> Box<dyn Screen> {
-		Box::<GameSelectionScreen>::default()
-	}
-
-	/// Creates the settings screen to switch to from this screen.
-	fn create_settings_screen() -> Box<dyn Screen> {
-		Box::<ConfigScreen>::default()
-	}
-
-	/// Handles the shortcut associated with the character inputted.
-	fn handle_char_shortcut(&mut self, character: char) {
-		match character {
-			'1' | 'p' => self.set_screen_created(ScreenCreated::GameSearch),
-			'2' | 'c' => self.set_screen_created(ScreenCreated::Settings),
-			'0' | 'q' => self.mark_closed(),
-			_ => {},
-		}
-	}
-
 	/// Handles the ENTER shortcut, which executes the function that the UI
 	/// selector is pointing at.
-	fn handle_enter_shortcut(&mut self) {
+	fn handle_enter_shortcut(&mut self, state: &mut ScreenState) {
 		if let Some((_, item)) = self.controls_list.get_selected() {
 			match item.data {
-				ControlOptions::SearchGames => self.set_screen_created(ScreenCreated::GameSearch),
-				ControlOptions::ViewSettings => self.set_screen_created(ScreenCreated::Settings),
-				ControlOptions::QuitApplication => self.mark_closed(),
+				ControlOptions::SearchGames => {
+					state.screen_created = Some(GameSearchScreen::default().into());
+				},
+				ControlOptions::ViewConfigs => {
+					state.screen_created = Some(ConfigScreen.into());
+				},
+				ControlOptions::QuitApplication => state.open_status = OpenStatus::Closed,
 			}
 		}
 	}

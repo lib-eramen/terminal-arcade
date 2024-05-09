@@ -50,6 +50,10 @@ use crate::{
 			scroll_tracker::ScrollTracker,
 			scrollable_list::ScrollableList,
 		},
+		screen::{
+			ScreenKind,
+			ScreenState,
+		},
 		Screen,
 	},
 };
@@ -63,15 +67,13 @@ fn uppercase_char(c: char) -> char {
 }
 
 /// The struct for the game selection screen.
-pub struct GameSelectionScreen {
+#[derive(Clone)]
+pub struct GameSearchScreen {
 	/// Search term, inputted by the user.
 	search_term: Option<String>,
 
 	/// Search results.
 	search_results: Vec<GameMetadata>,
-
-	/// Indicates whether a game has been chosen.
-	selected_game: bool,
 
 	/// Scrollable list widget for display.
 	game_results_list: ScrollableList<GameIdentifier>,
@@ -80,7 +82,7 @@ pub struct GameSelectionScreen {
 	time_to_search_secs: f64,
 }
 
-impl Default for GameSelectionScreen {
+impl Default for GameSearchScreen {
 	fn default() -> Self {
 		let all_game_metadata: Vec<GameMetadata> =
 			all_games().iter().map(|game| game.metadata()).collect();
@@ -89,7 +91,6 @@ impl Default for GameSelectionScreen {
 		Self {
 			search_term: None,
 			search_results: all_game_metadata,
-			selected_game: false,
 			game_results_list: ScrollableList::new(
 				list_entries,
 				Some(5),
@@ -104,12 +105,12 @@ impl Default for GameSelectionScreen {
 	}
 }
 
-impl Screen for GameSelectionScreen {
-	fn title(&self) -> &str {
-		"Select a game!"
+impl Screen for GameSearchScreen {
+	fn initial_state(&self) -> ScreenState {
+		ScreenState::new("Search for a game!", ScreenKind::Normal, None)
 	}
 
-	fn event(&mut self, event: &Event) -> anyhow::Result<()> {
+	fn event(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()> {
 		if let Event::Key(key) = event {
 			match key.code {
 				KeyCode::Char('r') if key.modifiers == KeyModifiers::CONTROL => {
@@ -133,7 +134,7 @@ impl Screen for GameSelectionScreen {
 				KeyCode::Left => self.decrease_searches_shown(),
 				KeyCode::Right => self.increase_searches_shown(),
 				KeyCode::Enter if self.game_results_list.get_selected().is_some() => {
-					self.selected_game = true;
+					self.select_game(state);
 				},
 				_ => {},
 			}
@@ -141,7 +142,7 @@ impl Screen for GameSelectionScreen {
 		Ok(())
 	}
 
-	fn render_screen(&mut self, frame: &mut Frame<'_>) {
+	fn render_screen(&mut self, frame: &mut Frame<'_>, _state: &ScreenState) {
 		let size = frame.size();
 		frame.render_widget(titled_ui_block("Select a game!"), size);
 		let chunks = Self::game_selection_layout(size).split(size);
@@ -156,22 +157,9 @@ impl Screen for GameSelectionScreen {
 			max(self.game_results_list.get_display_count().unwrap(), 5),
 		);
 	}
-
-	fn screen_created(&mut self) -> Option<Box<dyn Screen>> {
-		let selected_game = self.game_results_list.get_selected();
-		if !self.selected_game || selected_game.is_none() {
-			return None;
-		}
-		let selection = selected_game.unwrap();
-		Some(get_game_by_identifier(selection.1.data)?.screen_created())
-	}
-
-	fn is_closing(&self) -> bool {
-		self.selected_game
-	}
 }
 
-impl GameSelectionScreen {
+impl GameSearchScreen {
 	/// Returns the layout for the game selection screen.
 	#[must_use]
 	fn game_selection_layout(size: Rect) -> Layout {
@@ -192,6 +180,14 @@ impl GameSelectionScreen {
 			.vertical_margin(1)
 			.horizontal_margin(2)
 			.constraints(constraints)
+	}
+
+	/// Selects a game.
+	fn select_game(&mut self, state: &mut ScreenState) {
+		if let Some(selection) = self.game_results_list.get_selected() {
+			state.screen_created =
+				Some(get_game_by_identifier(selection.1.data).unwrap().screen_created());
+		}
 	}
 
 	/// Updates the search results.

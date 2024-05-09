@@ -10,6 +10,7 @@ use crate::{
 	},
 	ui::{
 		games::minesweeper::board_setup::MinesweeperSetupScreen,
+		screen::Screens,
 		Screen,
 	},
 };
@@ -39,7 +40,7 @@ impl Game for Minesweeper {
 		Ok(())
 	}
 
-	fn screen_created(&self) -> Box<dyn Screen> {
-		Box::new(MinesweeperSetupScreen::new())
+	fn screen_created(&self) -> Screens {
+		MinesweeperSetupScreen::new().into()
 	}
 }

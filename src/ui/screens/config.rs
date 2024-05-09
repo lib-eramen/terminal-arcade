@@ -29,21 +29,25 @@ use crate::{
 			},
 			under_construction::render_under_construction_block,
 		},
+		screen::{
+			ScreenKind,
+			ScreenState,
+		},
 		Screen,
 	},
 };
 
 /// See the [module](self) documentation for more information.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct ConfigScreen;
 
 impl Screen for ConfigScreen {
-	fn title(&self) -> &str {
-		"Under construction! (Probably for a very long time!)"
+	fn initial_state(&self) -> ScreenState {
+		ScreenState::new("Under construction!", ScreenKind::Normal, None)
 	}
 
 	// TODO: why are there only 24 hours in a day
-	fn render_screen(&mut self, frame: &mut Frame<'_>) {
+	fn render_screen(&mut self, frame: &mut Frame<'_>, _state: &ScreenState) {
 		render_under_construction_block(frame);
 	}
 }

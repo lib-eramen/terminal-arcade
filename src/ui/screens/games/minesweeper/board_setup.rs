@@ -15,23 +15,22 @@ use ratatui::{
 	Frame,
 };
 
-use crate::{
-	core::terminal::BackendType,
-	ui::{
-		components::presets::titled_ui_block,
-		Screen,
+use crate::ui::{
+	components::presets::titled_ui_block,
+	screen::{
+		OpenStatus,
+		ScreenKind,
+		ScreenState,
 	},
+	Screen,
 };
 
 /// A setup screen for a board of Minesweeper.
-#[derive(new)]
-pub struct MinesweeperSetupScreen {
-	#[new(default)]
-	setup_complete: bool,
-}
+#[derive(new, Clone)]
+pub struct MinesweeperSetupScreen;
 
 impl MinesweeperSetupScreen {
-	/// Returns the layout for the minesweeper board setup screen.
+	/// Returns the layout for the Minesweeper board setup screen.
 	#[must_use]
 	fn board_setup_layout() -> Layout {
 		let info_panel_height = 3 + 4;
@@ -45,32 +44,23 @@ impl MinesweeperSetupScreen {
 }
 
 impl Screen for MinesweeperSetupScreen {
-	fn title(&self) -> &str {
-		"Mine your field!"
+	fn initial_state(&self) -> ScreenState {
+		ScreenState::new("Mine your field!", ScreenKind::Normal, None)
 	}
 
-	fn render_screen(&mut self, frame: &mut Frame<'_>) {
+	fn render_screen(&mut self, frame: &mut Frame<'_>, _state: &ScreenState) {
 		let size = frame.size();
 		let chunks = Self::board_setup_layout().split(size);
 
 		frame.render_widget(titled_ui_block("Controls"), chunks[0]);
 	}
 
-	fn event(&mut self, event: &Event) -> anyhow::Result<()> {
+	fn event(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()> {
 		if let Event::Key(key) = event {
-			match key.code {
-				KeyCode::Enter => self.setup_complete = true,
-				_ => {},
+			if let KeyCode::Enter = key.code {
+				state.open_status = OpenStatus::Closed;
 			}
 		}
 		Ok(())
-	}
-
-	fn is_closing(&self) -> bool {
-		self.setup_complete
-	}
-
-	fn screen_created(&mut self) -> Option<Box<dyn Screen>> {
-		None
 	}
 }

@@ -57,43 +57,54 @@ use crate::{
 		get_terminal,
 	},
 	ui::{
+		screen::{
+			OpenStatus,
+			ScreenState,
+			Screens,
+		},
 		util::clear_terminal,
 		Screen,
 		WelcomeScreen,
 	},
 };
 
+/// A wrapper struct for a screen and its state
+#[must_use]
+pub struct ScreenAndState {
+	/// The screen itself.
+	pub screen: Screens,
+
+	/// State associated with the screen.
+	pub state: ScreenState,
+}
+
+impl ScreenAndState {
+	/// Creates a new screen and state object.
+	pub fn new(screen: Screens) -> Self {
+		let state = screen.initial_state();
+		Self { screen, state }
+	}
+
+	/// Closes the screen.
+	pub fn close(&mut self) -> anyhow::Result<()> {
+		self.state.open_status = OpenStatus::Closed;
+		self.screen.close()
+	}
+}
+
 /// Core struct to all inner workings in Terminal Arcade.
 /// This struct mostly handles rendering that and managing screens.
-#[derive(Default)]
 #[must_use]
+#[derive(Default)]
 pub struct Handler {
-	/// The screens hierarchy in which Terminal Arcade manages windows.
-	///
-	/// The hierarchy is linear - there is always the root window which is the
-	/// startup screen or setup screen (depending on if the setup has been run
-	/// yet), and it moves on to game screens, setting screens, etc. Simple,
-	/// one-time popups can also take advantage of this structure.
+	/// The screens stack in which Terminal Arcade manages windows.
 	///
 	/// The screen with the highest index in this hierarchy will be the only
 	/// screen visible on the terminal.
-	screens: Vec<Box<dyn Screen>>,
-
-	/// A flag controlling whether the controls popup is showing.
-	/// Every screen has (or should have) a controls popup that alleviates the
-	/// need to directly add controls information onto the screen itself.
-	showing_controls_popup: bool,
+	screen_stack: Vec<ScreenAndState>,
 }
 
 impl Handler {
-	/// Constructs a new Terminal Arcade object.
-	pub fn new() -> Self {
-		Self {
-			screens: vec![],
-			showing_controls_popup: false,
-		}
-	}
-
 	/// Runs the event loop, also returning whether the loop should break.
 	fn event_loop(&mut self, event: &Event) -> anyhow::Result<bool> {
 		Ok(self.handle_terminal_event(event)? || self.handle_active_screen()?)
@@ -119,29 +130,29 @@ impl Handler {
 
 	/// The function to be called when Terminal Arcade is being quitted.
 	fn quit(&mut self) -> anyhow::Result<()> {
-		while !self.screens.is_empty() {
-			self.close_screen()?;
+		while !self.screen_stack.is_empty() {
+			self.close_active_screen()?;
 		}
 		Self::unset_global_terminal_rules()?;
 		Ok(())
 	}
 
 	/// Gets the current active screen ***mutably***.
-	fn get_mut_active_screen(&mut self) -> &mut dyn Screen {
-		self.screens.last_mut().unwrap().as_mut()
+	fn get_mut_active_screen(&mut self) -> &mut ScreenAndState {
+		self.screen_stack.last_mut().unwrap()
 	}
 
 	/// Spawns a screen as active.
-	pub fn spawn_screen(&mut self, screen: Box<dyn Screen>) {
-		self.screens.push(screen);
+	pub fn spawn_screen(&mut self, screen: Screens) {
+		self.screen_stack.push(ScreenAndState::new(screen));
 	}
 
 	/// Closes the active screen.
-	/// In detail, this function pops the screen from the screen hierarchy in
+	/// Rhis function pops the screen from the screen hierarchy in
 	/// Terminal Arcade, and calls its [`Screen::close`] function.
-	pub fn close_screen(&mut self) -> anyhow::Result<()> {
+	pub fn close_active_screen(&mut self) -> anyhow::Result<()> {
 		self.get_mut_active_screen().close()?;
-		let _ = self.screens.pop();
+		let _ = self.screen_stack.pop();
 		Ok(())
 	}
 
@@ -186,11 +197,8 @@ impl Handler {
 	/// Draws the UI of the active screen.
 	fn draw_active_screen_ui(&mut self) -> anyhow::Result<()> {
 		get_mut_terminal().draw(|frame| {
-			self.get_mut_active_screen().render(frame);
-			if self.showing_controls_popup {
-				self.get_mut_active_screen()
-					.draw_controls_popup(frame, get_mut_terminal().current_buffer_mut());
-			}
+			let screen = self.get_mut_active_screen();
+			screen.screen.render(frame, &mut screen.state);
 		})?;
 		Ok(())
 	}
@@ -199,7 +207,7 @@ impl Handler {
 	/// Also returns if there are no screens, and by proxy, if the application
 	/// has been quit.
 	fn quit_when_no_screens(&mut self) -> anyhow::Result<bool> {
-		Ok(if self.screens.is_empty() {
+		Ok(if self.screen_stack.is_empty() {
 			self.quit()?;
 			true
 		} else {
@@ -211,7 +219,7 @@ impl Handler {
 	pub fn startup(&mut self) -> anyhow::Result<()> {
 		let _ = get_terminal(); // This call will initialize the global TERMINAL static variable.
 		Self::set_global_terminal_rules()?;
-		self.spawn_screen(Box::<WelcomeScreen>::default());
+		self.spawn_screen(WelcomeScreen::default().into());
 		self.run()?;
 		Ok(())
 	}
@@ -222,17 +230,17 @@ impl Handler {
 		if self.quit_when_no_screens()? {
 			return Ok(true);
 		}
+
 		let active_screen = self.get_mut_active_screen();
-		let created_screen: Option<Box<dyn Screen>> = active_screen.screen_created();
-		if active_screen.is_closing() {
-			self.close_screen()?;
+		let created_screen = active_screen.state.screen_created.clone();
+		active_screen.state.screen_created = None;
+
+		if active_screen.state.open_status == OpenStatus::Closed {
+			self.close_active_screen()?;
 		}
-		match created_screen {
-			Some(screen) if !screen.is_popup() => {
-				self.spawn_screen(screen);
-			},
-			_ => (),
-		} // when will let chains be stabilized, sigh
+		if let Some(screen) = created_screen {
+			self.spawn_screen(screen);
+		}
 		self.quit_when_no_screens()
 	}
 
@@ -245,17 +253,11 @@ impl Handler {
 					self.quit()?;
 					return Ok(true);
 				}
-				match key.code {
-					KeyCode::Esc => {
-						self.close_screen()?;
-						if self.quit_when_no_screens()? {
-							return Ok(true);
-						}
-					},
-					KeyCode::Tab => {
-						self.showing_controls_popup.toggle();
-					},
-					_ => {},
+				if key.code == KeyCode::Esc {
+					self.close_active_screen()?;
+					if self.quit_when_no_screens()? {
+						return Ok(true);
+					}
 				}
 			},
 			Event::Resize(..) => {
@@ -263,7 +265,8 @@ impl Handler {
 			},
 			_ => {},
 		}
-		self.get_mut_active_screen().event(event)?;
+		let screen = self.get_mut_active_screen();
+		screen.screen.event(event, &mut screen.state)?;
 		Ok(false)
 	}
 }

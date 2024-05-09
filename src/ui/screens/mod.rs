@@ -6,7 +6,7 @@ pub mod games;
 pub mod welcome;
 
 pub use config::ConfigScreen;
-pub use game_select::GameSelectionScreen;
+pub use game_select::GameSearchScreen;
 pub use games::*;
 pub use welcome::WelcomeScreen;
 

@@ -33,6 +33,7 @@ use crate::{
 	games::minesweeper::Minesweeper,
 	ui::{
 		components::scrollable_list::ListItem,
+		screen::Screens,
 		Screen,
 	},
 };
@@ -74,7 +75,7 @@ pub trait Game {
 	/// The screen for the game to create.
 	/// This can be either a setup screen (that can create the game screen on
 	/// its own) or the game screen itself.
-	fn screen_created(&self) -> Box<dyn Screen>;
+	fn screen_created(&self) -> Screens;
 }
 
 /// Returns a list of games that match the keyword in their name.

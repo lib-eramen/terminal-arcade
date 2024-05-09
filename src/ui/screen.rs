@@ -5,6 +5,7 @@ use crossterm::event::{
 	KeyCode,
 	KeyModifiers,
 };
+use enum_dispatch::enum_dispatch;
 use ratatui::{
 	buffer::Buffer,
 	layout::{
@@ -29,10 +30,16 @@ use ratatui::{
 
 use crate::{
 	core::terminal::BackendType,
-	ui::components::presets::{
-		highlight_block,
-		titled_ui_block,
-		HIGHLIGHTED,
+	ui::{
+		components::presets::{
+			highlight_block,
+			titled_ui_block,
+			HIGHLIGHTED,
+		},
+		ConfigScreen,
+		GameSearchScreen,
+		MinesweeperSetupScreen,
+		WelcomeScreen,
 	},
 };
 
@@ -65,18 +72,91 @@ fn get_controls_table<'a>(extra_entries: Option<Vec<ControlsEntry>>) -> Table<'a
 	)
 }
 
+/// Open status of the screen.
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[must_use]
+#[allow(missing_docs)]
+pub enum OpenStatus {
+	Open,
+	Closed,
+}
+
+impl OpenStatus {
+	/// Returns the toggled state.
+	pub fn toggled(self) -> Self {
+		match self {
+			OpenStatus::Open => OpenStatus::Closed,
+			OpenStatus::Closed => OpenStatus::Open,
+		}
+	}
+}
+
+/// Type of the screen, normal or popup.
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[allow(missing_docs)]
+pub enum ScreenKind {
+	Normal,
+	Popup,
+}
+
+/// State of a screen. Preferably, this struct is handled and mutated by an
+/// implementor of [Screen] itself, and not an overlying structure.
+#[must_use]
+pub struct ScreenState {
+	/// Title of the screen, displayed on top by a surrounding block.
+	pub title: &'static str,
+
+	/// Kind of the screen.
+	pub kind: ScreenKind,
+
+	/// Open status of the screen - open or closed.
+	pub open_status: OpenStatus,
+
+	/// Open status of the *controls popup*.
+	pub popup_open_status: OpenStatus,
+
+	/// Extra controls specific to this page, to be displayed in the controls
+	/// popup.
+	pub controls_entries: Option<Vec<ControlsEntry>>,
+
+	/// Screen to be created and to be spawned.
+	pub screen_created: Option<Screens>,
+}
+
+impl ScreenState {
+	/// Creates a new screen state instance, with itself open and the popup
+	/// closed.
+	pub fn new(
+		title: &'static str,
+		kind: ScreenKind,
+		controls_entries: Option<Vec<ControlsEntry>>,
+	) -> Self {
+		Self {
+			title,
+			kind,
+			open_status: OpenStatus::Open,
+			popup_open_status: OpenStatus::Closed,
+			controls_entries,
+			screen_created: None,
+		}
+	}
+}
+
 /// The trait for handling drawing on the terminal and receiving events from the
-/// user.
+/// user. Use the associated ***screen state*** struct [`ScreenState`] to handle
+/// screen/window stuff.
+///
 /// One should always start here when making a game/screen.
 #[must_use]
-pub trait Screen {
-	/// Returns this screen's title.
-	fn title(&self) -> &str;
+#[enum_dispatch(Screens)]
+pub trait Screen: Clone {
+	/// Returns an initial screen state when this screen is first created.
+	fn initial_state(&self) -> ScreenState;
 
 	/// Called when an event is passed along to the screen,
 	/// possibly from [`crate::TerminalArcade`], but also from whatever screen
 	/// spawned this screen.
-	fn event(&mut self, _event: &Event) -> anyhow::Result<()> {
+	fn event(&mut self, _event: &Event, _state: &mut ScreenState) -> anyhow::Result<()> {
 		Ok(())
 	}
 
@@ -87,55 +167,25 @@ pub trait Screen {
 		Ok(())
 	}
 
-	/// Indicates that the screen is ready to be closed.
-	/// If the screen is ready to be closed, the implementation of this function
-	/// should return true. Otherwise, it should return false.
-	fn is_closing(&self) -> bool {
-		false
-	}
-
-	/// Indicates the screen that is trying to be created.
-	/// If the window wants to create another screen, this function should
-	/// return [Some], with the screen inside it. Otherwise, return [None].
-	fn screen_created(&mut self) -> Option<Box<dyn Screen>> {
-		None
-	}
-
-	/// Returns extra entries coded in the page.
-	/// It is helpful for screens to specify this, such that the controls popup
-	/// works best.
-	fn extra_controls_entries(&self) -> Option<Vec<ControlsEntry>> {
-		None
-	}
-
 	/// Renders ***this*** screen's UI.
 	/// Using this method directly is discouraged - [`Self::render`] handles
 	/// rendering its popups as well.
-	fn render_screen(&mut self, frame: &mut Frame<'_>);
+	fn render_screen(&mut self, frame: &mut Frame<'_>, state: &ScreenState);
 
-	/// Renders the screen and its child popup's UI, if there exists one. The
-	/// method also draws a screen-sized base block with a provided title by the
-	/// trait.
-	fn render(&mut self, frame: &mut Frame<'_>) {
-		let mut base_block = titled_ui_block(self.title());
-		match self.screen_created() {
-			Some(screen) if screen.is_popup() => {
-				base_block = base_block.style(Style::new().add_modifier(Modifier::DIM));
-			},
-			_ => {},
+	/// Renders the screen (not its children). The method also draws a
+	/// screen-sized base block with a provided title by the trait.
+	fn render(&mut self, frame: &mut Frame<'_>, state: &mut ScreenState) {
+		let mut base_block = titled_ui_block(state.title);
+		if state.screen_created.is_some() {
+			base_block = base_block.style(Style::new().add_modifier(Modifier::DIM));
 		}
 		frame.render_widget(base_block, frame.size());
-		self.render_screen(frame);
-	}
-
-	/// Indicates whether this screen is a popup.
-	fn is_popup(&self) -> bool {
-		false
+		self.render_screen(frame, state);
 	}
 
 	/// Draws the controls popup to the screen.
 	/// This method is intended to be called whenever a shortcut is
-	fn draw_controls_popup(&self, frame: &mut Frame<'_>, buffer: &mut Buffer) {
+	fn draw_controls_popup(&self, frame: &mut Frame<'_>, buffer: &mut Buffer, state: &ScreenState) {
 		let frame_area = frame.size();
 		let area = Rect {
 			x: frame_area.width / 5,
@@ -144,6 +194,17 @@ pub trait Screen {
 			height: frame_area.height / 3,
 		};
 		Clear.render(area, buffer);
-		frame.render_widget(get_controls_table(self.extra_controls_entries()), area);
+		frame.render_widget(get_controls_table(state.controls_entries.clone()), area);
 	}
+}
+
+/// All screens implemented in Terminal Arcade.
+#[enum_dispatch]
+#[derive(Clone)]
+#[allow(missing_docs)]
+pub enum Screens {
+	WelcomeScreen,
+	ConfigScreen,
+	GameSearchScreen,
+	MinesweeperSetupScreen,
 }

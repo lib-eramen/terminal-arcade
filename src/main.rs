@@ -37,7 +37,7 @@ fn initialize() {
 
 fn main() -> anyhow::Result<()> {
 	initialize();
-	Handler::new().startup()?;
+	Handler::default().startup()?;
 	println!("See you next time! 👋");
 	Ok(())
 }
