@@ -38,8 +38,12 @@ use crate::{
 pub struct ConfigScreen;
 
 impl Screen for ConfigScreen {
+	fn title(&self) -> &str {
+		"Under construction! (Probably for a very long time!)"
+	}
+
 	// TODO: why are there only 24 hours in a day
-	fn render(&mut self, frame: &mut Frame<'_>) {
+	fn render_screen(&mut self, frame: &mut Frame<'_>) {
 		render_under_construction_block(frame);
 	}
 }

@@ -105,6 +105,10 @@ impl Default for GameSelectionScreen {
 }
 
 impl Screen for GameSelectionScreen {
+	fn title(&self) -> &str {
+		"Select a game!"
+	}
+
 	fn event(&mut self, event: &Event) -> anyhow::Result<()> {
 		if let Event::Key(key) = event {
 			match key.code {
@@ -137,7 +141,7 @@ impl Screen for GameSelectionScreen {
 		Ok(())
 	}
 
-	fn render(&mut self, frame: &mut Frame<'_>) {
+	fn render_screen(&mut self, frame: &mut Frame<'_>) {
 		let size = frame.size();
 		frame.render_widget(titled_ui_block("Select a game!"), size);
 		let chunks = Self::game_selection_layout(size).split(size);

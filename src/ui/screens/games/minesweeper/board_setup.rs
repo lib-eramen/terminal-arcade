@@ -45,9 +45,12 @@ impl MinesweeperSetupScreen {
 }
 
 impl Screen for MinesweeperSetupScreen {
-	fn render(&mut self, frame: &mut Frame<'_>) {
+	fn title(&self) -> &str {
+		"Mine your field!"
+	}
+
+	fn render_screen(&mut self, frame: &mut Frame<'_>) {
 		let size = frame.size();
-		frame.render_widget(titled_ui_block("Mine your field!"), size);
 		let chunks = Self::board_setup_layout().split(size);
 
 		frame.render_widget(titled_ui_block("Controls"), chunks[0]);

@@ -17,6 +17,7 @@ categories = ["arcade", "terminal", "games"]
 [dependencies]
 aho-corasick = "1.1.2"
 anyhow = "1.0.70"
+better-panic = "0.3.0"
 bool-toggle = "1.1.1"
 chrono = "0.4.24"
 color-eyre = "0.6.2"

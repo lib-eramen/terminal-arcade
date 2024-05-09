@@ -32,6 +32,7 @@ pub mod ui;
 
 fn initialize() {
 	let _ = color_eyre::install();
+	better_panic::install();
 }
 
 fn main() -> anyhow::Result<()> {

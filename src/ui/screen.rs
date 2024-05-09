@@ -11,7 +11,10 @@ use ratatui::{
 		Constraint,
 		Rect,
 	},
-	style::Modifier,
+	style::{
+		Modifier,
+		Style,
+	},
 	text::Text,
 	widgets::{
 		Cell,
@@ -38,19 +41,9 @@ use crate::{
 /// screen).
 pub type ControlsEntry = (&'static str, &'static str);
 
-/// Checks if the event is a key event in which the ESC key is pressed.
-#[must_use]
-pub fn check_escape_key(event: &Event) -> bool {
-	if let Event::Key(key) = event {
-		key.code == KeyCode::Esc && key.modifiers == KeyModifiers::NONE
-	} else {
-		false
-	}
-}
-
 /// Returns a table containing information about key shortcuts.
 #[must_use]
-pub fn get_controls_table<'a>(extra_entries: Option<Vec<ControlsEntry>>) -> Table<'a> {
+fn get_controls_table<'a>(extra_entries: Option<Vec<ControlsEntry>>) -> Table<'a> {
 	let mut entries = extra_entries.unwrap_or_default();
 	let mut default_shortcuts = vec![
 		("Esc", "Closes this screen and returns to the previous one"),
@@ -77,6 +70,9 @@ pub fn get_controls_table<'a>(extra_entries: Option<Vec<ControlsEntry>>) -> Tabl
 /// One should always start here when making a game/screen.
 #[must_use]
 pub trait Screen {
+	/// Returns this screen's title.
+	fn title(&self) -> &str;
+
 	/// Called when an event is passed along to the screen,
 	/// possibly from [`crate::TerminalArcade`], but also from whatever screen
 	/// spawned this screen.
@@ -98,9 +94,9 @@ pub trait Screen {
 		false
 	}
 
-	/// Indicates the screen that this screen itself is trying to create.
+	/// Indicates the screen that is trying to be created.
 	/// If the window wants to create another screen, this function should
-	/// return [Some], with the window inside it. Otherwise, return [None].
+	/// return [Some], with the screen inside it. Otherwise, return [None].
 	fn screen_created(&mut self) -> Option<Box<dyn Screen>> {
 		None
 	}
@@ -112,9 +108,30 @@ pub trait Screen {
 		None
 	}
 
-	/// Renders some UI to the screen.
-	/// This method is also called when a resize event is triggered.
-	fn render(&mut self, frame: &mut Frame<'_>);
+	/// Renders ***this*** screen's UI.
+	/// Using this method directly is discouraged - [`Self::render`] handles
+	/// rendering its popups as well.
+	fn render_screen(&mut self, frame: &mut Frame<'_>);
+
+	/// Renders the screen and its child popup's UI, if there exists one. The
+	/// method also draws a screen-sized base block with a provided title by the
+	/// trait.
+	fn render(&mut self, frame: &mut Frame<'_>) {
+		let mut base_block = titled_ui_block(self.title());
+		match self.screen_created() {
+			Some(screen) if screen.is_popup() => {
+				base_block = base_block.style(Style::new().add_modifier(Modifier::DIM));
+			},
+			_ => {},
+		}
+		frame.render_widget(base_block, frame.size());
+		self.render_screen(frame);
+	}
+
+	/// Indicates whether this screen is a popup.
+	fn is_popup(&self) -> bool {
+		false
+	}
 
 	/// Draws the controls popup to the screen.
 	/// This method is intended to be called whenever a shortcut is

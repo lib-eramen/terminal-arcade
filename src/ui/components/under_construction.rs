@@ -45,11 +45,6 @@ pub fn render_under_construction_block(frame: &mut Frame<'_>) {
 		.margin(1)
 		.constraints([Constraint::Max(13), Constraint::Max(0)])
 		.split(size);
-	frame.render_widget(
-		titled_ui_block("Configuration (Under construction!) (Probably for a very long time!)"),
-		size,
-	);
-
 	let message = Paragraph::new(UNDER_CONSTRUCTION_BANNER)
 		.alignment(Alignment::Center)
 		.block(untitled_ui_block().borders(Borders::NONE));

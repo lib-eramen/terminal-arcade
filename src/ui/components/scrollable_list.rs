@@ -141,7 +141,12 @@ impl<D: ToString + Clone> ScrollableList<D> {
 		let chunks = self.get_layout().split(area);
 		let items = self.items.clone();
 		for (position, index) in self.scroll_tracker.get_displayed_range().enumerate() {
-			let item = items.get(index).expect("Index outside of list's range.");
+			let item = items.get(index).unwrap_or_else(|| {
+				panic!(
+					"list length is {} but tried to index at {index}",
+					items.len()
+				)
+			});
 			self.render_item_processed(frame, chunks[position], item, index, &processor);
 		}
 	}
@@ -158,13 +163,19 @@ impl<D: ToString + Clone> ScrollableList<D> {
 		index: usize,
 		custom_paragraph: Option<Paragraph<'_>>,
 	) {
-		let item = self.items.get(index).expect("Index outside of list's range.");
+		let item = self.items.get(index).unwrap_or_else(|| {
+			panic!(
+				"list length is {} but tried to index at {index}",
+				self.items.len()
+			)
+		});
 		let mut item_block = titled_ui_block(format!(
 			"{}{}",
 			index + 1,
 			item.name.as_ref().map_or(String::new(), |s| format!(" ─ {s}"))
 		))
 		.title_alignment(self.text_alignment);
+
 		if self.get_selected().map_or(false, |(selected_index, _)| index == selected_index) {
 			let mut style = HIGHLIGHTED;
 			if self.flicker_counter.is_off() {

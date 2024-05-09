@@ -129,9 +129,12 @@ impl Default for WelcomeScreen {
 }
 
 impl Screen for WelcomeScreen {
-	fn render(&mut self, frame: &mut Frame<'_>) {
+	fn title(&self) -> &str {
+		"Terminal Arcade"
+	}
+
+	fn render_screen(&mut self, frame: &mut Frame<'_>) {
 		let size = frame.size();
-		frame.render_widget(titled_ui_block("Welcome to Terminal Arcade!"), size);
 		let used_ui_height = 16 + 11 + 5 + 6;
 		let empty_space_height =
 			if size.height <= used_ui_height { 0 } else { size.height - used_ui_height };
