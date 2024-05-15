@@ -19,7 +19,13 @@
 	unused_imports
 )]
 
-use std::time::Duration;
+use std::{
+	panic::{
+		set_hook,
+		take_hook,
+	},
+	time::Duration,
+};
 
 use crate::{
 	core::Handler,
@@ -27,7 +33,7 @@ use crate::{
 };
 
 pub mod core;
-pub mod games;
+pub mod game;
 pub mod ui;
 
 fn initialize() {
@@ -37,7 +43,7 @@ fn initialize() {
 
 fn main() -> anyhow::Result<()> {
 	initialize();
-	Handler::default().startup()?;
+	Handler::new().startup()?;
 	println!("See you next time! 👋");
 	Ok(())
 }

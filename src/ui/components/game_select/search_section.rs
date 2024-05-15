@@ -17,7 +17,6 @@ use ratatui::{
 
 use crate::{
 	core::terminal::BackendType,
-	games::Game,
 	ui::components::presets::{
 		titled_ui_block,
 		untitled_ui_block,
@@ -42,9 +41,11 @@ pub fn render_search_bar_top_row(frame: &mut Frame<'_>, size: Rect, search_term:
 		.direction(Direction::Horizontal)
 		.margin(0)
 		.constraints([
-			Constraint::Max(13), // Back button (does nothing)
-			Constraint::Min(1),  // Search area
+			Constraint::Max(13),   // Back button (does nothing)
+			Constraint::Length(1), // Space between widgets
+			Constraint::Min(1),    // Search area
 		])
+		.horizontal_margin(1)
 		.split(size);
 
 	let back_button =
@@ -57,7 +58,7 @@ pub fn render_search_bar_top_row(frame: &mut Frame<'_>, size: Rect, search_term:
 	);
 	let search_bar =
 		Paragraph::new(search_bar_text).alignment(Alignment::Left).block(untitled_ui_block());
-	frame.render_widget(search_bar, chunks[1]);
+	frame.render_widget(search_bar, chunks[2]);
 }
 
 /// Renders the search section.

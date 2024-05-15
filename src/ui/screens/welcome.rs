@@ -111,7 +111,7 @@ impl Default for WelcomeScreen {
 			1,
 			Direction::Vertical,
 			Alignment::Center,
-			None,
+			Some((1, 3)),
 			None,
 		);
 		Self { controls_list }

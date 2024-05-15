@@ -1,7 +1,8 @@
-//! A collection of individual UI elements.
+//! A collection of individual UI elements and widgets.
 //!
-//! Note that since this module has some very long names that has to be
-//! abbreviated, here is a list of them:
+//! Note that the UI conventions included in here are somewhat unfaithful to the
+//! way [ratatui] works with widgets, especially stateful ones (by separating
+//! state from view).
 
 use ratatui::layout::Layout;
 

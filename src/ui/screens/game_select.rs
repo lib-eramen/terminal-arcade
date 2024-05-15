@@ -24,17 +24,13 @@ use ratatui::{
 	widgets::Paragraph,
 	Frame,
 };
+use strum::IntoEnumIterator;
 
 use crate::{
 	core::terminal::BackendType,
-	games::{
-		all_games,
-		get_game_by_identifier,
-		get_games_by_keyword,
-		get_games_by_search_term,
+	game::{
 		Game,
-		GameIdentifier,
-		GameMetadata,
+		Games,
 	},
 	ui::{
 		components::{
@@ -73,10 +69,10 @@ pub struct GameSearchScreen {
 	search_term: Option<String>,
 
 	/// Search results.
-	search_results: Vec<GameMetadata>,
+	search_results: Vec<Games>,
 
 	/// Scrollable list widget for display.
-	game_results_list: ScrollableList<GameIdentifier>,
+	game_results_list: ScrollableList<Games>,
 
 	/// Time spent to search and filter the results, in seconds.
 	time_to_search_secs: f64,
@@ -84,20 +80,17 @@ pub struct GameSearchScreen {
 
 impl Default for GameSearchScreen {
 	fn default() -> Self {
-		let all_game_metadata: Vec<GameMetadata> =
-			all_games().iter().map(|game| game.metadata()).collect();
-		let list_entries = all_game_metadata.iter().map(GameMetadata::get_list_entry).collect();
-
+		let all_games: Vec<_> = Games::iter().collect();
 		Self {
 			search_term: None,
-			search_results: all_game_metadata,
+			search_results: all_games.clone(),
 			game_results_list: ScrollableList::new(
-				list_entries,
+				all_games.into_iter().map(|game| game.data().metadata.get_list_entry()).collect(),
 				Some(5),
 				3,
 				Direction::Vertical,
 				Alignment::Center,
-				None,
+				Some((1, 3)),
 				None,
 			),
 			time_to_search_secs: 0.0,
@@ -185,18 +178,14 @@ impl GameSearchScreen {
 	/// Selects a game.
 	fn select_game(&mut self, state: &mut ScreenState) {
 		if let Some(selection) = self.game_results_list.get_selected() {
-			state.screen_created =
-				Some(get_game_by_identifier(selection.1.data).unwrap().screen_created());
+			state.screen_created = Some(selection.1.data.data().created_screen);
 		}
 	}
 
 	/// Updates the search results.
 	fn update_search_results(&mut self) {
 		let timer = std::time::Instant::now();
-		self.search_results = get_games_by_search_term(&self.search_term)
-			.into_iter()
-			.map(|game| game.metadata())
-			.collect();
+		self.search_results = Games::get_by_search_term(&self.search_term);
 		self.update_results_list();
 		self.time_to_search_secs = timer.elapsed().as_secs_f64();
 	}
@@ -204,8 +193,9 @@ impl GameSearchScreen {
 	/// Updates the [`Self::game_results_list`] property from the
 	/// [`Self::search_results`] property.
 	fn update_results_list(&mut self) {
-		self.game_results_list
-			.update_items(self.search_results.iter().map(GameMetadata::get_list_entry).collect());
+		self.game_results_list.update_items(
+			self.search_results.iter().map(|game| game.data().metadata.get_list_entry()).collect(),
+		);
 	}
 
 	/// Adds the character to the search term object, capping out at 256

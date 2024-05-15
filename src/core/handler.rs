@@ -1,6 +1,10 @@
 //! UI handler. Manages a hierarchy of screens and rendering them.
 
 use std::{
+	panic::{
+		set_hook,
+		take_hook,
+	},
 	path::{
 		Path,
 		PathBuf,
@@ -105,6 +109,24 @@ pub struct Handler {
 }
 
 impl Handler {
+	/// Creates a new handler object, registering this handler's terminal reset
+	/// method to the panic hook ([`Self::unset_global_terminal_rules`]).
+	pub fn new() -> Self {
+		Self::set_panic_hook();
+		Self::default()
+	}
+
+	/// Registers this handler's terminal reset method to the panic hook.
+	/// ([`Self::unset_global_terminal_rules`])
+	fn set_panic_hook() {
+		let original_hook = take_hook();
+		set_hook(Box::new(move |panic_info| {
+			let _ = { Self::unset_global_terminal_rules() };
+			original_hook(panic_info);
+			println!("Sorry, something happened! 🫤\nIf you believe this was a bug, please send an issue to https://github.com/developer-ramen/terminal-arcade to get it squashed as soon as possible!");
+		}));
+	}
+
 	/// Runs the event loop, also returning whether the loop should break.
 	fn event_loop(&mut self, event: &Event) -> anyhow::Result<bool> {
 		Ok(self.handle_terminal_event(event)? || self.handle_active_screen()?)

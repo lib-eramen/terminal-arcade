@@ -6,6 +6,10 @@
 //! [`crate::ui::screens::games`] module.
 
 use std::{
+	fmt::{
+		Display,
+		Formatter,
+	},
 	path::PathBuf,
 	time::{
 		Duration,
@@ -20,17 +24,22 @@ use chrono::{
 	Utc,
 };
 use crossterm::event::Event;
-use derive_builder::Builder;
+use derive_new::new;
+use enum_dispatch::enum_dispatch;
 use pluralizer::pluralize;
 use serde_derive::{
 	Deserialize,
 	Serialize,
 };
-use strum::Display;
+use strum::{
+	Display,
+	EnumIter,
+	IntoEnumIterator,
+};
 
 use crate::{
 	core::get_save_dir,
-	games::minesweeper::Minesweeper,
+	game::minesweeper::Minesweeper,
 	ui::{
 		components::scrollable_list::ListItem,
 		screen::Screens,
@@ -40,20 +49,14 @@ use crate::{
 
 pub mod minesweeper;
 
-/// A [Vec] of games.
-pub type Games = Vec<Box<dyn Game>>;
+/// State for a [Game].
+#[derive(Clone, new)]
+pub struct GameData {
+	/// Game metadata.
+	pub metadata: GameMetadata,
 
-/// Returns a list of all games.
-#[must_use]
-pub fn all_games() -> Games {
-	vec![Box::new(Minesweeper)]
-}
-
-/// Enum for uniquely identifying a game in Terminal Arcade.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Display)]
-pub enum GameIdentifier {
-	/// [Minesweeper]
-	Minesweeper,
+	/// Screen to be created.
+	pub created_screen: Screens,
 }
 
 /// A trait for a game in Terminal Arcade.
@@ -62,47 +65,51 @@ pub enum GameIdentifier {
 /// handles events passed to it.
 /// When making a game with this trait, please also add the game to
 /// [`all_games`].
+#[must_use]
+#[enum_dispatch(Games)]
 pub trait Game {
-	/// Gets the metadata of the game.
-	fn metadata(&self) -> GameMetadata;
-
-	/// Indicates whether the game has finished or not.
-	fn is_finished(&self) -> bool;
+	/// Metadata of the game.
+	fn data(&self) -> GameData;
 
 	/// Called when an event is passed to the game.
 	fn event(&mut self, event: &Event) -> anyhow::Result<()>;
-
-	/// The screen for the game to create.
-	/// This can be either a setup screen (that can create the game screen on
-	/// its own) or the game screen itself.
-	fn screen_created(&self) -> Screens;
 }
 
-/// Returns a list of games that match the keyword in their name.
+/// All games implemented in Terminal Arcade.
 #[must_use]
-pub fn get_games_by_keyword(keyword: &str) -> Games {
-	all_games()
-		.into_iter()
-		.filter(|game| game.metadata().static_info.matches_keyword(keyword))
-		.collect()
+#[enum_dispatch]
+#[derive(EnumIter, Clone, Serialize, Deserialize)]
+#[allow(missing_docs)]
+pub enum Games {
+	Minesweeper,
 }
 
-/// Returns a list of games that match the search term. Identical to
-/// [`games_by_keyword`], but if the search term is [`None`], the list of all
-/// games are returned.
-#[must_use]
-pub fn get_games_by_search_term(term: &Option<String>) -> Games {
-	if let Some(ref term) = term {
-		get_games_by_keyword(term)
-	} else {
-		all_games()
+impl Display for Games {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		f.write_str(&self.data().metadata.get_entry_text())
 	}
 }
 
-/// Gets a game by its name.
-#[must_use]
-pub fn get_game_by_identifier(identifier: GameIdentifier) -> Option<Box<dyn Game>> {
-	all_games().into_iter().find(|game| game.metadata().static_info.identifier == identifier)
+impl Games {
+	/// Returns a list of games that match the keyword in their name.
+	#[must_use]
+	pub fn get_by_keyword(keyword: &str) -> Vec<Games> {
+		Self::iter()
+			.filter(|game| game.data().metadata.static_info.matches_keyword(keyword))
+			.collect()
+	}
+
+	/// Returns a list of games that match the search term. Identical to
+	/// [`games_by_keyword`], but if the search term is [`None`], the list of
+	/// all games are returned.
+	#[must_use]
+	pub fn get_by_search_term(term: &Option<String>) -> Vec<Games> {
+		if let Some(ref term) = term {
+			Self::get_by_keyword(term)
+		} else {
+			Games::iter().collect()
+		}
+	}
 }
 
 /// Gets the current UNIX time as seconds.
@@ -119,7 +126,7 @@ pub fn meta_file_path(name: &str) -> PathBuf {
 
 /// A [Game]'s metadata. Note that this does not include the game's settings.
 /// Check out [`Self::new`] and [`Self::save`] for more information.
-#[derive(Debug, Clone, Builder, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[must_use]
 pub struct GameMetadata {
 	/// The game's static information.
@@ -130,17 +137,12 @@ pub struct GameMetadata {
 }
 
 impl<'a> GameMetadata {
-	/// Creates a new metadata object from a closure that builds the
-	/// [`GameStaticInfo`] object, and a [`GameDynamicInfo`] object fetched by
-	/// the function itself.
-	pub fn new<F>(static_info: F) -> anyhow::Result<Self>
-	where
-		F: FnOnce(&mut GameStaticInfoBuilder) -> &mut GameStaticInfoBuilder,
-	{
-		let static_info = static_info(&mut GameStaticInfoBuilder::create_empty()).build().unwrap();
+	/// Creates a new game metadata object.
+	pub fn new(static_info: GameStaticInfo) -> anyhow::Result<Self> {
+		let name = static_info.name.clone();
 		Ok(Self {
-			static_info: static_info.clone(),
-			dynamic_info: GameDynamicInfo::load_or_default(&static_info.name)?,
+			static_info,
+			dynamic_info: GameDynamicInfo::load_or_default(&name)?,
 		})
 	}
 
@@ -162,10 +164,10 @@ impl<'a> GameMetadata {
 
 	/// Returns a list item usable with the [`ui::components::ScrollableList`]
 	/// widget.
-	pub fn get_list_entry(&self) -> ListItem<GameIdentifier> {
+	pub fn get_list_entry(&self) -> ListItem<Games> {
 		ListItem::new(
 			Some(self.static_info.name.to_string()),
-			self.static_info.identifier,
+			self.static_info.game.clone(),
 			Some(self.get_entry_text()),
 		)
 	}
@@ -186,9 +188,12 @@ impl<'a> GameMetadata {
 
 /// A [Game]'s static, unchanging info/data. This includes things like the
 /// game's name and description.
-#[derive(Debug, Clone, Builder, Serialize, Deserialize)]
+#[derive(new, Clone, Serialize, Deserialize)]
 #[must_use]
 pub struct GameStaticInfo {
+	/// [Games] enum variant for this game.
+	pub game: Games,
+
 	/// Name of the game
 	pub name: String,
 
@@ -197,9 +202,6 @@ pub struct GameStaticInfo {
 
 	/// Version that the game was created on.
 	pub version_created: String,
-
-	/// Unique identifier of the game.
-	pub identifier: GameIdentifier,
 }
 
 impl GameStaticInfo {

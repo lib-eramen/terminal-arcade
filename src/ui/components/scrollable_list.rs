@@ -22,6 +22,7 @@ use ratatui::{
 	style::Modifier,
 	widgets::{
 		Paragraph,
+		StatefulWidget,
 		Widget,
 	},
 	Frame,
@@ -60,6 +61,7 @@ impl<D: ToString> ListItem<D> {
 
 /// A scrollable list that highlights the chosen element, with adjustable view
 /// range.
+///
 /// This API exposes the underlying [scroll tracker](ScrollTracker) for access
 /// to its API as well, containing functionality for changing the size of the
 /// displayed list as well as scrolling.
