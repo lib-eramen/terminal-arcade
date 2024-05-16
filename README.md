@@ -1,5 +1,3 @@
 # Terminal Arcade 🕹️
 
-a bunch of games that you can play in the terminal
-
-will someone save me from ui design pls i am TIRED
+Terminal-style arcade-style games for when you're bored out of your mind.
