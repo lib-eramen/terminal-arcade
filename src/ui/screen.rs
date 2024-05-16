@@ -3,6 +3,7 @@
 use crossterm::event::{
 	Event,
 	KeyCode,
+	KeyEvent,
 	KeyModifiers,
 };
 use enum_dispatch::enum_dispatch;
@@ -31,10 +32,13 @@ use ratatui::{
 use crate::{
 	core::terminal::BackendType,
 	ui::{
-		components::presets::{
-			highlight_block,
-			titled_ui_block,
-			HIGHLIGHTED,
+		components::{
+			presets::{
+				highlight_block,
+				titled_ui_block,
+				HIGHLIGHTED,
+			},
+			screen_base_block::screen_base_block,
 		},
 		ConfigScreen,
 		GameSearchScreen,
@@ -146,18 +150,38 @@ impl ScreenState {
 /// user. Use the associated ***screen state*** struct [`ScreenState`] to handle
 /// screen/window stuff.
 ///
-/// One should always start here when making a game/screen.
+/// One should always start here when making a game/screen. To start, implement
+/// [`Self::initial_state`], as well as [`Self::event_screen`] and
+/// [`Self::render_screen`].
 #[must_use]
 #[enum_dispatch(Screens)]
 pub trait Screen: Clone {
 	/// Returns an initial screen state when this screen is first created.
 	fn initial_state(&self) -> ScreenState;
 
-	/// Called when an event is passed along to the screen,
-	/// possibly from [`crate::TerminalArcade`], but also from whatever screen
-	/// spawned this screen.
-	fn event(&mut self, _event: &Event, _state: &mut ScreenState) -> anyhow::Result<()> {
-		Ok(())
+	/// Handles an input event.
+	/// Using this method directly is discouraged - [`Self::event`] handles
+	/// default shortcuts for every screen as well.
+	fn event_screen(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()>;
+
+	/// Called when an input event is received.
+	/// In addition to the events that [`Self::event_screen`] handles, this
+	/// method also handles two extra events:
+	/// - On [Esc] key, closes this screen.
+	/// - On [Tab] key, displays the controls popup.
+	fn event(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()> {
+		if let Event::Key(ref key) = event {
+			match key.code {
+				KeyCode::Tab => {
+					state.popup_open_status = state.popup_open_status.toggled();
+				},
+				KeyCode::Esc => {
+					state.open_status = OpenStatus::Closed;
+				},
+				_ => {},
+			}
+		}
+		self.event_screen(event, state)
 	}
 
 	/// Called when the screen is being closed.
@@ -175,18 +199,21 @@ pub trait Screen: Clone {
 	/// Renders the screen (not its children). The method also draws a
 	/// screen-sized base block with a provided title by the trait.
 	fn render(&mut self, frame: &mut Frame<'_>, state: &mut ScreenState) {
-		let mut base_block = titled_ui_block(state.title);
-		if state.screen_created.is_some() {
+		let mut base_block = screen_base_block(state.title);
+		if state.popup_open_status == OpenStatus::Open {
 			base_block = base_block.style(Style::new().add_modifier(Modifier::DIM));
 		}
 		frame.render_widget(base_block, frame.size());
 		self.render_screen(frame, state);
+		if state.popup_open_status == OpenStatus::Open {
+			self.draw_controls_popup(frame, state);
+		}
 	}
 
 	/// Draws the controls popup to the screen.
-	/// This method is intended to be called whenever a shortcut is
-	fn draw_controls_popup(&self, frame: &mut Frame<'_>, buffer: &mut Buffer, state: &ScreenState) {
+	fn draw_controls_popup(&self, frame: &mut Frame<'_>, state: &ScreenState) {
 		let frame_area = frame.size();
+		let buffer = frame.buffer_mut();
 		let area = Rect {
 			x: frame_area.width / 5,
 			y: frame_area.height / 3,

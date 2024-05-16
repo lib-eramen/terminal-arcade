@@ -123,6 +123,18 @@ impl Screen for WelcomeScreen {
 		ScreenState::new("Terminal Arcade", ScreenKind::Normal, None)
 	}
 
+	fn event_screen(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()> {
+		if let Event::Key(key) = event {
+			match key.code {
+				KeyCode::Up => self.controls_list.scroll_forward(),
+				KeyCode::Down => self.controls_list.scroll_backward(),
+				KeyCode::Enter => self.handle_enter_shortcut(state),
+				_ => {},
+			}
+		}
+		Ok(())
+	}
+
 	fn render_screen(&mut self, frame: &mut Frame<'_>, _state: &ScreenState) {
 		let size = frame.size();
 		let used_ui_height = 16 + 11 + 5 + 6;
@@ -143,18 +155,6 @@ impl Screen for WelcomeScreen {
 		frame.render_widget(banner, chunks[0]);
 		self.controls_list.render(frame, chunks[1]);
 		render_welcome_bottom_bar(frame, chunks[3]);
-	}
-
-	fn event(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()> {
-		if let Event::Key(key) = event {
-			match key.code {
-				KeyCode::Up => self.controls_list.scroll_forward(),
-				KeyCode::Down => self.controls_list.scroll_backward(),
-				KeyCode::Enter => self.handle_enter_shortcut(state),
-				_ => {},
-			}
-		}
-		Ok(())
 	}
 }
 

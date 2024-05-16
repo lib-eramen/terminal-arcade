@@ -10,6 +10,7 @@ pub mod flicker_counter;
 pub mod game_select;
 pub mod games;
 pub mod presets;
+pub mod screen_base_block;
 pub mod scroll_tracker;
 pub mod scrollable_list;
 pub mod text_input_bar;

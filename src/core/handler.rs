@@ -270,17 +270,9 @@ impl Handler {
 	/// also returning if the event loop calling this function should quit.
 	fn handle_terminal_event(&mut self, event: &Event) -> anyhow::Result<bool> {
 		match event {
-			Event::Key(ref key) => {
-				if Self::check_quit_controls(key) {
-					self.quit()?;
-					return Ok(true);
-				}
-				if key.code == KeyCode::Esc {
-					self.close_active_screen()?;
-					if self.quit_when_no_screens()? {
-						return Ok(true);
-					}
-				}
+			Event::Key(ref key) if Self::check_quit_controls(key) => {
+				self.quit()?;
+				return Ok(true);
 			},
 			Event::Resize(..) => {
 				self.draw_active_screen_ui()?;
