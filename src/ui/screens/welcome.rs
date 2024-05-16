@@ -42,6 +42,7 @@ use crate::{
 		},
 		screen::{
 			OpenStatus,
+			ScreenAndState,
 			ScreenKind,
 			ScreenState,
 			Screens,
@@ -165,11 +166,9 @@ impl WelcomeScreen {
 		if let Some((_, item)) = self.controls_list.get_selected() {
 			match item.data {
 				ControlOptions::SearchGames => {
-					state.screen_created = Some(GameSearchScreen::default().into());
+					state.set_screen_created(GameSearchScreen::default().into());
 				},
-				ControlOptions::ViewConfigs => {
-					state.screen_created = Some(ConfigScreen.into());
-				},
+				ControlOptions::ViewConfigs => state.set_screen_created(ConfigScreen.into()),
 				ControlOptions::QuitApplication => state.open_status = OpenStatus::Closed,
 			}
 		}

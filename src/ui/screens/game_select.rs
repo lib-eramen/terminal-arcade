@@ -176,7 +176,7 @@ impl GameSearchScreen {
 	/// Selects a game.
 	fn select_game(&mut self, state: &mut ScreenState) {
 		if let Some(selection) = self.game_results_list.get_selected() {
-			state.screen_created = Some(selection.1.data.data().created_screen);
+			state.screen_created = Some(Box::new(selection.1.data.data().created_screen.into()));
 		}
 	}
 

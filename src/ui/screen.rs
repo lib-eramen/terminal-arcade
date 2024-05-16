@@ -41,6 +41,7 @@ use crate::{
 			screen_base_block::screen_base_block,
 		},
 		ConfigScreen,
+		ControlsPopup,
 		GameSearchScreen,
 		MinesweeperSetupScreen,
 		WelcomeScreen,
@@ -51,30 +52,6 @@ use crate::{
 /// the second element is the function (what it does in the context of the
 /// screen).
 pub type ControlsEntry = (&'static str, &'static str);
-
-/// Returns a table containing information about key shortcuts.
-#[must_use]
-fn get_controls_table<'a>(extra_entries: Option<Vec<ControlsEntry>>) -> Table<'a> {
-	let mut entries = extra_entries.unwrap_or_default();
-	let mut default_shortcuts = vec![
-		("Esc", "Closes this screen and returns to the previous one"),
-		("Ctrl-Q", "Quits the application"),
-	];
-	entries.append(&mut default_shortcuts);
-	Table::new(
-		entries.into_iter().map(|entry| Row::new([Cell::new(entry.0), Cell::new(entry.1)])),
-		&[
-			Constraint::Ratio(1, 6), // shortcut
-			Constraint::Ratio(5, 6), // function
-		],
-	)
-	.block(highlight_block(titled_ui_block("Controls")))
-	.highlight_spacing(HighlightSpacing::Always)
-	.column_spacing(3)
-	.header(
-		Row::new(["Shortcut", "Function"]).style(HIGHLIGHTED.add_modifier(Modifier::UNDERLINED)),
-	)
-}
 
 /// Open status of the screen.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -105,6 +82,7 @@ pub enum ScreenKind {
 
 /// State of a screen. Preferably, this struct is handled and mutated by an
 /// implementor of [Screen] itself, and not an overlying structure.
+#[derive(Clone)]
 #[must_use]
 pub struct ScreenState {
 	/// Title of the screen, displayed on top by a surrounding block.
@@ -116,15 +94,12 @@ pub struct ScreenState {
 	/// Open status of the screen - open or closed.
 	pub open_status: OpenStatus,
 
-	/// Open status of the *controls popup*.
-	pub popup_open_status: OpenStatus,
-
 	/// Extra controls specific to this page, to be displayed in the controls
 	/// popup.
 	pub controls_entries: Option<Vec<ControlsEntry>>,
 
 	/// Screen to be created and to be spawned.
-	pub screen_created: Option<Screens>,
+	pub screen_created: Option<Box<ScreenAndState>>,
 }
 
 impl ScreenState {
@@ -139,10 +114,14 @@ impl ScreenState {
 			title,
 			kind,
 			open_status: OpenStatus::Open,
-			popup_open_status: OpenStatus::Closed,
 			controls_entries,
 			screen_created: None,
 		}
+	}
+
+	/// Sets the [`Self::screen_created`] property, given a screen.
+	pub fn set_screen_created(&mut self, screen: Screens) {
+		self.screen_created = Some(Box::new(ScreenAndState::from(screen)));
 	}
 }
 
@@ -167,13 +146,19 @@ pub trait Screen: Clone {
 	/// Called when an input event is received.
 	/// In addition to the events that [`Self::event_screen`] handles, this
 	/// method also handles two extra events:
-	/// - On [Esc] key, closes this screen.
-	/// - On [Tab] key, displays the controls popup.
+	/// - On [Esc], closes this screen.
+	/// - On [Ctrl]+[H], displays the controls popup only when the screen is of
+	///   [`ScreenKind::Normal`] kind.
 	fn event(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()> {
 		if let Event::Key(ref key) = event {
 			match key.code {
-				KeyCode::Tab => {
-					state.popup_open_status = state.popup_open_status.toggled();
+				KeyCode::Char('h')
+					if key.modifiers == KeyModifiers::CONTROL
+						&& state.kind == ScreenKind::Normal =>
+				{
+					state.set_screen_created(
+						ControlsPopup::new(state.controls_entries.clone()).into(),
+					);
 				},
 				KeyCode::Esc => {
 					state.open_status = OpenStatus::Closed;
@@ -198,30 +183,40 @@ pub trait Screen: Clone {
 
 	/// Renders the screen (not its children). The method also draws a
 	/// screen-sized base block with a provided title by the trait.
-	fn render(&mut self, frame: &mut Frame<'_>, state: &mut ScreenState) {
-		let mut base_block = screen_base_block(state.title);
-		if state.popup_open_status == OpenStatus::Open {
-			base_block = base_block.style(Style::new().add_modifier(Modifier::DIM));
+	fn render(&mut self, frame: &mut Frame<'_>, state: &mut ScreenState, focused: bool) {
+		if state.kind == ScreenKind::Normal {
+			let mut base_block = screen_base_block(state.title);
+			if !focused {
+				base_block = base_block.style(Style::new().add_modifier(Modifier::DIM));
+			}
+			frame.render_widget(base_block, frame.size());
 		}
-		frame.render_widget(base_block, frame.size());
 		self.render_screen(frame, state);
-		if state.popup_open_status == OpenStatus::Open {
-			self.draw_controls_popup(frame, state);
-		}
+	}
+}
+
+/// A wrapper struct for a screen and its state.
+#[derive(Clone)]
+#[must_use]
+pub struct ScreenAndState {
+	/// The screen itself.
+	pub screen: Screens,
+
+	/// State associated with the screen.
+	pub state: ScreenState,
+}
+
+impl ScreenAndState {
+	/// Creates a new screen and state object.
+	pub fn new(screen: Screens) -> Self {
+		let state = screen.initial_state();
+		Self { screen, state }
 	}
 
-	/// Draws the controls popup to the screen.
-	fn draw_controls_popup(&self, frame: &mut Frame<'_>, state: &ScreenState) {
-		let frame_area = frame.size();
-		let buffer = frame.buffer_mut();
-		let area = Rect {
-			x: frame_area.width / 5,
-			y: frame_area.height / 3,
-			width: frame_area.width / 5 * 3,
-			height: frame_area.height / 3,
-		};
-		Clear.render(area, buffer);
-		frame.render_widget(get_controls_table(state.controls_entries.clone()), area);
+	/// Closes the screen.
+	pub fn close(&mut self) -> anyhow::Result<()> {
+		self.state.open_status = OpenStatus::Closed;
+		self.screen.close()
 	}
 }
 
@@ -230,8 +225,15 @@ pub trait Screen: Clone {
 #[derive(Clone)]
 #[allow(missing_docs)]
 pub enum Screens {
+	ControlsPopup,
 	WelcomeScreen,
 	ConfigScreen,
 	GameSearchScreen,
 	MinesweeperSetupScreen,
+}
+
+impl From<Screens> for ScreenAndState {
+	fn from(screen: Screens) -> Self {
+		ScreenAndState::new(screen)
+	}
 }

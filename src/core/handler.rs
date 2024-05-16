@@ -63,6 +63,8 @@ use crate::{
 	ui::{
 		screen::{
 			OpenStatus,
+			ScreenAndState,
+			ScreenKind,
 			ScreenState,
 			Screens,
 		},
@@ -71,30 +73,6 @@ use crate::{
 		WelcomeScreen,
 	},
 };
-
-/// A wrapper struct for a screen and its state
-#[must_use]
-pub struct ScreenAndState {
-	/// The screen itself.
-	pub screen: Screens,
-
-	/// State associated with the screen.
-	pub state: ScreenState,
-}
-
-impl ScreenAndState {
-	/// Creates a new screen and state object.
-	pub fn new(screen: Screens) -> Self {
-		let state = screen.initial_state();
-		Self { screen, state }
-	}
-
-	/// Closes the screen.
-	pub fn close(&mut self) -> anyhow::Result<()> {
-		self.state.open_status = OpenStatus::Closed;
-		self.screen.close()
-	}
-}
 
 /// Core struct to all inner workings in Terminal Arcade.
 /// This struct mostly handles rendering that and managing screens.
@@ -141,7 +119,7 @@ impl Handler {
 	fn run(&mut self) -> anyhow::Result<()> {
 		let sixty_fps_in_ms = 16;
 		loop {
-			self.draw_active_screen_ui()?;
+			self.draw_screen_ui()?;
 			let poll_status = poll(Duration::from_millis(sixty_fps_in_ms))?;
 			if poll_status && self.event_loop(&read()?)? {
 				break;
@@ -164,15 +142,41 @@ impl Handler {
 		self.screen_stack.last_mut().unwrap()
 	}
 
-	/// Spawns a screen as active.
-	pub fn spawn_screen(&mut self, screen: Screens) {
-		self.screen_stack.push(ScreenAndState::new(screen));
+	/// Gets screens that need to be drawn. This is determined by looking at the
+	/// stack of screens and travelling top-down, looking until it encounters a
+	/// parent screen (of [`ScreenKind::Normal`] variant) and collecting mutable
+	/// references from the children screens that also need to be drawn.
+	///
+	/// The first element is the parent screen - what follows are the rest of
+	/// the non-normal screens that all need to be rendered.
+	fn get_drawn_screens(&mut self) -> Vec<&mut ScreenAndState> {
+		let mut drawn_screens = Vec::new();
+		for screen in self.screen_stack.iter_mut().rev() {
+			let found_parent_screen = screen.state.kind == ScreenKind::Normal;
+			drawn_screens.push(screen);
+			if found_parent_screen {
+				break;
+			}
+		}
+		drawn_screens.reverse();
+		drawn_screens
+	}
+
+	/// "Spawns" a screen. This method simply appends a
+	/// [`ScreenAndState`] object to the tail end of the screen stack.
+	fn spawn_screen(&mut self, screen: Screens) {
+		self.spawn_screen_and_state(ScreenAndState::new(screen));
+	}
+
+	/// Appends a [screen] to the screen stack.
+	fn spawn_screen_and_state(&mut self, screen_and_state: ScreenAndState) {
+		self.screen_stack.push(screen_and_state);
 	}
 
 	/// Closes the active screen.
 	/// Rhis function pops the screen from the screen hierarchy in
 	/// Terminal Arcade, and calls its [`Screen::close`] function.
-	pub fn close_active_screen(&mut self) -> anyhow::Result<()> {
+	fn close_active_screen(&mut self) -> anyhow::Result<()> {
 		self.get_mut_active_screen().close()?;
 		let _ = self.screen_stack.pop();
 		Ok(())
@@ -216,11 +220,20 @@ impl Handler {
 		quit_controls.contains(key)
 	}
 
-	/// Draws the UI of the active screen.
-	fn draw_active_screen_ui(&mut self) -> anyhow::Result<()> {
+	/// Draws the UI. This function draws not only the topmost ("active") screen
+	/// but also the parenting screens if the child(ren) screen is not of
+	/// [`ScreenKind::Normal`] variant.
+	fn draw_screen_ui(&mut self) -> anyhow::Result<()> {
 		get_mut_terminal().draw(|frame| {
-			let screen = self.get_mut_active_screen();
-			screen.screen.render(frame, &mut screen.state);
+			let drawn_screens = self.get_drawn_screens();
+			let active_screen_index = drawn_screens.len() - 1;
+			for (index, drawn_screen) in drawn_screens.into_iter().enumerate() {
+				drawn_screen.screen.render(
+					frame,
+					&mut drawn_screen.state,
+					index == active_screen_index,
+				);
+			}
 		})?;
 		Ok(())
 	}
@@ -254,15 +267,15 @@ impl Handler {
 		}
 
 		let active_screen = self.get_mut_active_screen();
-		let created_screen = active_screen.state.screen_created.clone();
-		active_screen.state.screen_created = None;
+		let created_screen = active_screen.state.screen_created.take();
 
 		if active_screen.state.open_status == OpenStatus::Closed {
 			self.close_active_screen()?;
 		}
 		if let Some(screen) = created_screen {
-			self.spawn_screen(screen);
+			self.spawn_screen_and_state(*screen);
 		}
+
 		self.quit_when_no_screens()
 	}
 
@@ -275,7 +288,7 @@ impl Handler {
 				return Ok(true);
 			},
 			Event::Resize(..) => {
-				self.draw_active_screen_ui()?;
+				self.draw_screen_ui()?;
 			},
 			_ => {},
 		}
