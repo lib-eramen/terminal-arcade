@@ -2,9 +2,6 @@
 //!
 //! This module contains some core functionality that all other functionalities
 //! depend on.
-//!
-//! To get started, take a look at the [`TerminalArcade`] struct, the struct
-//! that all mechanics in this crate is based on.
 
 use std::{
 	path::{

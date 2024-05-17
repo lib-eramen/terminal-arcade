@@ -63,8 +63,6 @@ pub struct GameData {
 /// This trait is not only for the game's logic implementation, it also dictates
 /// how it interacts with the rest of the Terminal Arcade UI, as well as how it
 /// handles events passed to it.
-/// When making a game with this trait, please also add the game to
-/// [`all_games`].
 #[must_use]
 #[enum_dispatch(Games)]
 pub trait Game {
@@ -100,8 +98,8 @@ impl Games {
 	}
 
 	/// Returns a list of games that match the search term. Identical to
-	/// [`games_by_keyword`], but if the search term is [`None`], the list of
-	/// all games are returned.
+	/// [`Self::get_by_keyword`], but if the search term is [`None`], the list
+	/// of all games are returned.
 	#[must_use]
 	pub fn get_by_search_term(term: &Option<String>) -> Vec<Games> {
 		if let Some(ref term) = term {
@@ -162,8 +160,8 @@ impl<'a> GameMetadata {
 		)
 	}
 
-	/// Returns a list item usable with the [`ui::components::ScrollableList`]
-	/// widget.
+	/// Returns a list item usable with the
+	/// [`crate::ui::components::scrollable_list::ScrollableList`] widget.
 	pub fn get_list_entry(&self) -> ListItem<Games> {
 		ListItem::new(
 			Some(self.static_info.name.to_string()),

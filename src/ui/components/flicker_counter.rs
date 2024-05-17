@@ -56,7 +56,7 @@ impl Default for FlickerCounter {
 
 impl FlickerCounter {
 	/// Creates a new flicker counter, the state initially being
-	/// [`FlickerState::Appearing`].
+	/// [`FlickerState::On`].
 	pub fn new(interval: Duration) -> Self {
 		Self {
 			last_time: Instant::now(),
@@ -79,7 +79,7 @@ impl FlickerCounter {
 		self.state = FlickerState::On;
 	}
 
-	/// [Updates the counter](update) with a given global time.
+	/// [Updates the counter](Self::update) with a given global time.
 	pub fn update_with_time(&mut self, time: Instant) {
 		if time - self.last_time >= self.interval {
 			self.last_time = time;

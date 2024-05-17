@@ -168,7 +168,7 @@ impl Handler {
 		self.spawn_screen_and_state(ScreenAndState::new(screen));
 	}
 
-	/// Appends a [screen] to the screen stack.
+	/// Appends a [`ScreenAndState`] to the screen stack.
 	fn spawn_screen_and_state(&mut self, screen_and_state: ScreenAndState) {
 		self.screen_stack.push(screen_and_state);
 	}
@@ -196,7 +196,8 @@ impl Handler {
 		)?)
 	}
 
-	/// Unsets the global terminal rules set in [`set_global_terminal_rules`].
+	/// Unsets the global terminal rules set in
+	/// [`Self::set_global_terminal_rules`].
 	fn unset_global_terminal_rules() -> anyhow::Result<()> {
 		disable_raw_mode()?;
 		Ok(execute!(

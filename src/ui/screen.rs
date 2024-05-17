@@ -146,9 +146,9 @@ pub trait Screen: Clone {
 	/// Called when an input event is received.
 	/// In addition to the events that [`Self::event_screen`] handles, this
 	/// method also handles two extra events:
-	/// - On [Esc], closes this screen.
-	/// - On [Ctrl]+[H], displays the controls popup only when the screen is of
-	///   [`ScreenKind::Normal`] kind.
+	/// - On \[Esc\], closes this screen.
+	/// - On \[Ctrl\]+\[H\], displays the controls popup only when the screen is
+	///   of [`ScreenKind::Normal`] kind.
 	fn event(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()> {
 		if let Event::Key(ref key) = event {
 			match key.code {
