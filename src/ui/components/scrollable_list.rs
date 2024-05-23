@@ -91,7 +91,7 @@ pub struct ScrollableList<D: ToString + Clone> {
 }
 
 impl<D: ToString + Clone> ScrollableList<D> {
-	/// Create a new scrollable list.
+	/// Creates a new scrollable list.
 	pub fn new(
 		items: Vec<ListItem<D>>,
 		display_count: Option<usize>,
@@ -134,6 +134,76 @@ impl<D: ToString + Clone> ScrollableList<D> {
 		}
 	}
 
+	/// Creates a block for the list item to be displayed in.
+	fn get_list_item_paragraph<'a>(
+		&'a self,
+		index: usize,
+		custom_paragraph: Option<Paragraph<'a>>,
+	) -> Paragraph<'a> {
+		let item = self.items.get(index).unwrap_or_else(|| {
+			panic!(
+				"list length is {} but tried to index at {index}",
+				self.items.len()
+			)
+		});
+
+		let mut item_block = titled_ui_block(format!(
+			"{}{}",
+			index + 1,
+			item.name.as_ref().map_or(String::new(), |s| format!(" ─ {s}"))
+		))
+		.title_alignment(self.text_alignment);
+
+		if self.get_selected().map_or(false, |(selected_index, _)| index == selected_index) {
+			let mut style = HIGHLIGHTED;
+			if self.flicker_counter.is_off() {
+				style = style.add_modifier(Modifier::DIM);
+			}
+			item_block = highlight_block(item_block).style(style);
+		}
+
+		custom_paragraph
+			.unwrap_or_else(|| Paragraph::new(item.get_displayed_data()))
+			.alignment(self.text_alignment)
+			.block(item_block)
+	}
+
+	/// Renders one item of this list.
+	///
+	/// # Panics
+	///
+	/// This function panics when the index is outside of the list's items.
+	fn render_raw_item(
+		&mut self,
+		frame: &mut Frame<'_>,
+		area: Rect,
+		index: usize,
+		custom_paragraph: Option<Paragraph<'_>>,
+	) {
+		let item_paragraph = self.get_list_item_paragraph(index, custom_paragraph);
+		frame.render_widget(item_paragraph, area);
+		self.flicker_counter.update();
+	}
+
+	/// Renders one item of this list after being passed through a processor
+	/// function.
+	///
+	/// # Panics
+	///
+	/// This function panics when the index is outside of the list's items.
+	fn render_processed_item<P>(
+		&mut self,
+		frame: &mut Frame<'_>,
+		area: Rect,
+		item: &ListItem<D>,
+		index: usize,
+		processor: P,
+	) where
+		P: Fn(&ListItem<D>) -> Paragraph<'_>,
+	{
+		self.render_raw_item(frame, area, index, Some(processor(item)));
+	}
+
 	/// Renders this list with a custom closure to process the raw string
 	/// displayed on the list.
 	pub fn render_processed<P>(&mut self, frame: &mut Frame<'_>, area: Rect, processor: P)
@@ -149,67 +219,8 @@ impl<D: ToString + Clone> ScrollableList<D> {
 					items.len()
 				)
 			});
-			self.render_item_processed(frame, chunks[position], item, index, &processor);
+			self.render_processed_item(frame, chunks[position], item, index, &processor);
 		}
-	}
-
-	/// Renders one item of this list.
-	///
-	/// # Panics
-	///
-	/// This function panics when the index is outside of the list's items.
-	fn render_raw_item(
-		&mut self,
-		frame: &mut Frame<'_>,
-		area: Rect,
-		index: usize,
-		custom_paragraph: Option<Paragraph<'_>>,
-	) {
-		let item = self.items.get(index).unwrap_or_else(|| {
-			panic!(
-				"list length is {} but tried to index at {index}",
-				self.items.len()
-			)
-		});
-		let mut item_block = titled_ui_block(format!(
-			"{}{}",
-			index + 1,
-			item.name.as_ref().map_or(String::new(), |s| format!(" ─ {s}"))
-		))
-		.title_alignment(self.text_alignment);
-
-		if self.get_selected().map_or(false, |(selected_index, _)| index == selected_index) {
-			let mut style = HIGHLIGHTED;
-			if self.flicker_counter.is_off() {
-				style = style.add_modifier(Modifier::DIM);
-			}
-			item_block = highlight_block(item_block).style(style);
-		}
-		let paragraph =
-			custom_paragraph.unwrap_or_else(|| Paragraph::new(item.get_displayed_data()));
-		let item_paragraph = paragraph.alignment(self.text_alignment).block(item_block);
-		frame.render_widget(item_paragraph, area);
-		self.flicker_counter.update();
-	}
-
-	/// Renders one item of this list after being passed through a processor
-	/// function.
-	///
-	/// # Panics
-	///
-	/// This function panics when the index is outside of the list's items.
-	fn render_item_processed<P>(
-		&mut self,
-		frame: &mut Frame<'_>,
-		area: Rect,
-		item: &ListItem<D>,
-		index: usize,
-		processor: P,
-	) where
-		P: Fn(&ListItem<D>) -> Paragraph<'_>,
-	{
-		let paragraph = processor(item);
-		self.render_raw_item(frame, area, index, Some(paragraph));
 	}
 
 	/// Returns the layout for this list. Put simply, the layout is only a list
