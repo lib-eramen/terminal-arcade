@@ -6,7 +6,6 @@ use crossterm::event::{
 	KeyEvent,
 	KeyModifiers,
 };
-use enum_dispatch::enum_dispatch;
 use ratatui::{
 	buffer::Buffer,
 	layout::{
@@ -133,8 +132,8 @@ impl ScreenState {
 /// [`Self::initial_state`], as well as [`Self::event_screen`] and
 /// [`Self::render_screen`].
 #[must_use]
-#[enum_dispatch(Screens)]
-pub trait Screen: Clone {
+#[enum_delegate::register]
+pub trait Screen {
 	/// Returns an initial screen state when this screen is first created.
 	fn initial_state(&self) -> ScreenState;
 
@@ -221,15 +220,15 @@ impl ScreenAndState {
 }
 
 /// All screens implemented in Terminal Arcade.
-#[enum_dispatch]
+#[enum_delegate::implement(Screen)]
 #[derive(Clone)]
 #[allow(missing_docs)]
 pub enum Screens {
-	ControlsPopup,
-	WelcomeScreen,
-	ConfigScreen,
-	GameSearchScreen,
-	MinesweeperSetupScreen,
+	ControlsPopup(ControlsPopup),
+	WelcomeScreen(WelcomeScreen),
+	ConfigScreen(ConfigScreen),
+	GameSearchScreen(GameSearchScreen),
+	MinesweeperSetupScreen(MinesweeperSetupScreen),
 }
 
 impl From<Screens> for ScreenAndState {

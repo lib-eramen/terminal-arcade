@@ -7,6 +7,7 @@ pub mod color_scheme;
 pub mod components;
 pub mod screen;
 pub mod screens;
+pub mod widget;
 pub mod util;
 
 pub use screen::Screen;
