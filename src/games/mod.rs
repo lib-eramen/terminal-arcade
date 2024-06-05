@@ -25,6 +25,7 @@ use chrono::{
 };
 use crossterm::event::Event;
 use derive_new::new;
+use enum_dispatch::enum_dispatch;
 use pluralizer::pluralize;
 use serde_derive::{
 	Deserialize,
@@ -64,7 +65,7 @@ pub struct GameState {
 /// how it interacts with the rest of the Terminal Arcade UI, as well as how it
 /// handles events passed to it.
 #[must_use]
-#[enum_delegate::register]
+#[enum_dispatch]
 pub trait Game {
 	/// Metadata of the game.
 	fn data(&self) -> GameState;
@@ -75,7 +76,7 @@ pub trait Game {
 
 /// All games implemented in Terminal Arcade.
 #[must_use]
-#[enum_delegate::implement(Game)]
+#[enum_dispatch(Game)]
 #[derive(EnumIter, Clone, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub enum Games {

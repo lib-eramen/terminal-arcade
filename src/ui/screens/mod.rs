@@ -14,6 +14,7 @@ use crossterm::event::{
 	KeyEvent,
 	KeyModifiers,
 };
+use enum_dispatch::enum_dispatch;
 pub use game_select::GameSearchScreen;
 pub use games::*;
 use ratatui::{
@@ -136,7 +137,7 @@ impl ScreenState {
 /// [`Self::initial_state`], as well as [`Self::event_screen`] and
 /// [`Self::render_screen`].
 #[must_use]
-#[enum_delegate::register]
+#[enum_dispatch]
 pub trait Screen {
 	/// Returns an initial screen state when this screen is first created.
 	fn initial_state(&self) -> ScreenState;
@@ -224,7 +225,7 @@ impl ScreenAndState {
 }
 
 /// All screens implemented in Terminal Arcade.
-#[enum_delegate::implement(Screen)]
+#[enum_dispatch(Screen)]
 #[derive(Clone)]
 #[allow(missing_docs)]
 pub enum Screens {

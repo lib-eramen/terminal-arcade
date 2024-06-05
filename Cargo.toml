@@ -22,7 +22,7 @@ color-eyre = "0.6.2"
 crossterm = { version = "0.26.1", features = ["event-stream"] }
 derive-new = "0.5.9"
 derive_builder = "0.20.0"
-enum_delegate = "0.2.0"
+enum_dispatch = "0.3.13"
 git_info = "0.1.2"
 home = "0.5.5"
 lazy_static = "1.4.0"
