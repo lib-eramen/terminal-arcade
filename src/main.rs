@@ -2,8 +2,7 @@
 //!
 //! Terminal Arcade is an arcade machine
 //! replica-concept-reinvention-do-it-myself thingymajig of the arcade
-//! machine! The preceding sentence should have already given a solid indication
-//! of the quality of this crate.
+//! machine! That's really it.
 //!
 //! This crate contains an interface for extending and building more games, as
 //! well as a (hopefully) lot other pre-built games as well.
@@ -27,13 +26,10 @@ use std::{
 	time::Duration,
 };
 
-use crate::{
-	core::Handler,
-	ui::components::flicker_counter::FlickerCounter,
-};
+use crate::core::Handler;
 
 pub mod core;
-pub mod game;
+pub mod games;
 pub mod ui;
 
 fn initialize() {

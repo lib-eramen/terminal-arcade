@@ -28,14 +28,16 @@ use ratatui::{
 	Frame,
 };
 
-use crate::ui::components::{
-	flicker_counter::FlickerCounter,
-	presets::{
+use crate::ui::{
+	components::presets::{
 		highlight_block,
 		titled_ui_block,
 		HIGHLIGHTED,
 	},
-	scroll_tracker::ScrollTracker,
+	widgets::util::{
+		flicker_counter::FlickerCounter,
+		scroll_tracker::ScrollTracker,
+	},
 };
 
 /// A list item to be displayed.

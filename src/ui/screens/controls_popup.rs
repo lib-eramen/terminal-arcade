@@ -25,7 +25,7 @@ use crate::ui::{
 		titled_ui_block,
 		HIGHLIGHTED,
 	},
-	screen::{
+	screens::{
 		ControlsEntry,
 		ScreenKind,
 		ScreenState,

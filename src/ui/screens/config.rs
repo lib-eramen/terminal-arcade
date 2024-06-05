@@ -29,7 +29,7 @@ use crate::{
 			},
 			under_construction::render_under_construction_block,
 		},
-		screen::{
+		screens::{
 			ScreenKind,
 			ScreenState,
 		},

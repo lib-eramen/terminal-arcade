@@ -7,16 +7,16 @@ use serde_derive::{
 };
 
 use crate::{
-	game::{
+	games::{
 		Game,
-		GameData,
 		GameMetadata,
+		GameState,
 		GameStaticInfo,
 		Games,
 	},
 	ui::{
 		games::minesweeper::board_setup::MinesweeperSetupScreen,
-		screen::Screens,
+		screens::Screens,
 		Screen,
 	},
 };
@@ -26,8 +26,8 @@ use crate::{
 pub struct Minesweeper;
 
 impl Game for Minesweeper {
-	fn data(&self) -> GameData {
-		GameData::new(
+	fn data(&self) -> GameState {
+		GameState::new(
 			GameMetadata::new(GameStaticInfo::new(
 				self.clone().into(),
 				"Minesweeper".to_string(),
@@ -35,7 +35,7 @@ impl Game for Minesweeper {
 				"0.0.1".to_string(),
 			))
 			.unwrap(),
-			MinesweeperSetupScreen::new().into(),
+			Some(MinesweeperSetupScreen::new().into()),
 		)
 	}
 

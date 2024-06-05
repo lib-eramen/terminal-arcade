@@ -61,7 +61,7 @@ use crate::{
 		get_terminal,
 	},
 	ui::{
-		screen::{
+		screens::{
 			OpenStatus,
 			ScreenAndState,
 			ScreenKind,
@@ -165,12 +165,7 @@ impl Handler {
 	/// "Spawns" a screen. This method simply appends a
 	/// [`ScreenAndState`] object to the tail end of the screen stack.
 	fn spawn_screen(&mut self, screen: Screens) {
-		self.spawn_screen_and_state(ScreenAndState::new(screen));
-	}
-
-	/// Appends a [`ScreenAndState`] to the screen stack.
-	fn spawn_screen_and_state(&mut self, screen_and_state: ScreenAndState) {
-		self.screen_stack.push(screen_and_state);
+		self.screen_stack.push(ScreenAndState::new(screen));
 	}
 
 	/// Closes the active screen.
@@ -274,7 +269,7 @@ impl Handler {
 			self.close_active_screen()?;
 		}
 		if let Some(screen) = created_screen {
-			self.spawn_screen_and_state(*screen);
+			self.spawn_screen(screen);
 		}
 
 		self.quit_when_no_screens()

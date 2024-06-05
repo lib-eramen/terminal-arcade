@@ -17,7 +17,7 @@ use ratatui::{
 
 use crate::ui::{
 	components::presets::titled_ui_block,
-	screen::{
+	screens::{
 		OpenStatus,
 		ScreenKind,
 		ScreenState,

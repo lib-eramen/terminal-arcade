@@ -1,6 +1,6 @@
 //! A text input bar. See [`TextInputBar`] for the struct this module exports.
 
-use crate::ui::components::flicker_counter::FlickerCounter;
+use crate::ui::widgets::util::flicker_counter::FlickerCounter;
 
 /// A text input field, navigable with entry by a keyboard-controlled cursor.
 #[derive(Clone)]

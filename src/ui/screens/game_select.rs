@@ -28,13 +28,12 @@ use strum::IntoEnumIterator;
 
 use crate::{
 	core::terminal::BackendType,
-	game::{
+	games::{
 		Game,
 		Games,
 	},
 	ui::{
 		components::{
-			flicker_counter::FlickerCounter,
 			game_select::{
 				search_bottom_bar::render_search_bottom_bar,
 				search_section::render_search_section,
@@ -43,13 +42,12 @@ use crate::{
 				titled_ui_block,
 				untitled_ui_block,
 			},
-			scroll_tracker::ScrollTracker,
-			scrollable_list::ScrollableList,
 		},
-		screen::{
+		screens::{
 			ScreenKind,
 			ScreenState,
 		},
+		widgets::scrollable_list::ScrollableList,
 		Screen,
 	},
 };
@@ -176,7 +174,7 @@ impl GameSearchScreen {
 	/// Selects a game.
 	fn select_game(&mut self, state: &mut ScreenState) {
 		if let Some(selection) = self.game_results_list.get_selected() {
-			state.screen_created = Some(Box::new(selection.1.data.data().created_screen.into()));
+			state.screen_created = selection.1.data.data().created_screen.take();
 		}
 	}
 

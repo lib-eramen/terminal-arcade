@@ -33,25 +33,22 @@ use crate::{
 				titled_ui_block,
 				untitled_ui_block,
 			},
-			scroll_tracker::ScrollTracker,
-			scrollable_list::{
-				ListItem,
-				ScrollableList,
-			},
 			welcome::footer::render_welcome_bottom_bar,
 		},
-		screen::{
+		screens::{
+			config::ConfigScreen,
+			game_select::GameSearchScreen,
 			OpenStatus,
 			ScreenAndState,
 			ScreenKind,
 			ScreenState,
 			Screens,
 		},
-		screens::{
-			config::ConfigScreen,
-			game_select::GameSearchScreen,
-		},
 		util::get_crate_version,
+		widgets::scrollable_list::{
+			ListItem,
+			ScrollableList,
+		},
 		Screen,
 	},
 };

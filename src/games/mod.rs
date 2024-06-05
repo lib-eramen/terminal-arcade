@@ -38,10 +38,10 @@ use strum::{
 
 use crate::{
 	core::get_save_dir,
-	game::minesweeper::Minesweeper,
+	games::minesweeper::Minesweeper,
 	ui::{
-		components::scrollable_list::ListItem,
-		screen::Screens,
+		screens::Screens,
+		widgets::scrollable_list::ListItem,
 		Screen,
 	},
 };
@@ -50,12 +50,13 @@ pub mod minesweeper;
 
 /// State for a [Game].
 #[derive(Clone, new)]
-pub struct GameData {
+pub struct GameState {
 	/// Game metadata.
 	pub metadata: GameMetadata,
 
-	/// Screen to be created.
-	pub created_screen: Screens,
+	/// Screen to be created. You are always strongly encouraged to place a
+	/// [Screen] in there, unless you'd like to create a screenless game.
+	pub created_screen: Option<Screens>,
 }
 
 /// A trait for a game in Terminal Arcade.
@@ -66,7 +67,7 @@ pub struct GameData {
 #[enum_delegate::register]
 pub trait Game {
 	/// Metadata of the game.
-	fn data(&self) -> GameData;
+	fn data(&self) -> GameState;
 
 	/// Called when an event is passed to the game.
 	fn event(&mut self, event: &Event) -> anyhow::Result<()>;
