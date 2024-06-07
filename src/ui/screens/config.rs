@@ -46,12 +46,12 @@ impl Screen for ConfigScreen {
 		ScreenState::new("Under construction!", ScreenKind::Normal, None)
 	}
 
-	fn event_screen(&mut self, _event: &Event, _state: &mut ScreenState) -> anyhow::Result<()> {
+	fn handle_event(&mut self, _event: &Event, _state: &mut ScreenState) -> anyhow::Result<()> {
 		Ok(())
 	}
 
 	// TODO: why are there only 24 hours in a day
-	fn render_screen(&mut self, frame: &mut Frame<'_>, _state: &ScreenState) {
+	fn render_ui(&mut self, frame: &mut Frame<'_>, _state: &ScreenState) {
 		render_under_construction_block(frame);
 	}
 }

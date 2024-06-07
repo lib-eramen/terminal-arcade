@@ -135,7 +135,7 @@ impl ScreenState {
 ///
 /// One should always start here when making a game/screen. To start, implement
 /// [`Self::initial_state`], as well as [`Self::event_screen`] and
-/// [`Self::render_screen`].
+/// [`Self::render_ui`].
 #[must_use]
 #[enum_dispatch]
 pub trait Screen {
@@ -145,7 +145,7 @@ pub trait Screen {
 	/// Handles an input event.
 	/// Using this method directly is discouraged - [`Self::event`] handles
 	/// default shortcuts for every screen as well.
-	fn event_screen(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()>;
+	fn handle_event(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()>;
 
 	/// Called when an input event is received.
 	/// In addition to the events that [`Self::event_screen`] handles, this
@@ -170,7 +170,7 @@ pub trait Screen {
 				_ => {},
 			}
 		}
-		self.event_screen(event, state)
+		self.handle_event(event, state)
 	}
 
 	/// Called when the screen is being closed.
@@ -183,7 +183,7 @@ pub trait Screen {
 	/// Renders ***this*** screen's UI.
 	/// Using this method directly is discouraged - [`Self::render`] handles
 	/// rendering its popups as well.
-	fn render_screen(&mut self, frame: &mut Frame<'_>, state: &ScreenState);
+	fn render_ui(&mut self, frame: &mut Frame<'_>, state: &ScreenState);
 
 	/// Renders the screen (not its children). The method also draws a
 	/// screen-sized base block with a provided title by the trait.
@@ -195,7 +195,7 @@ pub trait Screen {
 			}
 			frame.render_widget(base_block, frame.size());
 		}
-		self.render_screen(frame, state);
+		self.render_ui(frame, state);
 	}
 }
 

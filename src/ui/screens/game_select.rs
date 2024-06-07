@@ -101,7 +101,7 @@ impl Screen for GameSearchScreen {
 		ScreenState::new("Search for a game!", ScreenKind::Normal, None)
 	}
 
-	fn event_screen(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()> {
+	fn handle_event(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()> {
 		if let Event::Key(key) = event {
 			match key.code {
 				KeyCode::Char('r') if key.modifiers == KeyModifiers::CONTROL => {
@@ -133,7 +133,7 @@ impl Screen for GameSearchScreen {
 		Ok(())
 	}
 
-	fn render_screen(&mut self, frame: &mut Frame<'_>, _state: &ScreenState) {
+	fn render_ui(&mut self, frame: &mut Frame<'_>, _state: &ScreenState) {
 		let size = frame.size();
 		let chunks = Self::game_selection_layout(size).split(size);
 		render_search_section(frame, chunks[0], self.search_term.as_deref());

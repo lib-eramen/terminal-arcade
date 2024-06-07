@@ -49,11 +49,11 @@ impl Screen for ControlsPopup {
 		)
 	}
 
-	fn event_screen(&mut self, _event: &Event, _state: &mut ScreenState) -> anyhow::Result<()> {
+	fn handle_event(&mut self, _event: &Event, _state: &mut ScreenState) -> anyhow::Result<()> {
 		Ok(())
 	}
 
-	fn render_screen(&mut self, frame: &mut Frame<'_>, state: &ScreenState) {
+	fn render_ui(&mut self, frame: &mut Frame<'_>, state: &ScreenState) {
 		let frame_area = frame.size();
 		let buffer = frame.buffer_mut();
 		let area = Rect {

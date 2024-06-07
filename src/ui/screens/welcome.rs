@@ -121,7 +121,7 @@ impl Screen for WelcomeScreen {
 		ScreenState::new("Terminal Arcade", ScreenKind::Normal, None)
 	}
 
-	fn event_screen(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()> {
+	fn handle_event(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()> {
 		if let Event::Key(key) = event {
 			match key.code {
 				KeyCode::Up => self.controls_list.scroll_forward(),
@@ -133,7 +133,7 @@ impl Screen for WelcomeScreen {
 		Ok(())
 	}
 
-	fn render_screen(&mut self, frame: &mut Frame<'_>, _state: &ScreenState) {
+	fn render_ui(&mut self, frame: &mut Frame<'_>, _state: &ScreenState) {
 		let size = frame.size();
 		let used_ui_height = 16 + 11 + 5 + 6;
 		let empty_space_height =

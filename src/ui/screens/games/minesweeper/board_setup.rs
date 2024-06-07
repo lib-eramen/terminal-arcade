@@ -34,9 +34,9 @@ impl Screen for MinesweeperSetupScreen {
 		ScreenState::new("Mine your field!", ScreenKind::Normal, None)
 	}
 
-	fn event_screen(&mut self, _event: &Event, _state: &mut ScreenState) -> anyhow::Result<()> {
+	fn handle_event(&mut self, _event: &Event, _state: &mut ScreenState) -> anyhow::Result<()> {
 		Ok(())
 	}
 
-	fn render_screen(&mut self, _frame: &mut Frame<'_>, _state: &ScreenState) {}
+	fn render_ui(&mut self, _frame: &mut Frame<'_>, _state: &ScreenState) {}
 }
