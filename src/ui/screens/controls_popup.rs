@@ -53,7 +53,7 @@ impl Screen for ControlsPopup {
 		Ok(())
 	}
 
-	fn render_ui(&mut self, frame: &mut Frame<'_>, state: &ScreenState) {
+	fn render_ui(&self, frame: &mut Frame<'_>, state: &ScreenState) {
 		let frame_area = frame.size();
 		let buffer = frame.buffer_mut();
 		let area = Rect {

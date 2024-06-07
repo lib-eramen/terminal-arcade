@@ -38,5 +38,5 @@ impl Screen for MinesweeperSetupScreen {
 		Ok(())
 	}
 
-	fn render_ui(&mut self, _frame: &mut Frame<'_>, _state: &ScreenState) {}
+	fn render_ui(&self, _frame: &mut Frame<'_>, _state: &ScreenState) {}
 }

@@ -4,7 +4,7 @@ use std::{
 	sync::Mutex,
 	time::{
 		Duration,
-		Instant,
+		SystemTime,
 	},
 };
 
@@ -34,22 +34,18 @@ impl FlickerState {
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct FlickerCounter {
-	/// Last time recorded.
-	pub last_time: Instant,
+	/// The beginning time of this flicker counter.
+	pub begin_time: SystemTime,
 
 	/// Interval to toggle.
 	pub interval: Duration,
-
-	/// State of the flicker.
-	pub state: FlickerState,
 }
 
 impl Default for FlickerCounter {
 	fn default() -> Self {
 		Self {
-			last_time: Instant::now(),
+			begin_time: SystemTime::now(),
 			interval: Duration::from_secs_f32(0.5),
-			state: FlickerState::On,
 		}
 	}
 }
@@ -59,43 +55,35 @@ impl FlickerCounter {
 	/// [`FlickerState::On`].
 	pub fn new(interval: Duration) -> Self {
 		Self {
-			last_time: Instant::now(),
+			begin_time: SystemTime::now(),
 			interval,
-			state: FlickerState::On,
 		}
 	}
 
-	/// Updates the counter. If the time is past the interval, the time is
-	/// always updated to [`Instant::now`].
-	///
-	/// Intended to be called as often as possible (preferably every frame).
-	pub fn update(&mut self) {
-		self.update_with_time(Instant::now());
-	}
-
-	/// Updates the counter with the [`Instant::now`] time.
+	/// Updates the counter with the [`SystemTime::now`] time.
 	pub fn reset(&mut self) {
-		self.last_time = Instant::now();
-		self.state = FlickerState::On;
+		self.begin_time = SystemTime::now();
 	}
 
-	/// [Updates the counter](Self::update) with a given global time.
-	pub fn update_with_time(&mut self, time: Instant) {
-		if time - self.last_time >= self.interval {
-			self.last_time = time;
-			self.state = self.state.toggle();
+	/// Gets the current [flicker state](FlickerState).
+	pub fn get_state(&self) -> FlickerState {
+		let elapsed = self.begin_time.elapsed().expect("Time is not making sense").as_nanos();
+		if elapsed / self.interval.as_nanos() % 2 == 0 {
+			FlickerState::On
+		} else {
+			FlickerState::Off
 		}
 	}
 
 	/// Checks if this counter's state is [`FlickerState::On`].
 	#[must_use]
 	pub fn is_on(&self) -> bool {
-		self.state == FlickerState::On
+		self.get_state() == FlickerState::On
 	}
 
 	/// Checks if this counter's state is [`FlickerState::Off`].
 	#[must_use]
 	pub fn is_off(&self) -> bool {
-		self.state == FlickerState::Off
+		self.get_state() == FlickerState::Off
 	}
 }

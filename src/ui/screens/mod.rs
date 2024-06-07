@@ -183,7 +183,7 @@ pub trait Screen {
 	/// Renders ***this*** screen's UI.
 	/// Using this method directly is discouraged - [`Self::render`] handles
 	/// rendering its popups as well.
-	fn render_ui(&mut self, frame: &mut Frame<'_>, state: &ScreenState);
+	fn render_ui(&self, frame: &mut Frame<'_>, state: &ScreenState);
 
 	/// Renders the screen (not its children). The method also draws a
 	/// screen-sized base block with a provided title by the trait.

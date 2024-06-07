@@ -129,7 +129,7 @@ impl<D: ToString + Clone> ScrollableList<D> {
 	}
 
 	/// Renders this list.
-	pub fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
+	pub fn render(&self, frame: &mut Frame<'_>, area: Rect) {
 		let chunks = self.get_layout().split(area);
 		for (position, index) in self.scroll_tracker.get_displayed_range().enumerate() {
 			self.render_raw_item(frame, chunks[position], index, None);
@@ -176,7 +176,7 @@ impl<D: ToString + Clone> ScrollableList<D> {
 	///
 	/// This function panics when the index is outside of the list's items.
 	fn render_raw_item(
-		&mut self,
+		&self,
 		frame: &mut Frame<'_>,
 		area: Rect,
 		index: usize,
@@ -184,7 +184,6 @@ impl<D: ToString + Clone> ScrollableList<D> {
 	) {
 		let item_paragraph = self.get_list_item_paragraph(index, custom_paragraph);
 		frame.render_widget(item_paragraph, area);
-		self.flicker_counter.update();
 	}
 
 	/// Renders one item of this list after being passed through a processor
@@ -194,7 +193,7 @@ impl<D: ToString + Clone> ScrollableList<D> {
 	///
 	/// This function panics when the index is outside of the list's items.
 	fn render_processed_item<P>(
-		&mut self,
+		&self,
 		frame: &mut Frame<'_>,
 		area: Rect,
 		item: &ListItem<D>,
@@ -208,7 +207,7 @@ impl<D: ToString + Clone> ScrollableList<D> {
 
 	/// Renders this list with a custom closure to process the raw string
 	/// displayed on the list.
-	pub fn render_processed<P>(&mut self, frame: &mut Frame<'_>, area: Rect, processor: P)
+	pub fn render_processed<P>(&self, frame: &mut Frame<'_>, area: Rect, processor: P)
 	where
 		P: Fn(&ListItem<D>) -> Paragraph<'_>,
 	{

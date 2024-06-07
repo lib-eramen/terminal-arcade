@@ -133,7 +133,7 @@ impl Screen for WelcomeScreen {
 		Ok(())
 	}
 
-	fn render_ui(&mut self, frame: &mut Frame<'_>, _state: &ScreenState) {
+	fn render_ui(&self, frame: &mut Frame<'_>, _state: &ScreenState) {
 		let size = frame.size();
 		let used_ui_height = 16 + 11 + 5 + 6;
 		let empty_space_height =

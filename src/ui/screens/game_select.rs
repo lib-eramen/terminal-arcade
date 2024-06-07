@@ -133,7 +133,7 @@ impl Screen for GameSearchScreen {
 		Ok(())
 	}
 
-	fn render_ui(&mut self, frame: &mut Frame<'_>, _state: &ScreenState) {
+	fn render_ui(&self, frame: &mut Frame<'_>, _state: &ScreenState) {
 		let size = frame.size();
 		let chunks = Self::game_selection_layout(size).split(size);
 		render_search_section(frame, chunks[0], self.search_term.as_deref());

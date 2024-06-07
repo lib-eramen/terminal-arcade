@@ -51,7 +51,7 @@ impl Screen for ConfigScreen {
 	}
 
 	// TODO: why are there only 24 hours in a day
-	fn render_ui(&mut self, frame: &mut Frame<'_>, _state: &ScreenState) {
+	fn render_ui(&self, frame: &mut Frame<'_>, _state: &ScreenState) {
 		render_under_construction_block(frame);
 	}
 }
