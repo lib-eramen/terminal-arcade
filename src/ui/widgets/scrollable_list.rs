@@ -34,7 +34,7 @@ use crate::ui::{
 		titled_ui_block,
 		HIGHLIGHTED,
 	},
-	widgets::util::{
+	widgets::utils::{
 		flicker_counter::FlickerCounter,
 		scroll_tracker::ScrollTracker,
 	},
