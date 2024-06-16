@@ -55,5 +55,5 @@ pub trait Widget {
 	fn render_ui(&self, frame: &mut Frame<'_>, area: Rect, state: &WidgetState);
 
 	/// Updates this struct on a frame-by-frame basis.
-	fn update(&mut self, state: &mut WidgetState) {}
+	fn update(&mut self, _state: &mut WidgetState) {}
 }

@@ -210,7 +210,7 @@ impl Widget for ControlsTable {
 		Ok(())
 	}
 
-	fn render_ui(&self, frame: &mut ratatui::Frame<'_>, area: Rect, state: &WidgetState) {
+	fn render_ui(&self, frame: &mut ratatui::Frame<'_>, area: Rect, _state: &WidgetState) {
 		// TODO: Use state to make selected option flicker
 
 		let mut table_state = TableState::from(self.scroll_tracker);
