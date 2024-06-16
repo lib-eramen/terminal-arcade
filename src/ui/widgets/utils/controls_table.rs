@@ -3,9 +3,44 @@
 use std::fmt::Display;
 
 use bitflags::bitflags;
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use derive_builder::Builder;
 use derive_new::new;
 use indexmap::IndexMap;
+use ratatui::{
+	layout::{
+		Constraint,
+		Direction,
+		Layout,
+	},
+	prelude::{
+		Buffer,
+		Rect,
+	},
+	style::{
+		Modifier,
+		Style,
+		Stylize,
+	},
+	text::Text,
+	widgets::{
+		Cell,
+		Row,
+		StatefulWidget,
+		Table,
+		TableState,
+	},
+};
+
+use crate::ui::{
+	components::presets::HIGHLIGHTED,
+	widgets::{
+		utils::scroll_tracker::ScrollTracker,
+		Widget,
+		WidgetFocus,
+		WidgetState,
+	},
+};
 
 /// The main key of a key combination, versus a modifier.
 #[derive(Hash, PartialEq, Eq)]
@@ -16,8 +51,15 @@ pub enum KeyControl {
 	/// Function keys.
 	F(u8),
 
-	/// Custom entry.
+	/// Custom control entry.
 	Custom(String),
+}
+
+impl KeyControl {
+	/// Creates a new custom key control.
+	pub fn new_custom<S: ToString>(s: S) -> Self {
+		Self::Custom(s.to_string())
+	}
 }
 
 impl Clone for KeyControl {
@@ -44,7 +86,7 @@ impl Display for KeyControl {
 #[derive(Clone, Hash, PartialEq, Eq, new)]
 pub struct Control {
 	/// Modifier key names.
-	modifiers: Vec<String>,
+	modifiers: Option<Vec<String>>,
 
 	/// The main key.
 	control: KeyControl,
@@ -52,38 +94,69 @@ pub struct Control {
 
 impl Display for Control {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		let mut keys = self.modifiers.clone();
+		let mut keys = self.modifiers.clone().unwrap_or_else(|| Vec::new());
 		keys.push(self.control.to_string());
 		let result = keys.into_iter().map(|key| format!("[{key}]")).collect::<Vec<_>>().join(" ");
 		write!(f, "{result}")
 	}
 }
 
-/// A table of [Control]s, each mapped to a function/usage described in text.
-/// The table also handles merging controls with like key combinations.
-#[derive(Clone)]
-pub struct ControlsTable(IndexMap<Control, Vec<String>>);
+/// A table of [Control]s, each mapped to a function/usage described in a text
+/// entry. The table also handles merging controls with like key combinations.
+///
+/// One way to instantiate this struct would be to create a new [Default]
+/// instance before [`Self::register`]ing entries.
+#[derive(Clone, Default)]
+pub struct ControlsEntries(pub IndexMap<Control, Vec<String>>);
 
-impl ControlsTable {
-	/// Creates a controls table.
-	pub fn new<T: IntoIterator<Item = (Control, Vec<String>)>>(iterable: T) -> Self {
-		Self(IndexMap::from_iter(iterable))
+impl<'a> ControlsEntries {
+	/// Creates a new controls entries table.
+	pub fn new<E>(entries: E) -> Self
+	where
+		E: IntoIterator<Item = (Control, Vec<String>)>,
+	{
+		Self(IndexMap::from_iter(entries))
 	}
 
-	/// Creates a controls table, with reference to other controls table to be
-	/// [`Self::merge`]d.
-	pub fn with_others<T: IntoIterator<Item = (Control, Vec<String>)>>(
-		iterable: T,
-		others: &[&Self],
-	) -> Self {
-		let mut result = Self::new(iterable);
+	/// Adds an entry into the controls entries table. This is a fluent setter
+	/// method.
+	pub fn add<S: ToString>(mut self, control: Control, entry: S) -> Self {
+		self.register(control, entry.to_string());
+		self
+	}
+
+	/// Adds an entry of multiple functions in to the controls entries table.
+	/// This is a fluent setter method.
+	pub fn add_multi(mut self, control: Control, entries: Vec<String>) -> Self {
+		for entry in entries {
+			self = self.add(control.clone(), entry);
+		}
+		self
+	}
+
+	/// Registers an entry, merging into an exact control if it exists.
+	fn register(&mut self, control: Control, entry: String) {
+		self.0
+			.entry(control.clone())
+			.and_modify(|entries| entries.push(entry.clone()))
+			.or_insert(vec![entry]);
+	}
+
+	/// Creates a new controls entries table, with reference to other controls
+	/// table to be [`Self::merge`]d.
+	pub fn with_others<E>(entries: E, others: &[&Self]) -> Self
+	where
+		E: IntoIterator<Item = (Control, Vec<String>)>,
+	{
+		let mut result = Self::new(entries);
 		for other in others {
 			result.merge(other);
 		}
 		result
 	}
 
-	/// Merges another controls table with this control table, enabling enabling
+	/// Merges another controls entries table with this control table, enabling
+	/// enabling
 	pub fn merge(&mut self, other: &Self) {
 		for (control, entry) in &other.0 {
 			self.0
@@ -92,4 +165,104 @@ impl ControlsTable {
 				.or_insert(entry.clone());
 		}
 	}
+
+	/// Gets the longest control string's length.
+	pub fn get_longest_control_str_len(&self) -> Option<usize> {
+		self.0.iter().map(|(control, _)| control.to_string().len()).fold(None, |acc, item| {
+			if item > acc.unwrap_or(0) {
+				Some(item)
+			} else {
+				acc
+			}
+		})
+	}
+
+	/// Gets the longest entry string's length.
+	pub fn get_longest_entry_str_len(&self, index: usize) -> Option<usize> {
+		self.0.get_index(index)?.1.iter().map(String::len).fold(None, |acc, item| {
+			if item > acc.unwrap_or(0) {
+				Some(item)
+			} else {
+				acc
+			}
+		})
+	}
+}
+
+/// A table of [Control]s, each mapped to a function/usage described in text.
+#[derive(Clone)]
+pub struct ControlsTable {
+	/// Controls entries to be displayed.
+	entries: ControlsEntries,
+
+	/// Scroll tracker for the table.
+	scroll_tracker: ScrollTracker,
+}
+
+impl StatefulWidget for ControlsTable {
+	type State = (ControlsTableState, WidgetState);
+
+	fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+		let controls_state = &state.0;
+		let widget_state = &state.1;
+		let mut table_state = TableState::from(controls_state.scroll_tracker);
+		let controls_entries = &controls_state.entries;
+
+		let header = ["Control", "Function"]
+			.into_iter()
+			.map(Cell::from)
+			.collect::<Row<'_>>()
+			.style(HIGHLIGHTED.add_modifier(Modifier::UNDERLINED))
+			.height(1);
+		// TODO: (Util function?) Alternating colors for alternating rows.
+		let entry_rows = controls_entries.0.iter().map(|(control, entries)| {
+			let entry_length = entries.len();
+			let entry_height = entry_length
+				.try_into()
+				.expect(format!("Too many lines: {entry_length} > {}", u16::MAX).as_str());
+
+			Row::new([
+				Cell::new(control.to_string()).italic(),
+				Cell::new(entries.join("\n")),
+			])
+			.height(entry_height)
+		});
+
+		let table_widths = [Constraint::Length(
+			controls_state.entries.get_longest_control_str_len().unwrap_or(0) as u16,
+		)];
+		let table = Table::new(entry_rows, table_widths);
+		table.render(area, buffer, &mut table_state);
+	}
+}
+
+impl Widget for ControlsTable {
+	/// Returns this widget's initial state.
+	fn initial_state(&self) -> WidgetState {
+		WidgetState::new(
+			WidgetFocus::Unfocused,
+			ControlsEntries::default().add(
+				Control::new(None, KeyControl::new_custom("[↑ ↓]")),
+				"Navigate this controls list",
+			),
+		)
+	}
+
+	/// Handles an event.
+	/// Refer to [Screen::handle_event] for events that are intercepted by the
+	/// overlying screen that manages this widget.
+	fn handle_event(&self, event: &Event) -> anyhow::Result<()> {
+		if let KeyEvent { code, modifiers, .. } = event {
+			if !modifiers.is_empty() {
+				return Ok(());
+			}
+			match code {
+				KeyCode::Up => self.
+			}
+		}
+	}
+	
+	fn render_ui(&self, frame: &mut ratatui::Frame<'_>, area: Rect, state: &WidgetState) {
+			todo!()
+		}
 }

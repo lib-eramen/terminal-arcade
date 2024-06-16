@@ -9,6 +9,7 @@ use std::{
 
 use anyhow::bail;
 use rand::Rng;
+use ratatui::widgets::TableState;
 
 /// Keeps track of scroll position.
 #[derive(Debug, Clone, Copy)]
@@ -135,5 +136,11 @@ impl ScrollTracker {
 	/// the count will be set to the tracker's length instead.
 	pub fn set_display_count(&mut self, new_range: usize) {
 		self.display_count = Some(min(self.length, new_range));
+	}
+}
+
+impl From<ScrollTracker> for TableState {
+	fn from(value: ScrollTracker) -> Self {
+		TableState::new().with_selected(value.selected)
 	}
 }

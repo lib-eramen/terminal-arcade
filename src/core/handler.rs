@@ -284,6 +284,7 @@ impl Handler {
 				return Ok(true);
 			},
 			Event::Resize(..) => {
+				// TODO: Minimum size warning mechanism
 				self.draw_screen_ui()?;
 			},
 			_ => {},
