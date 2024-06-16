@@ -1,24 +1,11 @@
 //! Implementation for the game Minesweeper.
 
 use crossterm::event::Event;
-use serde_derive::{
-	Deserialize,
-	Serialize,
-};
+use serde_derive::{Deserialize, Serialize};
 
 use crate::{
-	games::{
-		Game,
-		GameMetadata,
-		GameState,
-		GameStaticInfo,
-		Games,
-	},
-	ui::{
-		games::minesweeper::board_setup::MinesweeperSetupScreen,
-		screens::Screens,
-		Screen,
-	},
+	games::{Game, GameMetadata, GameState, GameStaticInfo, Games},
+	ui::{games::minesweeper::board_setup::MinesweeperSetupScreen, screens::Screens, Screen},
 };
 
 /// The game [Minesweeper](https://en.wikipedia.org/wiki/Minesweeper_(video_game)).

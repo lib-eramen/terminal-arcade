@@ -3,33 +3,15 @@
 use crossterm::event::Event;
 use derive_new::new;
 use ratatui::{
-	layout::{
-		Constraint,
-		Rect,
-	},
+	layout::{Constraint, Rect},
 	style::Modifier,
-	widgets::{
-		Cell,
-		Clear,
-		HighlightSpacing,
-		Row,
-		Table,
-		Widget,
-	},
+	widgets::{Cell, Clear, HighlightSpacing, Row, Table, Widget},
 	Frame,
 };
 
 use crate::ui::{
-	components::presets::{
-		highlight_block,
-		titled_ui_block,
-		HIGHLIGHTED,
-	},
-	screens::{
-		ControlsEntry,
-		ScreenKind,
-		ScreenState,
-	},
+	components::presets::{highlight_block, titled_ui_block, HIGHLIGHTED},
+	screens::{ControlsEntry, ScreenKind, ScreenState},
 	Screen,
 };
 
@@ -74,6 +56,7 @@ impl ControlsPopup {
 	/// Returns a table containing information about key shortcuts.
 	#[must_use]
 	fn get_controls_table<'a>(extra_entries: Option<Vec<ControlsEntry>>) -> Table<'a> {
+		// TODO: Replace this with own controls table widget
 		let mut entries = extra_entries.unwrap_or_default();
 		let mut default_shortcuts = vec![
 			("Esc", "Closes this screen and returns to the previous one"),

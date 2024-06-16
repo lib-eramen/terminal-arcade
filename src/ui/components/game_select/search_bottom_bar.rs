@@ -3,19 +3,13 @@
 
 use pluralizer::pluralize;
 use ratatui::{
-	layout::{
-		Alignment,
-		Rect,
-	},
+	layout::{Alignment, Rect},
 	text::Text,
 	widgets::Paragraph,
 	Frame,
 };
 
-use crate::{
-	core::terminal::BackendType,
-	ui::components::presets::untitled_ui_block,
-};
+use crate::{core::terminal::BackendType, ui::components::presets::untitled_ui_block};
 
 /// Renders the bottom bar of the game selection screen.
 pub fn render_search_bottom_bar(

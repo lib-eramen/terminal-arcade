@@ -2,22 +2,13 @@
 
 #![allow(clippy::needless_pass_by_value)]
 
-use std::time::{
-	SystemTime,
-	UNIX_EPOCH,
-};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crossterm::{
 	execute,
-	terminal::{
-		Clear,
-		ClearType,
-	},
+	terminal::{Clear, ClearType},
 };
-use ratatui::text::{
-	Line,
-	Text,
-};
+use ratatui::text::{Line, Text};
 
 use crate::core::terminal::get_mut_terminal;
 

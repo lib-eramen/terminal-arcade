@@ -1,43 +1,20 @@
 //! A scrollable list. See [`ScrollableList`] for the struct this module
 //! exports.
 
-use std::{
-	cmp::min,
-	fmt::Display,
-	time::Duration,
-};
+use std::{cmp::min, fmt::Display, time::Duration};
 
 use derive_new::new;
 use ratatui::{
-	layout::{
-		Alignment,
-		Constraint,
-		Direction,
-		Layout,
-	},
-	prelude::{
-		Buffer,
-		Rect,
-	},
+	layout::{Alignment, Constraint, Direction, Layout},
+	prelude::{Buffer, Rect},
 	style::Modifier,
-	widgets::{
-		Paragraph,
-		StatefulWidget,
-		Widget,
-	},
+	widgets::{Paragraph, StatefulWidget, Widget},
 	Frame,
 };
 
 use crate::ui::{
-	components::presets::{
-		highlight_block,
-		titled_ui_block,
-		HIGHLIGHTED,
-	},
-	widgets::utils::{
-		flicker_counter::FlickerCounter,
-		scroll_tracker::ScrollTracker,
-	},
+	components::presets::{highlight_block, titled_ui_block, HIGHLIGHTED},
+	widgets::utils::{flicker_counter::FlickerCounter, scroll_tracker::ScrollTracker},
 };
 
 /// A list item to be displayed.

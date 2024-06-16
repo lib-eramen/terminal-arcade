@@ -1,3 +1,8 @@
 /target
 /.idea
 /.vscode
+/.cargo
+
+# replit files
+.replit
+replit.nix

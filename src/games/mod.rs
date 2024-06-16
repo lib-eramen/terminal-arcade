@@ -6,45 +6,23 @@
 //! [`crate::ui::screens::games`] module.
 
 use std::{
-	fmt::{
-		Display,
-		Formatter,
-	},
+	fmt::{Display, Formatter},
 	path::PathBuf,
-	time::{
-		Duration,
-		SystemTime,
-		UNIX_EPOCH,
-	},
+	time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use chrono::{
-	DateTime,
-	Local,
-	Utc,
-};
+use chrono::{DateTime, Local, Utc};
 use crossterm::event::Event;
 use derive_new::new;
 use enum_dispatch::enum_dispatch;
 use pluralizer::pluralize;
-use serde_derive::{
-	Deserialize,
-	Serialize,
-};
-use strum::{
-	Display,
-	EnumIter,
-	IntoEnumIterator,
-};
+use serde_derive::{Deserialize, Serialize};
+use strum::{Display, EnumIter, IntoEnumIterator};
 
 use crate::{
 	core::get_save_dir,
 	games::minesweeper::Minesweeper,
-	ui::{
-		screens::Screens,
-		widgets::scrollable_list::ListItem,
-		Screen,
-	},
+	ui::{screens::Screens, widgets::scrollable_list::ListItem, Screen},
 };
 
 pub mod minesweeper;

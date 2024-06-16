@@ -4,19 +4,9 @@
 
 use ratatui::{
 	layout::Alignment,
-	style::{
-		Color,
-		Modifier,
-		Style,
-		Stylize,
-	},
+	style::{Color, Modifier, Style, Stylize},
 	text::Line,
-	widgets::{
-		Block,
-		BorderType,
-		Borders,
-		Padding,
-	},
+	widgets::{Block, BorderType, Borders, Padding},
 };
 
 /// A "highlighted" text [Style] (bold + italic + underlined).

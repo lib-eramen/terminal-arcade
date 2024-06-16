@@ -2,53 +2,27 @@
 
 use std::cmp::max;
 
-use crossterm::event::{
-	Event,
-	KeyCode,
-	KeyModifiers,
-};
+use crossterm::event::{Event, KeyCode, KeyModifiers};
 use ratatui::{
-	layout::{
-		Alignment,
-		Constraint,
-		Direction,
-		Layout,
-	},
-	widgets::{
-		Padding,
-		Paragraph,
-	},
+	layout::{Alignment, Constraint, Direction, Layout},
+	widgets::{Padding, Paragraph},
 	Frame,
 };
-use strum::{
-	Display,
-	EnumString,
-};
+use strum::{Display, EnumString};
 
 use crate::{
 	core::terminal::BackendType,
 	ui::{
 		components::{
-			presets::{
-				titled_ui_block,
-				untitled_ui_block,
-			},
+			presets::{titled_ui_block, untitled_ui_block},
 			welcome::footer::render_welcome_bottom_bar,
 		},
 		screens::{
-			config::ConfigScreen,
-			game_select::GameSearchScreen,
-			OpenStatus,
-			ScreenAndState,
-			ScreenKind,
-			ScreenState,
-			Screens,
+			config::ConfigScreen, game_select::GameSearchScreen, OpenStatus, ScreenAndState,
+			ScreenKind, ScreenState, Screens,
 		},
 		util::get_crate_version,
-		widgets::scrollable_list::{
-			ListItem,
-			ScrollableList,
-		},
+		widgets::scrollable_list::{ListItem, ScrollableList},
 		Screen,
 	},
 };

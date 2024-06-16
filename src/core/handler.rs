@@ -1,76 +1,34 @@
 //! UI handler. Manages a hierarchy of screens and rendering them.
 
 use std::{
-	panic::{
-		set_hook,
-		take_hook,
-	},
-	path::{
-		Path,
-		PathBuf,
-	},
+	panic::{set_hook, take_hook},
+	path::{Path, PathBuf},
 	time::Duration,
 };
 
 use anyhow::bail;
 use bool_toggle::Toggler;
 use crossterm::{
-	cursor::{
-		DisableBlinking,
-		EnableBlinking,
-		Hide,
-		MoveTo,
-		Show,
-	},
+	cursor::{DisableBlinking, EnableBlinking, Hide, MoveTo, Show},
 	event::{
-		poll,
-		read,
-		DisableBracketedPaste,
-		DisableFocusChange,
-		DisableMouseCapture,
-		EnableBracketedPaste,
-		EnableFocusChange,
-		EnableMouseCapture,
-		Event,
-		KeyCode,
-		KeyEvent,
+		poll, read, DisableBracketedPaste, DisableFocusChange, DisableMouseCapture,
+		EnableBracketedPaste, EnableFocusChange, EnableMouseCapture, Event, KeyCode, KeyEvent,
 		KeyModifiers,
 	},
 	execute,
-	terminal::{
-		disable_raw_mode,
-		enable_raw_mode,
-		EnterAlternateScreen,
-		LeaveAlternateScreen,
-	},
+	terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-	layout::{
-		Constraint,
-		Layout,
-	},
-	style::{
-		Color,
-		Style,
-	},
+	layout::{Constraint, Layout},
+	style::{Color, Style},
 };
 
 use crate::{
-	core::terminal::{
-		get_mut_terminal,
-		get_terminal,
-	},
+	core::terminal::{get_mut_terminal, get_terminal},
 	ui::{
-		screens::{
-			OpenStatus,
-			ScreenAndState,
-			ScreenKind,
-			ScreenState,
-			Screens,
-		},
+		screens::{OpenStatus, ScreenAndState, ScreenKind, ScreenState, Screens},
 		util::clear_terminal,
-		Screen,
-		WelcomeScreen,
+		Screen, WelcomeScreen,
 	},
 };
 
@@ -284,6 +242,7 @@ impl Handler {
 				return Ok(true);
 			},
 			Event::Resize(..) => {
+				// TODO: Minimum size warning mechanism
 				self.draw_screen_ui()?;
 			},
 			_ => {},

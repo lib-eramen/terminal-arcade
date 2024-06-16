@@ -1,24 +1,15 @@
 //! A bottom bar for the welcome screen.
 
 use ratatui::{
-	layout::{
-		Alignment,
-		Rect,
-	},
+	layout::{Alignment, Rect},
 	text::Text,
-	widgets::{
-		Paragraph,
-		Wrap,
-	},
+	widgets::{Paragraph, Wrap},
 	Frame,
 };
 
 use crate::{
 	core::terminal::BackendType,
-	ui::{
-		components::presets::untitled_ui_block,
-		util::get_crate_version,
-	},
+	ui::{components::presets::untitled_ui_block, util::get_crate_version},
 };
 
 #[must_use]

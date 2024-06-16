@@ -19,10 +19,7 @@
 )]
 
 use std::{
-	panic::{
-		set_hook,
-		take_hook,
-	},
+	panic::{set_hook, take_hook},
 	time::Duration,
 };
 

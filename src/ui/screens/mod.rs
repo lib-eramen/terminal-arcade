@@ -8,34 +8,16 @@ pub mod welcome;
 
 pub use config::ConfigScreen;
 pub use controls_popup::ControlsPopup;
-use crossterm::event::{
-	Event,
-	KeyCode,
-	KeyEvent,
-	KeyModifiers,
-};
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use enum_dispatch::enum_dispatch;
 pub use game_select::GameSearchScreen;
 pub use games::*;
 use ratatui::{
 	buffer::Buffer,
-	layout::{
-		Constraint,
-		Rect,
-	},
-	style::{
-		Modifier,
-		Style,
-	},
+	layout::{Constraint, Rect},
+	style::{Modifier, Style},
 	text::Text,
-	widgets::{
-		Cell,
-		Clear,
-		HighlightSpacing,
-		Row,
-		Table,
-		Widget,
-	},
+	widgets::{Cell, Clear, HighlightSpacing, Row, Table, Widget},
 	Frame,
 };
 pub use welcome::WelcomeScreen;
@@ -43,11 +25,7 @@ pub use welcome::WelcomeScreen;
 use crate::{
 	core::terminal::BackendType,
 	ui::components::{
-		presets::{
-			highlight_block,
-			titled_ui_block,
-			HIGHLIGHTED,
-		},
+		presets::{highlight_block, titled_ui_block, HIGHLIGHTED},
 		screen_base_block::screen_base_block,
 	},
 };
@@ -154,6 +132,9 @@ pub trait Screen {
 	/// - On \[Ctrl\]+\[H\], displays the controls popup only when the screen is
 	///   of [`ScreenKind::Normal`] kind.
 	fn event(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()> {
+		// TODO: ([Shift] )[Tab] to move focus from widget to widget.
+		// TODO: Make screen accept all kinds of events
+		// TODO: Handle displaying errors in popups
 		if let Event::Key(ref key) = event {
 			match key.code {
 				KeyCode::Char('h')

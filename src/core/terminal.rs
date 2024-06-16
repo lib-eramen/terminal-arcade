@@ -3,10 +3,7 @@
 use std::io::Stdout;
 
 use once_cell::sync::OnceCell;
-use ratatui::{
-	backend::CrosstermBackend,
-	Terminal,
-};
+use ratatui::{backend::CrosstermBackend, Terminal};
 
 /// The type of [`ratatui`] backend used in Terminal Arcade.
 pub type BackendType = CrosstermBackend<Stdout>;

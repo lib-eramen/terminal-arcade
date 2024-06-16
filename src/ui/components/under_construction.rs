@@ -2,25 +2,14 @@
 //! screen/component is not ready yet. Useful as a `todo!()` replacer.
 
 use ratatui::{
-	layout::{
-		Alignment,
-		Constraint,
-		Direction,
-		Layout,
-	},
-	widgets::{
-		Borders,
-		Paragraph,
-	},
+	layout::{Alignment, Constraint, Direction, Layout},
+	widgets::{Borders, Paragraph},
 	Frame,
 };
 
 use crate::{
 	core::terminal::BackendType,
-	ui::components::presets::{
-		titled_ui_block,
-		untitled_ui_block,
-	},
+	ui::components::presets::{titled_ui_block, untitled_ui_block},
 };
 
 /// A banner for an under construction message.
