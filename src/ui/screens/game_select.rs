@@ -2,12 +2,25 @@
 //! Users can scroll through the list with arrows to look for a game they want,
 //! search a game by its name, or pick a game at random.
 
-use std::cmp::{max, min};
+use std::cmp::{
+	max,
+	min,
+};
 
-use crossterm::event::{Event, KeyCode, KeyModifiers};
+use crossterm::event::{
+	Event,
+	KeyCode,
+	KeyModifiers,
+};
 use rand::Rng;
 use ratatui::{
-	layout::{Alignment, Constraint, Direction, Layout, Rect},
+	layout::{
+		Alignment,
+		Constraint,
+		Direction,
+		Layout,
+		Rect,
+	},
 	widgets::Paragraph,
 	Frame,
 };
@@ -15,15 +28,25 @@ use strum::IntoEnumIterator;
 
 use crate::{
 	core::terminal::BackendType,
-	games::{Game, Games},
+	games::{
+		Game,
+		Games,
+	},
 	ui::{
 		components::{
 			game_select::{
-				search_bottom_bar::render_search_bottom_bar, search_section::render_search_section,
+				search_bottom_bar::render_search_bottom_bar,
+				search_section::render_search_section,
 			},
-			presets::{titled_ui_block, untitled_ui_block},
+			presets::{
+				titled_ui_block,
+				untitled_ui_block,
+			},
 		},
-		screens::{ScreenKind, ScreenState},
+		screens::{
+			ScreenKind,
+			ScreenState,
+		},
 		widgets::scrollable_list::ScrollableList,
 		Screen,
 	},

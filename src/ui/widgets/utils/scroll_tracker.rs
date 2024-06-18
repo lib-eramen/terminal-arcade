@@ -2,7 +2,10 @@
 //! the process of building a UI that has a number of navigable,
 //! indexed elements
 
-use std::{cmp::min, ops::Range};
+use std::{
+	cmp::min,
+	ops::Range,
+};
 
 use anyhow::bail;
 use rand::Rng;

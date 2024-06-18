@@ -3,21 +3,48 @@
 use std::fmt::Display;
 
 use bitflags::bitflags;
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{
+	Event,
+	KeyCode,
+	KeyEvent,
+	KeyModifiers,
+};
 use derive_builder::Builder;
 use derive_new::new;
 use indexmap::IndexMap;
 use ratatui::{
-	layout::{Constraint, Direction, Layout},
-	prelude::{Buffer, Rect},
-	style::{Modifier, Style, Stylize},
+	layout::{
+		Constraint,
+		Direction,
+		Layout,
+	},
+	prelude::{
+		Buffer,
+		Rect,
+	},
+	style::{
+		Modifier,
+		Style,
+		Stylize,
+	},
 	text::Text,
-	widgets::{Cell, Row, StatefulWidget, Table, TableState},
+	widgets::{
+		Cell,
+		Row,
+		StatefulWidget,
+		Table,
+		TableState,
+	},
 };
 
 use crate::ui::{
 	components::presets::HIGHLIGHTED,
-	widgets::{utils::scroll_tracker::ScrollTracker, Widget, WidgetFocus, WidgetState},
+	widgets::{
+		utils::scroll_tracker::ScrollTracker,
+		Widget,
+		WidgetFocus,
+		WidgetState,
+	},
 };
 
 /// The main key of a key combination, versus a modifier.
@@ -52,15 +79,11 @@ impl Clone for KeyControl {
 
 impl Display for KeyControl {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(
-			f,
-			"{}",
-			match self {
-				KeyControl::Char(c) => c.to_string().to_uppercase(),
-				KeyControl::F(n) => format!("F{n}"),
-				KeyControl::Custom(ref s) => s.to_string(),
-			}
-		)
+		write!(f, "{}", match self {
+			KeyControl::Char(c) => c.to_string().to_uppercase(),
+			KeyControl::F(n) => format!("F{n}"),
+			KeyControl::Custom(ref s) => s.to_string(),
+		})
 	}
 }
 

@@ -2,11 +2,17 @@
 //! screens to continue drawing on.
 
 use ratatui::{
-	style::{Color, Style},
+	style::{
+		Color,
+		Style,
+	},
 	widgets::Block,
 };
 
-use crate::ui::components::presets::{titled_ui_block, HIGHLIGHTED};
+use crate::ui::components::presets::{
+	titled_ui_block,
+	HIGHLIGHTED,
+};
 
 /// An empty base block with bolded borders and a bolded + italicized title for
 /// screens to continue drawing on.

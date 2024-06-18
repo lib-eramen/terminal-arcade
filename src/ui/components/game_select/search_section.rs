@@ -3,7 +3,13 @@
 
 use crossterm::style::Attribute;
 use ratatui::{
-	layout::{Alignment, Constraint, Direction, Layout, Rect},
+	layout::{
+		Alignment,
+		Constraint,
+		Direction,
+		Layout,
+		Rect,
+	},
 	text::Text,
 	widgets::Paragraph,
 	Frame,
@@ -11,7 +17,10 @@ use ratatui::{
 
 use crate::{
 	core::terminal::BackendType,
-	ui::components::presets::{titled_ui_block, untitled_ui_block},
+	ui::components::presets::{
+		titled_ui_block,
+		untitled_ui_block,
+	},
 };
 
 #[must_use]

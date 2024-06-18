@@ -2,7 +2,10 @@
 
 use std::{
 	sync::Mutex,
-	time::{Duration, SystemTime},
+	time::{
+		Duration,
+		SystemTime,
+	},
 };
 
 use lazy_static::lazy_static;

@@ -4,7 +4,10 @@ use crossterm::event::Event;
 use derive_new::new;
 use enum_dispatch::enum_dispatch;
 use ratatui::{
-	prelude::{Buffer, Rect},
+	prelude::{
+		Buffer,
+		Rect,
+	},
 	widgets::StatefulWidget,
 	Frame,
 };

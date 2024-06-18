@@ -3,15 +3,33 @@
 use crossterm::event::Event;
 use derive_new::new;
 use ratatui::{
-	layout::{Constraint, Rect},
+	layout::{
+		Constraint,
+		Rect,
+	},
 	style::Modifier,
-	widgets::{Cell, Clear, HighlightSpacing, Row, Table, Widget},
+	widgets::{
+		Cell,
+		Clear,
+		HighlightSpacing,
+		Row,
+		Table,
+		Widget,
+	},
 	Frame,
 };
 
 use crate::ui::{
-	components::presets::{highlight_block, titled_ui_block, HIGHLIGHTED},
-	screens::{ControlsEntry, ScreenKind, ScreenState},
+	components::presets::{
+		highlight_block,
+		titled_ui_block,
+		HIGHLIGHTED,
+	},
+	screens::{
+		ControlsEntry,
+		ScreenKind,
+		ScreenState,
+	},
 	Screen,
 };
 

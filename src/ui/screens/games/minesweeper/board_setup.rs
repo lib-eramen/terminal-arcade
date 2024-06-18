@@ -1,15 +1,27 @@
 //! Game setup screen for a Minesweeper board.
 
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::{
+	Event,
+	KeyCode,
+};
 use derive_new::new;
 use ratatui::{
-	layout::{Constraint, Direction, Layout, Rect},
+	layout::{
+		Constraint,
+		Direction,
+		Layout,
+		Rect,
+	},
 	Frame,
 };
 
 use crate::ui::{
 	components::presets::titled_ui_block,
-	screens::{OpenStatus, ScreenKind, ScreenState},
+	screens::{
+		OpenStatus,
+		ScreenKind,
+		ScreenState,
+	},
 	Screen,
 };
 

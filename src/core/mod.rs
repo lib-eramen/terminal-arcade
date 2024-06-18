@@ -4,30 +4,63 @@
 //! depend on.
 
 use std::{
-	path::{Path, PathBuf},
+	path::{
+		Path,
+		PathBuf,
+	},
 	time::Duration,
 };
 
 use bool_toggle::Toggler;
 use crossterm::{
-	cursor::{DisableBlinking, EnableBlinking, Hide, MoveTo, Show},
+	cursor::{
+		DisableBlinking,
+		EnableBlinking,
+		Hide,
+		MoveTo,
+		Show,
+	},
 	event::{
-		poll, read, DisableBracketedPaste, DisableFocusChange, DisableMouseCapture,
-		EnableBracketedPaste, EnableFocusChange, EnableMouseCapture, Event, KeyCode, KeyEvent,
+		poll,
+		read,
+		DisableBracketedPaste,
+		DisableFocusChange,
+		DisableMouseCapture,
+		EnableBracketedPaste,
+		EnableFocusChange,
+		EnableMouseCapture,
+		Event,
+		KeyCode,
+		KeyEvent,
 		KeyModifiers,
 	},
 	execute,
-	terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+	terminal::{
+		disable_raw_mode,
+		enable_raw_mode,
+		EnterAlternateScreen,
+		LeaveAlternateScreen,
+	},
 };
 use ratatui::{
-	layout::{Constraint, Layout},
-	style::{Color, Style},
+	layout::{
+		Constraint,
+		Layout,
+	},
+	style::{
+		Color,
+		Style,
+	},
 };
 
 use self::terminal::get_terminal;
 use crate::{
 	core::terminal::get_mut_terminal,
-	ui::{util::clear_terminal, Screen, WelcomeScreen},
+	ui::{
+		util::clear_terminal,
+		Screen,
+		WelcomeScreen,
+	},
 };
 
 pub mod handler;

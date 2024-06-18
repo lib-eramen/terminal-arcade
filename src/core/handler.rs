@@ -1,36 +1,80 @@
 //! UI handler. Manages a hierarchy of screens and rendering them.
 
 use std::{
-	panic::{set_hook, take_hook},
-	path::{Path, PathBuf},
+	panic::{
+		set_hook,
+		take_hook,
+	},
+	path::{
+		Path,
+		PathBuf,
+	},
 	time::Duration,
 };
 
 use anyhow::bail;
 use bool_toggle::Toggler;
 use crossterm::{
-	cursor::{DisableBlinking, EnableBlinking, Hide, MoveTo, Show},
+	cursor::{
+		DisableBlinking,
+		EnableBlinking,
+		Hide,
+		MoveTo,
+		Show,
+	},
 	event::{
-		poll, read, DisableBracketedPaste, DisableFocusChange, DisableMouseCapture,
-		EnableBracketedPaste, EnableFocusChange, EnableMouseCapture, Event, KeyCode, KeyEvent,
+		poll,
+		read,
+		DisableBracketedPaste,
+		DisableFocusChange,
+		DisableMouseCapture,
+		EnableBracketedPaste,
+		EnableFocusChange,
+		EnableMouseCapture,
+		Event,
+		KeyCode,
+		KeyEvent,
 		KeyModifiers,
 	},
 	execute,
-	terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+	terminal::{
+		disable_raw_mode,
+		enable_raw_mode,
+		EnterAlternateScreen,
+		LeaveAlternateScreen,
+	},
 };
 use ratatui::{
-	layout::{Constraint, Layout},
-	style::{Color, Style},
+	layout::{
+		Constraint,
+		Layout,
+	},
+	style::{
+		Color,
+		Style,
+	},
 };
 
 use crate::{
-	core::terminal::{get_mut_terminal, get_terminal},
+	core::terminal::{
+		get_mut_terminal,
+		get_terminal,
+	},
 	ui::{
-		screens::{OpenStatus, ScreenAndState, ScreenKind, ScreenState, Screens},
+		screens::{
+			OpenStatus,
+			ScreenAndState,
+			ScreenKind,
+			ScreenState,
+			Screens,
+		},
 		util::clear_terminal,
-		Screen, WelcomeScreen,
+		Screen,
+		WelcomeScreen,
 	},
 };
+
+// TODO: Idling mechanism
 
 /// Core struct to all inner workings in Terminal Arcade.
 /// This struct mostly handles rendering that and managing screens.
@@ -236,6 +280,7 @@ impl Handler {
 	/// Handles an event read from the terminal.
 	/// also returning if the event loop calling this function should quit.
 	fn handle_terminal_event(&mut self, event: &Event) -> anyhow::Result<bool> {
+		// TODO: Mini popup showing dimensions on resize
 		match event {
 			Event::Key(ref key) if Self::check_quit_controls(key) => {
 				self.quit()?;

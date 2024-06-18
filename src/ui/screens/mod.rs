@@ -8,16 +8,34 @@ pub mod welcome;
 
 pub use config::ConfigScreen;
 pub use controls_popup::ControlsPopup;
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{
+	Event,
+	KeyCode,
+	KeyEvent,
+	KeyModifiers,
+};
 use enum_dispatch::enum_dispatch;
 pub use game_select::GameSearchScreen;
 pub use games::*;
 use ratatui::{
 	buffer::Buffer,
-	layout::{Constraint, Rect},
-	style::{Modifier, Style},
+	layout::{
+		Constraint,
+		Rect,
+	},
+	style::{
+		Modifier,
+		Style,
+	},
 	text::Text,
-	widgets::{Cell, Clear, HighlightSpacing, Row, Table, Widget},
+	widgets::{
+		Cell,
+		Clear,
+		HighlightSpacing,
+		Row,
+		Table,
+		Widget,
+	},
 	Frame,
 };
 pub use welcome::WelcomeScreen;
@@ -25,7 +43,11 @@ pub use welcome::WelcomeScreen;
 use crate::{
 	core::terminal::BackendType,
 	ui::components::{
-		presets::{highlight_block, titled_ui_block, HIGHLIGHTED},
+		presets::{
+			highlight_block,
+			titled_ui_block,
+			HIGHLIGHTED,
+		},
 		screen_base_block::screen_base_block,
 	},
 };
