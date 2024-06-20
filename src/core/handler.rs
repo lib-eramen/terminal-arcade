@@ -57,8 +57,8 @@ use ratatui::{
 
 use crate::{
 	core::terminal::{
-		get_mut_terminal,
 		get_terminal,
+		initialize_terminal,
 	},
 	ui::{
 		screens::{
@@ -183,7 +183,7 @@ impl Handler {
 	fn set_global_terminal_rules() -> anyhow::Result<()> {
 		enable_raw_mode()?;
 		Ok(execute!(
-			get_mut_terminal().backend_mut(),
+			get_terminal().backend_mut(),
 			DisableBracketedPaste,
 			DisableFocusChange,
 			DisableBlinking,
@@ -198,7 +198,7 @@ impl Handler {
 	fn unset_global_terminal_rules() -> anyhow::Result<()> {
 		disable_raw_mode()?;
 		Ok(execute!(
-			get_mut_terminal().backend_mut(),
+			get_terminal().backend_mut(),
 			EnableBracketedPaste,
 			EnableFocusChange,
 			EnableBlinking,
@@ -222,7 +222,7 @@ impl Handler {
 	/// but also the parenting screens if the child(ren) screen is not of
 	/// [`ScreenKind::Normal`] variant.
 	fn draw_screen_ui(&mut self) -> anyhow::Result<()> {
-		get_mut_terminal().draw(|frame| {
+		get_terminal().draw(|frame| {
 			let drawn_screens = self.get_drawn_screens();
 			let active_screen_index = drawn_screens.len() - 1;
 			for (index, drawn_screen) in drawn_screens.into_iter().enumerate() {
@@ -250,7 +250,7 @@ impl Handler {
 
 	/// The function to be called when Terminal Arcade starts up.
 	pub fn startup(&mut self) -> anyhow::Result<()> {
-		let _ = get_terminal(); // This call will initialize the global TERMINAL static variable.
+		initialize_terminal();
 		Self::set_global_terminal_rules()?;
 		self.spawn_screen(WelcomeScreen::default().into());
 		self.run()?;

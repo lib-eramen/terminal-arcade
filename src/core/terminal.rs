@@ -1,6 +1,13 @@
 //! Helper module for easier handling of the terminal.
 
-use std::io::Stdout;
+use std::{
+	borrow::BorrowMut,
+	io::Stdout,
+	sync::{
+		Mutex,
+		MutexGuard,
+	},
+};
 
 use once_cell::sync::OnceCell;
 use ratatui::{
@@ -12,32 +19,31 @@ use ratatui::{
 pub type BackendType = CrosstermBackend<Stdout>;
 
 /// The type of the terminal used in Terminal Arcade.
-pub type TerminalType = Terminal<BackendType>;
+pub type ArcadeTerminal = Terminal<BackendType>;
 
 /// The global terminal instance, shared by all mechanisms in Terminal Arcade.
 /// See [`get_terminal`] for a more convenient way to access this static
 /// variable, as it is wrapped under a layer of [`OnceCell`].
-pub static mut TERMINAL: OnceCell<TerminalType> = OnceCell::new();
+pub static TERMINAL: OnceCell<Mutex<ArcadeTerminal>> = OnceCell::new();
 
-/// Initializes the terminal.
+/// Creates the terminal for use in Terminal Arcade.
 #[must_use]
-pub fn initialize_terminal() -> TerminalType {
+pub fn create_terminal() -> ArcadeTerminal {
 	let stdout = std::io::stdout();
 	let backend = CrosstermBackend::new(stdout);
-	Terminal::new(backend).unwrap()
+	ArcadeTerminal::new(backend).unwrap()
+}
+
+/// Initializes the terminal for use in Termianl Arcade.
+pub fn initialize_terminal() {
+	TERMINAL
+		.set(Mutex::new(create_terminal()))
+		.expect("Terminal should not have already been initialized");
 }
 
 /// Helper function for accessing the global terminal handle used throughout
 /// Terminal Arcade.
 #[must_use]
-pub fn get_terminal() -> &'static TerminalType {
-	unsafe { TERMINAL.get_or_init(initialize_terminal) }
-}
-
-/// Helper function for accessing the global terminal handle mutably used
-/// throughout Terminal Arcade.
-/// Note that if [`TERMINAL`] is not initialized, the function will panic.
-#[must_use]
-pub fn get_mut_terminal() -> &'static mut TerminalType {
-	unsafe { TERMINAL.get_mut().unwrap() }
+pub fn get_terminal() -> MutexGuard<'static, ArcadeTerminal> {
+	TERMINAL.get().unwrap().lock().unwrap()
 }

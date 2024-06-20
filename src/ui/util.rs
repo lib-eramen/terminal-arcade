@@ -19,11 +19,11 @@ use ratatui::text::{
 	Text,
 };
 
-use crate::core::terminal::get_mut_terminal;
+use crate::core::terminal::get_terminal;
 
 /// Clears the terminal.
 pub fn clear_terminal() -> anyhow::Result<()> {
-	Ok(get_mut_terminal().clear()?)
+	Ok(get_terminal().clear()?)
 }
 
 /// Gets the version of the crate, or returns "NOT.FOUND" if one

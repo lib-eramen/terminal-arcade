@@ -54,17 +54,11 @@ use ratatui::{
 };
 
 use self::terminal::get_terminal;
-use crate::{
-	core::terminal::get_mut_terminal,
-	ui::{
-		util::clear_terminal,
-		Screen,
-		WelcomeScreen,
-	},
-};
 
 pub mod handler;
 pub mod terminal;
+
+// TODO: Use an actual crate for this (`directory-rs?)
 
 /// The directory where Terminal Arcade saves all of its data.
 /// NOT TO BE USED DIRECTLY. This path does not include the home dir.
