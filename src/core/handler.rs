@@ -182,7 +182,6 @@ impl Handler {
 	/// Sets global terminal rules.
 	fn set_global_terminal_rules() -> anyhow::Result<()> {
 		enable_raw_mode()?;
-		dbg!("Enabled raw mode");
 		Ok(execute!(
 			get_terminal().backend_mut(),
 			DisableBracketedPaste,
@@ -198,7 +197,7 @@ impl Handler {
 	/// [`Self::set_global_terminal_rules`].
 	fn unset_global_terminal_rules() -> anyhow::Result<()> {
 		disable_raw_mode()?;
-		let mut terminal = dbg!(get_terminal());
+		let mut terminal = get_terminal();
 		Ok(execute!(
 			terminal.backend_mut(),
 			EnableBracketedPaste,
@@ -254,11 +253,8 @@ impl Handler {
 	pub fn startup(&mut self) -> anyhow::Result<()> {
 		// TODO: Embrace (reasonable & common) abbreviations in signatures
 		initialize_terminal();
-		dbg!("Terminal initialized");
 		Self::set_global_terminal_rules()?;
-		dbg!("Global terminal rules set");
 		self.spawn_screen(WelcomeScreen::default().into());
-		dbg!("Prepared to run");
 		self.run()?;
 		Ok(())
 	}
