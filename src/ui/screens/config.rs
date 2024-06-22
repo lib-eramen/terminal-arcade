@@ -19,22 +19,19 @@ use ratatui::{
 	Frame,
 };
 
-use crate::{
-	core::terminal::BackendType,
-	ui::{
-		components::{
-			presets::{
-				titled_ui_block,
-				untitled_ui_block,
-			},
-			under_construction::render_under_construction_block,
+use crate::ui::{
+	components::{
+		presets::{
+			titled_ui_block,
+			untitled_ui_block,
 		},
-		screens::{
-			ScreenKind,
-			ScreenState,
-		},
-		Screen,
+		under_construction::render_under_construction_block,
 	},
+	screens::{
+		ScreenKind,
+		ScreenState,
+	},
+	Screen,
 };
 
 /// See the [module](self) documentation for more information.

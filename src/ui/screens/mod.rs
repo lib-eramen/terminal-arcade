@@ -40,16 +40,13 @@ use ratatui::{
 };
 pub use welcome::WelcomeScreen;
 
-use crate::{
-	core::terminal::BackendType,
-	ui::components::{
-		presets::{
-			highlight_block,
-			titled_ui_block,
-			HIGHLIGHTED,
-		},
-		screen_base_block::screen_base_block,
+use crate::ui::components::{
+	presets::{
+		highlight_block,
+		titled_ui_block,
+		HIGHLIGHTED,
 	},
+	screen_base_block::screen_base_block,
 };
 
 /// A controls entry. The first element of the tuple is the key shortcut, while

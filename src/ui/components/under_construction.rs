@@ -15,12 +15,9 @@ use ratatui::{
 	Frame,
 };
 
-use crate::{
-	core::terminal::BackendType,
-	ui::components::presets::{
-		titled_ui_block,
-		untitled_ui_block,
-	},
+use crate::ui::components::presets::{
+	titled_ui_block,
+	untitled_ui_block,
 };
 
 /// A banner for an under construction message.

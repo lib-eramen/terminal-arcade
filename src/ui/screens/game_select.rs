@@ -27,7 +27,6 @@ use ratatui::{
 use strum::IntoEnumIterator;
 
 use crate::{
-	core::terminal::BackendType,
 	games::{
 		Game,
 		Games,

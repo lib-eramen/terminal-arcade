@@ -182,6 +182,7 @@ impl Handler {
 	/// Sets global terminal rules.
 	fn set_global_terminal_rules() -> anyhow::Result<()> {
 		enable_raw_mode()?;
+		dbg!("Enabled raw mode");
 		Ok(execute!(
 			get_terminal().backend_mut(),
 			DisableBracketedPaste,
@@ -197,8 +198,9 @@ impl Handler {
 	/// [`Self::set_global_terminal_rules`].
 	fn unset_global_terminal_rules() -> anyhow::Result<()> {
 		disable_raw_mode()?;
+		let mut terminal = dbg!(get_terminal());
 		Ok(execute!(
-			get_terminal().backend_mut(),
+			terminal.backend_mut(),
 			EnableBracketedPaste,
 			EnableFocusChange,
 			EnableBlinking,
@@ -250,9 +252,13 @@ impl Handler {
 
 	/// The function to be called when Terminal Arcade starts up.
 	pub fn startup(&mut self) -> anyhow::Result<()> {
+		// TODO: Embrace (reasonable & common) abbreviations in signatures
 		initialize_terminal();
+		dbg!("Terminal initialized");
 		Self::set_global_terminal_rules()?;
+		dbg!("Global terminal rules set");
 		self.spawn_screen(WelcomeScreen::default().into());
+		dbg!("Prepared to run");
 		self.run()?;
 		Ok(())
 	}
@@ -279,6 +285,7 @@ impl Handler {
 
 	/// Handles an event read from the terminal.
 	/// also returning if the event loop calling this function should quit.
+	// TODO: Error handling in more places
 	fn handle_terminal_event(&mut self, event: &Event) -> anyhow::Result<bool> {
 		// TODO: Mini popup showing dimensions on resize
 		match event {

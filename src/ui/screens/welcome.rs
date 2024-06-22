@@ -25,32 +25,29 @@ use strum::{
 	EnumString,
 };
 
-use crate::{
-	core::terminal::BackendType,
-	ui::{
-		components::{
-			presets::{
-				titled_ui_block,
-				untitled_ui_block,
-			},
-			welcome::footer::render_welcome_bottom_bar,
+use crate::ui::{
+	components::{
+		presets::{
+			titled_ui_block,
+			untitled_ui_block,
 		},
-		screens::{
-			config::ConfigScreen,
-			game_select::GameSearchScreen,
-			OpenStatus,
-			ScreenAndState,
-			ScreenKind,
-			ScreenState,
-			Screens,
-		},
-		util::get_crate_version,
-		widgets::scrollable_list::{
-			ListItem,
-			ScrollableList,
-		},
-		Screen,
+		welcome::footer::render_welcome_bottom_bar,
 	},
+	screens::{
+		config::ConfigScreen,
+		game_select::GameSearchScreen,
+		OpenStatus,
+		ScreenAndState,
+		ScreenKind,
+		ScreenState,
+		Screens,
+	},
+	util::get_crate_version,
+	widgets::scrollable_list::{
+		ListItem,
+		ScrollableList,
+	},
+	Screen,
 };
 
 /// Terminal Arcade's ASCII banner.

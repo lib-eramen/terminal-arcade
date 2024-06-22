@@ -13,12 +13,9 @@ use ratatui::{
 	Frame,
 };
 
-use crate::{
-	core::terminal::BackendType,
-	ui::{
-		components::presets::untitled_ui_block,
-		util::get_crate_version,
-	},
+use crate::ui::{
+	components::presets::untitled_ui_block,
+	util::get_crate_version,
 };
 
 // TODO: Somehow the footer needs to be turned into a Paragraph and wrapped

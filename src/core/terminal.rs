@@ -15,23 +15,19 @@ use ratatui::{
 	Terminal,
 };
 
-/// The type of [`ratatui`] backend used in Terminal Arcade.
-pub type BackendType = CrosstermBackend<Stdout>;
-
 /// The type of the terminal used in Terminal Arcade.
-pub type ArcadeTerminal = Terminal<BackendType>;
+pub type ArcadeTerminal = Terminal<CrosstermBackend<Stdout>>;
 
 /// The global terminal instance, shared by all mechanisms in Terminal Arcade.
 /// See [`get_terminal`] for a more convenient way to access this static
 /// variable, as it is wrapped under a layer of [`OnceCell`].
+// FIXME: Introducing mutex for some reason is blocking this thread
 pub static TERMINAL: OnceCell<Mutex<ArcadeTerminal>> = OnceCell::new();
 
 /// Creates the terminal for use in Terminal Arcade.
 #[must_use]
 pub fn create_terminal() -> ArcadeTerminal {
-	let stdout = std::io::stdout();
-	let backend = CrosstermBackend::new(stdout);
-	ArcadeTerminal::new(backend).unwrap()
+	ArcadeTerminal::new(CrosstermBackend::new(std::io::stdout())).unwrap()
 }
 
 /// Initializes the terminal for use in Termianl Arcade.
@@ -45,5 +41,9 @@ pub fn initialize_terminal() {
 /// Terminal Arcade.
 #[must_use]
 pub fn get_terminal() -> MutexGuard<'static, ArcadeTerminal> {
-	TERMINAL.get().unwrap().lock().unwrap()
+	TERMINAL
+		.get()
+		.expect("Terminal should already be instantiated")
+		.try_lock()
+		.expect("No other locks on the terminal should exist")
 }

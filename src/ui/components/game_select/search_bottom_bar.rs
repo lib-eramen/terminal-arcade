@@ -12,10 +12,7 @@ use ratatui::{
 	Frame,
 };
 
-use crate::{
-	core::terminal::BackendType,
-	ui::components::presets::untitled_ui_block,
-};
+use crate::ui::components::presets::untitled_ui_block;
 
 /// Renders the bottom bar of the game selection screen.
 pub fn render_search_bottom_bar(
