@@ -18,9 +18,6 @@ use crate::ui::{
 	util::get_crate_version,
 };
 
-// TODO: Somehow the footer needs to be turned into a Paragraph and wrapped
-// properly
-
 #[must_use]
 fn git_info_string() -> String {
 	let git_info = git_info::get();

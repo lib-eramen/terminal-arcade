@@ -75,8 +75,6 @@ pub struct GameSearchScreen {
 	time_to_search_secs: f64,
 }
 
-// TODO: Replace ranging with scrollable view
-
 impl Default for GameSearchScreen {
 	fn default() -> Self {
 		let all_games: Vec<_> = Games::iter().collect();

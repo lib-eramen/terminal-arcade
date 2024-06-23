@@ -151,9 +151,6 @@ pub trait Screen {
 	/// - On \[Ctrl\]+\[H\], displays the controls popup only when the screen is
 	///   of [`ScreenKind::Normal`] kind.
 	fn event(&mut self, event: &Event, state: &mut ScreenState) -> anyhow::Result<()> {
-		// TODO: ([Shift] )[Tab] to move focus from widget to widget.
-		// TODO: Make screen accept all kinds of events
-		// TODO: Handle displaying errors in popups
 		if let Event::Key(ref key) = event {
 			match key.code {
 				KeyCode::Char('h')

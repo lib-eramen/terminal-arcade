@@ -74,8 +74,6 @@ use crate::{
 	},
 };
 
-// TODO: Idling mechanism
-
 /// Core struct to all inner workings in Terminal Arcade.
 /// This struct mostly handles rendering that and managing screens.
 #[must_use]
@@ -251,7 +249,6 @@ impl Handler {
 
 	/// The function to be called when Terminal Arcade starts up.
 	pub fn startup(&mut self) -> anyhow::Result<()> {
-		// TODO: Embrace (reasonable & common) abbreviations in signatures
 		initialize_terminal();
 		Self::set_global_terminal_rules()?;
 		self.spawn_screen(WelcomeScreen::default().into());
@@ -281,16 +278,13 @@ impl Handler {
 
 	/// Handles an event read from the terminal.
 	/// also returning if the event loop calling this function should quit.
-	// TODO: Error handling in more places
 	fn handle_terminal_event(&mut self, event: &Event) -> anyhow::Result<bool> {
-		// TODO: Mini popup showing dimensions on resize
 		match event {
 			Event::Key(ref key) if Self::check_quit_controls(key) => {
 				self.quit()?;
 				return Ok(true);
 			},
 			Event::Resize(..) => {
-				// TODO: Minimum size warning mechanism
 				self.draw_screen_ui()?;
 			},
 			_ => {},

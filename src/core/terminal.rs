@@ -21,7 +21,6 @@ pub type ArcadeTerminal = Terminal<CrosstermBackend<Stdout>>;
 /// The global terminal instance, shared by all mechanisms in Terminal Arcade.
 /// See [`get_terminal`] for a more convenient way to access this static
 /// variable, as it is wrapped under a layer of [`OnceCell`].
-// FIXME: Introducing mutex for some reason is blocking this thread
 pub static TERMINAL: OnceCell<Mutex<ArcadeTerminal>> = OnceCell::new();
 
 /// Creates the terminal for use in Terminal Arcade.

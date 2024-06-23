@@ -44,7 +44,6 @@ pub struct WidgetState {
 /// This trait does not follow conventions similar to what [ratatui] does,
 /// separating the state from the rendering and needing to be created
 /// every time it is rendered. Due to language limitations,
-/// TODO: Usage example for widget implementation
 pub trait Widget {
 	/// Returns this widget's initial state.
 	fn initial_state(&self) -> WidgetState;
