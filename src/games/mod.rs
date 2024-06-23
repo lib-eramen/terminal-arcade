@@ -60,8 +60,6 @@ pub struct GameState {
 	pub created_screen: Option<Screens>,
 }
 
-// TODO: Do you want to save the game when exiting? + Autosave feature
-
 /// A trait for a game in Terminal Arcade.
 /// This trait is not only for the game's logic implementation, it also dictates
 /// how it interacts with the rest of the Terminal Arcade UI, as well as how it

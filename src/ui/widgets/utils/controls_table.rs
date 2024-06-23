@@ -217,7 +217,6 @@ impl Widget for ControlsTable {
 	}
 
 	fn handle_event(&mut self, event: &Event) -> anyhow::Result<()> {
-		// TODO: Should it also handle HJKL and WASD?
 		if let Event::Key(KeyEvent {
 			code, modifiers, ..
 		}) = event
@@ -234,8 +233,6 @@ impl Widget for ControlsTable {
 	}
 
 	fn render_ui(&self, frame: &mut ratatui::Frame<'_>, area: Rect, _state: &WidgetState) {
-		// TODO: Use state to make selected option flicker
-
 		let mut table_state = TableState::from(self.scroll_tracker);
 		let controls_entries = &self.controls_entries;
 
@@ -245,7 +242,7 @@ impl Widget for ControlsTable {
 			.collect::<Row<'_>>()
 			.style(HIGHLIGHTED.add_modifier(Modifier::UNDERLINED))
 			.height(1);
-		// TODO: (Util function?) Alternating colors for alternating rows.
+
 		let entry_rows = {
 			let mut rows = controls_entries
 				.0

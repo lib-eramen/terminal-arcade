@@ -32,14 +32,9 @@ pub mod core;
 pub mod games;
 pub mod ui;
 
-fn initialize() {
-	let _ = color_eyre::install();
-	better_panic::install();
-}
-
 fn main() -> anyhow::Result<()> {
-	initialize();
-	Handler::new().startup()?;
+	let _ = color_eyre::install();
+	Handler::default().startup()?;
 	println!("See you next time! 👋");
 	Ok(())
 }

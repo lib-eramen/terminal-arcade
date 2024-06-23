@@ -1,6 +1,10 @@
 //! UI handler. Manages a hierarchy of screens and rendering them.
 
 use std::{
+	io::{
+		stdout,
+		Stdout,
+	},
 	panic::{
 		set_hook,
 		take_hook,
@@ -44,7 +48,9 @@ use crossterm::{
 		LeaveAlternateScreen,
 	},
 };
+use derive_new::new;
 use ratatui::{
+	backend::CrosstermBackend,
 	layout::{
 		Constraint,
 		Layout,
@@ -55,47 +61,103 @@ use ratatui::{
 	},
 };
 
-use crate::{
-	core::terminal::{
-		get_terminal,
-		initialize_terminal,
+use crate::ui::{
+	screens::{
+		OpenStatus,
+		ScreenAndState,
+		ScreenKind,
+		ScreenState,
+		Screens,
 	},
-	ui::{
-		screens::{
-			OpenStatus,
-			ScreenAndState,
-			ScreenKind,
-			ScreenState,
-			Screens,
-		},
-		util::clear_terminal,
-		Screen,
-		WelcomeScreen,
-	},
+	Screen,
+	WelcomeScreen,
 };
 
-// TODO: Idling mechanism
+pub type Terminal = ratatui::Terminal<CrosstermBackend<Stdout>>;
 
-/// Core struct to all inner workings in Terminal Arcade.
-/// This struct mostly handles rendering that and managing screens.
-#[must_use]
+/// Struct to handle and manage multiple [Screen]s in Terminal Arcade.
 #[derive(Default)]
-pub struct Handler {
+pub struct ScreenHandler {
 	/// The screens stack in which Terminal Arcade manages windows.
 	///
 	/// The screen with the highest index in this hierarchy will be the only
 	/// screen visible on the terminal.
-	screen_stack: Vec<ScreenAndState>,
+	screens: Vec<ScreenAndState>,
+}
+
+impl ScreenHandler {
+	/// Returns whether there are no [Screen]s to manage.
+	pub fn is_empty(&self) -> bool {
+		self.screens.is_empty()
+	}
+
+	/// Returns the active screen that should be receiving events and being
+	/// rendered.
+	pub fn get_mut_active_screen(&mut self) -> Option<&mut ScreenAndState> {
+		self.screens.last_mut()
+	}
+
+	/// Gets screens that need to be drawn. This is determined by looking at the
+	/// stack of screens and travelling top-down, looking until it encounters a
+	/// parent screen (of [`ScreenKind::Normal`] variant) and collecting mutable
+	/// references from the children screens that also need to be drawn.
+	///
+	/// The first element is the parent screen - what follows are the rest of
+	/// the non-normal screens that all need to be rendered.
+	fn get_drawn_screens(&mut self) -> Vec<&mut ScreenAndState> {
+		let mut drawn_screens = Vec::new();
+		for screen in self.screens.iter_mut().rev() {
+			let found_parent_screen = screen.state.kind == ScreenKind::Normal;
+			drawn_screens.push(screen);
+			if found_parent_screen {
+				break;
+			}
+		}
+		drawn_screens.reverse();
+		drawn_screens
+	}
+
+	/// "Spawns" a screen. This method simply appends a
+	/// [`ScreenAndState`] object to the tail end of the screen stack.
+	fn spawn_screen(&mut self, screen: Screens) {
+		self.screens.push(ScreenAndState::new(screen));
+	}
+
+	/// Closes the active screen and returns it.
+	/// This function pops the screen from the screen hierarchy in
+	/// Terminal Arcade, and calls its [`Screen::close`] function.
+	fn close_active_screen(&mut self) -> anyhow::Result<Option<ScreenAndState>> {
+		match self.get_mut_active_screen() {
+			Some(screen) => screen.close()?,
+			None => {},
+		}
+		Ok(self.screens.pop())
+	}
+}
+
+/// Core struct to all inner workings in Terminal Arcade.
+/// This struct mostly handles rendering that and managing screens.
+#[must_use]
+#[derive(new)]
+pub struct Handler {
+	/// Terminal managed by Terminal Arcade.
+	terminal: Terminal,
+
+	/// Handler for screens.
+	screen_handler: ScreenHandler,
+}
+
+impl Default for Handler {
+	fn default() -> Self {
+		Self {
+			terminal: Terminal::new(CrosstermBackend::new(stdout()))
+				.expect("Failed to create a terminal from crossterm and stdout"),
+			screen_handler: ScreenHandler::default(),
+		}
+	}
 }
 
 impl Handler {
-	/// Creates a new handler object, registering this handler's terminal reset
-	/// method to the panic hook ([`Self::unset_global_terminal_rules`]).
-	pub fn new() -> Self {
-		Self::set_panic_hook();
-		Self::default()
-	}
-
 	/// Registers this handler's terminal reset method to the panic hook.
 	/// ([`Self::unset_global_terminal_rules`])
 	fn set_panic_hook() {
@@ -132,50 +194,10 @@ impl Handler {
 
 	/// The function to be called when Terminal Arcade is being quitted.
 	fn quit(&mut self) -> anyhow::Result<()> {
-		while !self.screen_stack.is_empty() {
-			self.close_active_screen()?;
+		while !self.screen_handler.is_empty() {
+			self.screen_handler.close_active_screen()?;
 		}
 		Self::unset_global_terminal_rules()?;
-		Ok(())
-	}
-
-	/// Gets the current active screen ***mutably***.
-	fn get_mut_active_screen(&mut self) -> &mut ScreenAndState {
-		self.screen_stack.last_mut().unwrap()
-	}
-
-	/// Gets screens that need to be drawn. This is determined by looking at the
-	/// stack of screens and travelling top-down, looking until it encounters a
-	/// parent screen (of [`ScreenKind::Normal`] variant) and collecting mutable
-	/// references from the children screens that also need to be drawn.
-	///
-	/// The first element is the parent screen - what follows are the rest of
-	/// the non-normal screens that all need to be rendered.
-	fn get_drawn_screens(&mut self) -> Vec<&mut ScreenAndState> {
-		let mut drawn_screens = Vec::new();
-		for screen in self.screen_stack.iter_mut().rev() {
-			let found_parent_screen = screen.state.kind == ScreenKind::Normal;
-			drawn_screens.push(screen);
-			if found_parent_screen {
-				break;
-			}
-		}
-		drawn_screens.reverse();
-		drawn_screens
-	}
-
-	/// "Spawns" a screen. This method simply appends a
-	/// [`ScreenAndState`] object to the tail end of the screen stack.
-	fn spawn_screen(&mut self, screen: Screens) {
-		self.screen_stack.push(ScreenAndState::new(screen));
-	}
-
-	/// Closes the active screen.
-	/// Rhis function pops the screen from the screen hierarchy in
-	/// Terminal Arcade, and calls its [`Screen::close`] function.
-	fn close_active_screen(&mut self) -> anyhow::Result<()> {
-		self.get_mut_active_screen().close()?;
-		let _ = self.screen_stack.pop();
 		Ok(())
 	}
 
@@ -183,7 +205,7 @@ impl Handler {
 	fn set_global_terminal_rules() -> anyhow::Result<()> {
 		enable_raw_mode()?;
 		Ok(execute!(
-			get_terminal().backend_mut(),
+			stdout(),
 			DisableBracketedPaste,
 			DisableFocusChange,
 			DisableBlinking,
@@ -197,9 +219,8 @@ impl Handler {
 	/// [`Self::set_global_terminal_rules`].
 	fn unset_global_terminal_rules() -> anyhow::Result<()> {
 		disable_raw_mode()?;
-		let mut terminal = get_terminal();
 		Ok(execute!(
-			terminal.backend_mut(),
+			stdout(),
 			EnableBracketedPaste,
 			EnableFocusChange,
 			EnableBlinking,
@@ -223,9 +244,9 @@ impl Handler {
 	/// but also the parenting screens if the child(ren) screen is not of
 	/// [`ScreenKind::Normal`] variant.
 	fn draw_screen_ui(&mut self) -> anyhow::Result<()> {
-		get_terminal().draw(|frame| {
-			let drawn_screens = self.get_drawn_screens();
-			let active_screen_index = drawn_screens.len() - 1;
+		let drawn_screens = self.screen_handler.get_drawn_screens();
+		let active_screen_index = drawn_screens.len() - 1;
+		self.terminal.draw(|frame| {
 			for (index, drawn_screen) in drawn_screens.into_iter().enumerate() {
 				drawn_screen.screen.render(
 					frame,
@@ -241,7 +262,7 @@ impl Handler {
 	/// Also returns if there are no screens, and by proxy, if the application
 	/// has been quit.
 	fn quit_when_no_screens(&mut self) -> anyhow::Result<bool> {
-		Ok(if self.screen_stack.is_empty() {
+		Ok(if self.screen_handler.is_empty() {
 			self.quit()?;
 			true
 		} else {
@@ -251,10 +272,9 @@ impl Handler {
 
 	/// The function to be called when Terminal Arcade starts up.
 	pub fn startup(&mut self) -> anyhow::Result<()> {
-		// TODO: Embrace (reasonable & common) abbreviations in signatures
-		initialize_terminal();
+		Self::set_panic_hook();
 		Self::set_global_terminal_rules()?;
-		self.spawn_screen(WelcomeScreen::default().into());
+		self.screen_handler.spawn_screen(WelcomeScreen::default().into());
 		self.run()?;
 		Ok(())
 	}
@@ -266,14 +286,14 @@ impl Handler {
 			return Ok(true);
 		}
 
-		let active_screen = self.get_mut_active_screen();
+		let active_screen = self.screen_handler.get_mut_active_screen().unwrap();
 		let created_screen = active_screen.state.screen_created.take();
 
 		if active_screen.state.open_status == OpenStatus::Closed {
-			self.close_active_screen()?;
+			self.screen_handler.close_active_screen()?;
 		}
 		if let Some(screen) = created_screen {
-			self.spawn_screen(screen);
+			self.screen_handler.spawn_screen(screen);
 		}
 
 		self.quit_when_no_screens()
@@ -281,22 +301,23 @@ impl Handler {
 
 	/// Handles an event read from the terminal.
 	/// also returning if the event loop calling this function should quit.
-	// TODO: Error handling in more places
 	fn handle_terminal_event(&mut self, event: &Event) -> anyhow::Result<bool> {
-		// TODO: Mini popup showing dimensions on resize
 		match event {
 			Event::Key(ref key) if Self::check_quit_controls(key) => {
 				self.quit()?;
 				return Ok(true);
 			},
 			Event::Resize(..) => {
-				// TODO: Minimum size warning mechanism
 				self.draw_screen_ui()?;
 			},
 			_ => {},
 		}
-		let screen = self.get_mut_active_screen();
-		screen.screen.event(event, &mut screen.state)?;
-		Ok(false)
+		Ok(match self.screen_handler.get_mut_active_screen() {
+			Some(screen) => {
+				screen.screen.event(event, &mut screen.state)?;
+				false
+			},
+			None => true,
+		})
 	}
 }

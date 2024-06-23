@@ -19,15 +19,9 @@ use ratatui::text::{
 	Text,
 };
 
-use crate::core::terminal::get_terminal;
-
-/// Clears the terminal.
-pub fn clear_terminal() -> anyhow::Result<()> {
-	Ok(get_terminal().clear()?)
-}
-
 /// Gets the version of the crate, or returns "NOT.FOUND" if one
 /// was unable to be retrieved.
+/// TODO: Move to footer where this information is used
 #[must_use]
 pub fn get_crate_version() -> String {
 	format!(

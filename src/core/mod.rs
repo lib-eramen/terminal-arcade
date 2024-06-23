@@ -53,12 +53,7 @@ use ratatui::{
 	},
 };
 
-use self::terminal::get_terminal;
-
 pub mod handler;
-pub mod terminal;
-
-// TODO: Use an actual crate for this (`directory-rs?)
 
 /// The directory where Terminal Arcade saves all of its data.
 /// NOT TO BE USED DIRECTLY. This path does not include the home dir.

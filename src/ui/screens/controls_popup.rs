@@ -74,7 +74,6 @@ impl ControlsPopup {
 	/// Returns a table containing information about key shortcuts.
 	#[must_use]
 	fn get_controls_table<'a>(extra_entries: Option<Vec<ControlsEntry>>) -> Table<'a> {
-		// TODO: Replace this with own controls table widget
 		let mut entries = extra_entries.unwrap_or_default();
 		let mut default_shortcuts = vec![
 			("Esc", "Closes this screen and returns to the previous one"),
