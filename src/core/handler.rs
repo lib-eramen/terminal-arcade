@@ -73,6 +73,7 @@ use crate::ui::{
 	WelcomeScreen,
 };
 
+/// Kind of terminal backend used in Terminal Arcade - crossterm + stdout.
 pub type Terminal = ratatui::Terminal<CrosstermBackend<Stdout>>;
 
 /// Struct to handle and manage multiple [Screen]s in Terminal Arcade.
