@@ -10,31 +10,4 @@ license = "MIT"
 keywords = ["arcade", "terminal", "games"]
 categories = ["games"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-aho-corasick = "1.1.2"
-anyhow = "1.0.70"
-better-panic = "0.3.0"
-bitflags = "2.5.0"
-bool-toggle = "1.1.1"
-chrono = "0.4.24"
-color-eyre = "0.6.2"
-crossterm = { version = "0.26.1", features = ["event-stream"] }
-derive-new = "0.5.9"
-derive_builder = "0.20.0"
-enum_dispatch = "0.3.13"
-git_info = "0.1.2"
-home = "0.5.5"
-indexmap = "2.2.6"
-lazy_static = "1.4.0"
-once_cell = "1.17.1"
-palette = "0.7.5"
-pluralizer = "0.4.0"
-rand = "0.8.5"
-ratatui = "0.26.3"
-serde = "1.0.160"
-serde_derive = "1.0.160"
-strum = "0.26.2"
-thiserror = "1.0.40"
-toml = "0.7.3"
