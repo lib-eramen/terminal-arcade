@@ -9,5 +9,30 @@ repository = "https://github.com/developer-ramen/terminal-arcade"
 license = "MIT"
 keywords = ["arcade", "terminal", "games"]
 categories = ["games"]
+build = "build.rs"
 
 [dependencies]
+anyhow = "1.0.86"
+better-panic = "0.3.0"
+color-eyre = "0.6.3"
+config = "0.14.0"
+directories = "5.0.1"
+human-panic = "2.0.0"
+lazy_static = "1.5.0"
+libc = "0.2.155"
+serde = { version = "1.0.204", features = ["derive", "rc"] }
+strip-ansi-escapes = "0.2.0"
+thiserror = "1.0.63"
+time = { version = "0.3.36", features = [
+    "formatting",
+    "parsing",
+    "local-offset",
+    "serde",
+] }
+toml = "0.8.15"
+tracing = { version = "0.1.40", features = ["async-await", "log"] }
+tracing-error = "0.2.0"
+tracing-subscriber = { version = "0.3.18", features = ["ansi", "env-filter", "fmt", "local-time", "time"] }
+
+[build-dependencies]
+vergen-gix = { version = "1.0.0", features = ["build", "cargo", "rustc", "si"] }
