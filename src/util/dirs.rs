@@ -6,7 +6,12 @@ use std::{
 	path::PathBuf,
 };
 
+use derive_new::new;
 use directories::ProjectDirs;
+use serde::{
+	Deserialize,
+	Serialize,
+};
 use tracing::info;
 
 use crate::util::PROJECT_NAME;
@@ -40,6 +45,22 @@ pub enum PathSource {
 
 	/// Default option - in the same folder where the program is run.
 	Default,
+}
+
+/// Directories used in Terminal Arcade.
+#[derive(Debug, Clone, Serialize, Deserialize, new)]
+pub struct AppDirs {
+	/// Directory holding Terminal Arcade's config.
+	pub config_dir: PathBuf,
+
+	/// Directory holding Terminal Arcade's data.
+	pub data_dir: PathBuf,
+}
+
+impl Default for AppDirs {
+	fn default() -> Self {
+		Self::new(get_config_dir(), get_data_dir())
+	}
 }
 
 impl Display for PathSource {

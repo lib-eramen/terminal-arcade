@@ -10,6 +10,7 @@
 #![warn(clippy::complexity, clippy::perf, clippy::style, clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
+mod config;
 mod util;
 
 /// Result type for the entire crate. Uses [`color_eyre`]'s
