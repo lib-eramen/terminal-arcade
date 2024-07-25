@@ -6,7 +6,10 @@
 use std::panic::PanicInfo;
 
 use color_eyre::config::PanicHook;
-use tracing::info;
+use tracing::{
+	error,
+	info,
+};
 
 lazy_static::lazy_static! {
 	static ref REPO_URL: String = env!("CARGO_PKG_REPOSITORY").to_string();
@@ -45,22 +48,25 @@ fn prod_panic_hook(panic_hook: &PanicHook, panic_info: &PanicInfo) {
 
 /// Custom panic hook. Also resets the terminal to the original state in
 /// addition to previous panic handling.
-fn custom_panic_hook(panic_hook: &PanicHook, panic_info: &PanicInfo) -> ! {
-	// TODO: Reset terminal rules here
+fn custom_panic_hook(panic_hook: &PanicHook, panic_info: &PanicInfo) {
+	if let Err(err) = crate::tui::Tui::reset_terminal_rules() {
+		error!("could not reset terminal rules: {err}");
+	}
 	let msg = format!("{}", panic_hook.panic_report(panic_info));
-	tracing::error!("panic: {}", strip_ansi_escapes::strip_str(msg));
+	error!("panic: {}", strip_ansi_escapes::strip_str(msg));
 
 	#[cfg(debug_assertions)]
 	debug_panic_hook(panic_info);
 	#[cfg(not(debug_assertions))]
 	prod_panic_hook(panic_hook, panic_info);
 
-	std::process::exit(libc::EXIT_FAILURE)
+	std::process::exit(libc::EXIT_FAILURE);
 }
 
 /// Initializes utilities for error/panic reporting.
 /// Includes [`human_panic`], [`better_panic`] and [`color_eyre`].
 pub fn init_panic_handling() -> crate::Result<()> {
+	info!("initializing panic handling");
 	let (panic_hook, eyre_hook) = color_eyre::config::HookBuilder::default()
 		.panic_section(PANIC_MSG.clone())
 		.capture_span_trace_by_default(false)
@@ -70,8 +76,7 @@ pub fn init_panic_handling() -> crate::Result<()> {
 
 	eyre_hook.install()?;
 	std::panic::set_hook(Box::new(move |panic_info| {
-		custom_panic_hook(&panic_hook, panic_info)
+		custom_panic_hook(&panic_hook, panic_info);
 	}));
-	info!("panic handling initialized");
 	Ok(())
 }

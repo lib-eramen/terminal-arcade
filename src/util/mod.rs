@@ -27,9 +27,9 @@ lazy_static::lazy_static! {
 
 /// Formats the [`RUN_TIMESTAMP`] with the [`Iso8601`] format.
 fn fmt_run_timestamp() -> crate::Result<String> {
-	Ok(RUN_TIMESTAMP
+	RUN_TIMESTAMP
 		.format(&Iso8601::DEFAULT)
-		.map_err(|err| eyre!("unable to format run timestamp: {err}"))?)
+		.map_err(|err| eyre!("unable to format run timestamp: {err}"))
 }
 
 /// Logs the current running mode.

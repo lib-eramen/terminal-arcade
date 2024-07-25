@@ -37,6 +37,7 @@ fn get_log_file_name() -> crate::Result<String> {
 /// variable - when that is invalid, the [`LOG_ENV_VAR`] variable is used
 /// instead. When even that is invalid, an error is returned.
 pub fn init_logging() -> crate::Result<()> {
+	info!("initializing logging");
 	let log_dir = get_data_dir().join("logs");
 	std::fs::create_dir_all(log_dir.clone())?;
 	let log_file_path = log_dir.join(get_log_file_name()?);
@@ -60,6 +61,5 @@ pub fn init_logging() -> crate::Result<()> {
 		.with(file_subscriber)
 		.with(ErrorLayer::default())
 		.try_init()?;
-	info!("logging initialized");
 	Ok(())
 }
