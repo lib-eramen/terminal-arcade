@@ -2,11 +2,9 @@ name: ci
 
 on:
   push:
-    branches:
-      - main
+    branches: "*"
   pull_request:
-    branches:
-      - main
+    branches: "*"
 
 env:
   CARGO_TERM_COLOR: always
@@ -21,7 +19,7 @@ jobs:
           toolchain: stable
           profile: default
           override: true
-      - run: cargo build --verbose --all-targets
+      - run: cargo build --all-targets
   
   test:
     runs-on: ubuntu-latest
@@ -32,7 +30,7 @@ jobs:
           toolchain: stable
           profile: default
           override: true
-      - run: cargo test --verbose --all-targets
+      - run: cargo test --all-targets
   
   lint:
     runs-on: ubuntu-latest
@@ -44,7 +42,7 @@ jobs:
           profile: minimal
           components: clippy
           override: true
-      - run: cargo clippy -- -Dwarnings --verbose
+      - run: cargo clippy -- -Dwarnings
   
   check-fmt:
     runs-on: ubuntu-latest
@@ -56,4 +54,4 @@ jobs:
           profile: minimal
           components: rustfmt
           override: true
-      - run: cargo +nightly fmt --verbose --check -- -Dwarnings
+      - run: cargo +nightly fmt --check
