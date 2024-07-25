@@ -9,6 +9,7 @@ use time::{
 use tracing::{
 	info,
 	instrument,
+	trace,
 };
 
 pub mod dirs;
@@ -17,22 +18,30 @@ pub mod panic;
 
 lazy_static::lazy_static! {
 	/// This crate/app/project's name in lowercase.
-	pub static ref PROJECT_NAME: String = env!("CARGO_PKG_NAME").to_lowercase().to_string();
+	pub static ref PROJECT_NAME: String =
+		env!("CARGO_PKG_NAME").to_lowercase().to_string();
 
 	/// The timestamp of when Terminal Arcade was run.
 	pub static ref RUN_TIMESTAMP: OffsetDateTime = OffsetDateTime::now_utc();
 }
 
 /// Formats the [`RUN_TIMESTAMP`] with the [`Iso8601`] format.
-fn try_fmt_run_timestamp() -> crate::Result<String> {
-	Ok(RUN_TIMESTAMP.format(&Iso8601::DEFAULT)?)
+fn fmt_run_timestamp() -> crate::Result<String> {
+	Ok(RUN_TIMESTAMP
+		.format(&Iso8601::DEFAULT)
+		.map_err(|err| eyre!("unable to format run timestamp: {err}"))?)
 }
 
-/// Formats the [`RUN_TIMESTAMP`] with the [`Iso8601`] format, panicking if an
-/// error is returned.
-fn fmt_run_timestamp() -> String {
-	try_fmt_run_timestamp()
-		.expect("unable to fmt run timestamp with iso8601 for some reason")
+/// Logs the current running mode.
+fn log_current_running_mode() {
+	info!(
+		"current running mode: {}",
+		if cfg!(debug_assertions) {
+			"debug"
+		} else {
+			"release"
+		}
+	);
 }
 
 /// Initilizes different utilities of the application ([directories](dirs),
@@ -43,15 +52,12 @@ fn fmt_run_timestamp() -> String {
 #[instrument]
 pub fn initialize_utils() -> crate::Result<()> {
 	let _ = RUN_TIMESTAMP; // Immediately access and evaluate `RUN_TIMESTAMP`.
-
 	log::init_logging()?;
+	log_current_running_mode();
 
-	let fmted_timestamp = try_fmt_run_timestamp()
+	let fmted_timestamp = fmt_run_timestamp()
 		.map_err(|err| eyre!("unable to fmt run timestamp: {err}"))?;
-	info!(
-		run_time = fmted_timestamp,
-		"run timestamp should be initialized"
-	);
+	trace!("initialized run timestamp: {fmted_timestamp}");
 
 	panic::init_panic_handling()?;
 	dirs::init_project_dirs()?;

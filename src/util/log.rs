@@ -1,6 +1,9 @@
 //! Utilities for logging in Terminal Arcade, using [tracing].
 
-use tracing::level_filters::LevelFilter;
+use tracing::{
+	info,
+	level_filters::LevelFilter,
+};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
 	layer::SubscriberExt,
@@ -18,12 +21,14 @@ use crate::util::{
 lazy_static::lazy_static! {
 	pub static ref LOG_ENV_VAR: String =
 		format!("{}_LOG_LEVEL", PROJECT_NAME.to_uppercase().clone());
+}
 
-	pub static ref LOG_FILE_NAME: String = format!(
+fn get_log_file_name() -> crate::Result<String> {
+	Ok(format!(
 		"{}-{}.log",
 		PROJECT_NAME.clone(),
-		fmt_run_timestamp()
-	);
+		fmt_run_timestamp()?
+	))
 }
 
 /// Initializes logging for Terminal Arcade.
@@ -34,7 +39,7 @@ lazy_static::lazy_static! {
 pub fn init_logging() -> crate::Result<()> {
 	let log_dir = get_data_dir().join("logs");
 	std::fs::create_dir_all(log_dir.clone())?;
-	let log_file_path = log_dir.join(LOG_FILE_NAME.clone());
+	let log_file_path = log_dir.join(get_log_file_name()?);
 	let log_file = std::fs::File::create(log_file_path)?;
 
 	let env_filter =
@@ -55,6 +60,6 @@ pub fn init_logging() -> crate::Result<()> {
 		.with(file_subscriber)
 		.with(ErrorLayer::default())
 		.try_init()?;
-
+	info!("logging initialized");
 	Ok(())
 }

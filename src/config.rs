@@ -3,6 +3,8 @@
 //! Under the [config folder](crate::util::dirs::get_config_dir) will be a list
 //! of configuration files, defaulting to `config.toml`.
 
+use std::path::PathBuf;
+
 use config::{
 	builder::DefaultState,
 	ConfigBuilder,
@@ -42,7 +44,7 @@ impl Config {
 		let config_path = config_dir.join("config.toml");
 		if !config_path.exists() {
 			let config = Self::default();
-			std::fs::write(config_path, toml::to_string(&config)?)?;
+			config.save(config_path)?;
 			return Ok(config);
 		}
 
@@ -53,7 +55,13 @@ impl Config {
 					.required(true),
 			)
 			.add_source(config::Environment::with_prefix("TA"));
-		let result = dbg!(config_builder.build()?.try_deserialize()?);
+		let result = config_builder.build()?.try_deserialize()?;
 		Ok(result)
+	}
+
+	/// Saves the current config to the provided path.
+	pub fn save(&self, path: PathBuf) -> crate::Result<()> {
+		std::fs::write(path, toml::to_string(self)?)?;
+		Ok(())
 	}
 }

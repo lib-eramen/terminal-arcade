@@ -122,5 +122,6 @@ pub fn init_project_dirs() -> crate::Result<()> {
 	use std::fs::create_dir_all;
 	create_dir_all(get_config_dir())?;
 	create_dir_all(get_data_dir())?;
+	info!("initialized project dirs");
 	Ok(())
 }

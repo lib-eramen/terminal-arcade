@@ -19,6 +19,7 @@ type Result<T, E = color_eyre::eyre::Report> = color_eyre::eyre::Result<T, E>;
 
 fn main() -> Result<()> {
 	util::initialize_utils()?;
+	let _config = config::Config::new()?;
 	println!("See you next time! 🕹️ 👋");
 	Ok(())
 }
