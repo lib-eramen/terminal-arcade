@@ -85,6 +85,7 @@ type Terminal = ratatui::Terminal<CrosstermBackend<Stdout>>;
 /// to be called after [creating](Tui::new) a TUI object, as dropping it will
 /// automatically make it [exit](Tui::exit).
 #[derive(Debug)]
+#[allow(dead_code)] // TODO: Remove this once this struct is actually used
 pub struct Tui {
 	/// Terminal interface to interact with.
 	terminal: Terminal,
