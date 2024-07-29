@@ -14,6 +14,7 @@ use tracing_subscriber::{
 };
 
 use crate::service::{
+	debug_either,
 	dirs::get_data_dir,
 	fmt_run_timestamp,
 	PROJECT_NAME,
@@ -45,11 +46,7 @@ pub fn init_logging() -> crate::Result<()> {
 	let log_file = std::fs::File::create(log_file_path)?;
 
 	let env_filter = EnvFilter::builder().with_default_directive(
-		match cfg!(debug_assertions) {
-			true => LevelFilter::TRACE,
-			false => LevelFilter::INFO,
-		}
-		.into(),
+		debug_either(LevelFilter::TRACE, LevelFilter::INFO).into(),
 	);
 	let env_filter = env_filter
 		.try_from_env()

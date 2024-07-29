@@ -75,11 +75,11 @@ impl App {
 	pub fn with_config(config: Config) -> Self {
 		debug!(?config, "using provided config");
 		Self::new(
-			Default::default(),
+			RunState::default(),
 			config,
-			Default::default(),
-			Default::default(),
-			Default::default(),
+			ScreenHandler::default(),
+			UnboundedChannel::default(),
+			Vec::default(),
 		)
 	}
 
@@ -224,15 +224,12 @@ impl App {
 	///
 	/// This method will return an error if the state is already quitting.
 	fn indicate_quit(&mut self, forced: bool) -> crate::Result<()> {
-		match self.run_state {
-			RunState::Quitting(_) => {
-				Err(eyre!("app is already set to quitting"))
-			},
-			_ => {
-				self.run_state = RunState::Quitting(forced);
-				info!("set app's run state; indicated to quit");
-				Ok(())
-			},
+		if let RunState::Quitting(_) = self.run_state {
+			Err(eyre!("app is already set to quitting"))
+		} else {
+			self.run_state = RunState::Quitting(forced);
+			info!("set app's run state; indicated to quit");
+			Ok(())
 		}
 	}
 }

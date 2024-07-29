@@ -27,7 +27,7 @@ impl Screen {
 	fn handle_event(
 		&mut self,
 		state: &mut ScreenState,
-		event: Event,
+		event: &Event,
 	) -> crate::Result<()> {
 		todo!()
 	}

@@ -25,6 +25,16 @@ lazy_static::lazy_static! {
 	pub static ref RUN_TIMESTAMP: OffsetDateTime = OffsetDateTime::now_utc();
 }
 
+/// Checks if `debug_assertions` is on and returns the `debug` parameter if yes,
+/// `other` otherwise.
+fn debug_either<T>(debug: T, other: T) -> T {
+	if cfg!(debug_assertions) {
+		debug
+	} else {
+		other
+	}
+}
+
 /// Formats the [`RUN_TIMESTAMP`] with the [`Iso8601`] format.
 fn fmt_run_timestamp() -> crate::Result<String> {
 	RUN_TIMESTAMP

@@ -68,10 +68,7 @@ fn custom_panic_hook(panic_hook: &PanicHook, panic_info: &PanicInfo) {
 /// Includes [`human_panic`], [`better_panic`] and [`color_eyre`].
 pub fn init_panic_handling() -> crate::Result<()> {
 	info!("initializing error & panic handling");
-	std::env::set_var("RUST_BACKTRACE", match cfg!(debug_assertions) {
-		true => "full",
-		false => "1",
-	});
+	std::env::set_var("RUST_BACKTRACE", "full");
 
 	let (panic_hook, eyre_hook) = color_eyre::config::HookBuilder::default()
 		.panic_section(PANIC_MSG.clone())
