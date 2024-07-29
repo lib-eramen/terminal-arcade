@@ -14,7 +14,7 @@ use serde::{
 };
 use tracing::info;
 
-use crate::util::PROJECT_NAME;
+use crate::service::PROJECT_NAME;
 
 lazy_static::lazy_static! {
 	static ref DATA_FOLDER_ENV_VAR: String =
@@ -97,7 +97,7 @@ pub fn get_config_dir() -> PathBuf {
 	} else {
 		(PathBuf::from(".").join(".config"), PathSource::Default)
 	};
-	info!("found config dir via {source}, at {}", path.display());
+	info!(%source, path = path.display().to_string(), "found config dir");
 	path
 }
 
@@ -113,7 +113,7 @@ pub fn get_data_dir() -> PathBuf {
 	} else {
 		(PathBuf::from(".").join(".data"), PathSource::Default)
 	};
-	info!("found data dir via {source}, at {}", path.display());
+	info!(%source, path = path.display().to_string(), "found data dir");
 	path
 }
 

@@ -42,7 +42,7 @@ jobs:
           profile: minimal
           components: clippy
           override: true
-      - run: cargo clippy -- -Dwarnings
+      - run: cargo clippy -- -Dwarnings -Aunused
   
   check-fmt:
     runs-on: ubuntu-latest

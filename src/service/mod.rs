@@ -1,4 +1,4 @@
-//! Utilities specific to inner workings for Terminal Arcade, such as
+//! Services for the backend application side of Terminal Arcade, such as
 //! [logging](log), [error and panic handling](panic), [directories](dirs), etc.
 
 use color_eyre::eyre::eyre;

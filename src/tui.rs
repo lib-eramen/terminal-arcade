@@ -42,16 +42,14 @@ use crossterm::{
 		LeaveAlternateScreen,
 	},
 };
+use derive_new::new;
 use futures::{
 	FutureExt,
 	StreamExt,
 };
 use ratatui::prelude::CrosstermBackend;
 use tokio::{
-	sync::mpsc::{
-		UnboundedReceiver,
-		UnboundedSender,
-	},
+	sync::mpsc::UnboundedSender,
 	task::JoinHandle,
 	time::interval,
 };
@@ -61,7 +59,13 @@ use tracing::{
 	error,
 	info,
 	instrument,
+	trace,
 	warn,
+};
+
+use crate::{
+	config::GameSpecs,
+	util::UnboundedChannel,
 };
 
 /// Terminal type used by Terminal Arcade.
@@ -71,6 +75,8 @@ type Terminal = ratatui::Terminal<CrosstermBackend<Stdout>>;
 /// events. This struct also has [`Deref`] and [`DerefMut`] implementations to
 /// the contained [`Tui::terminal`]. When this struct is [`Drop`]ped,
 /// [`Tui::exit`] will be called.
+///
+/// Note that by default, mouse capture is not enabled.
 ///
 /// This struct provides several methods to influence its control flow:
 /// * [`Tui::start`] starts terminal event handling.
@@ -84,8 +90,7 @@ type Terminal = ratatui::Terminal<CrosstermBackend<Stdout>>;
 /// to start the terminal interface. Typically, only [`Tui::enter`] will need
 /// to be called after [creating](Tui::new) a TUI object, as dropping it will
 /// automatically make it [exit](Tui::exit).
-#[derive(Debug)]
-#[allow(dead_code)] // TODO: Remove this once this struct is actually used
+#[derive(Debug, new)]
 pub struct Tui {
 	/// Terminal interface to interact with.
 	terminal: Terminal,
@@ -96,11 +101,8 @@ pub struct Tui {
 	/// This handler's cancellation token.
 	cancel_token: CancellationToken,
 
-	/// Event sender channel.
-	event_sender: UnboundedSender<TuiEvent>,
-
-	/// Event receiver channel.
-	event_receiver: UnboundedReceiver<TuiEvent>,
+	/// [`TuiEvent`] channel.
+	event_channel: UnboundedChannel<TuiEvent>,
 
 	/// Tick rate - how rapidly to update state.
 	tick_rate: Duration,
@@ -110,23 +112,22 @@ pub struct Tui {
 }
 
 impl Tui {
-	/// Constructs a new terminal interface object.
-	pub fn new(tps: u32, fps: u32) -> crate::Result<Self> {
-		let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
+	/// Constructs a new terminal interface object with the provided
+	/// [`GameSpecs`].
+	pub fn with_specs(specs: GameSpecs) -> crate::Result<Self> {
 		Ok(Self {
 			terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
 			event_task: tokio::spawn(async {}),
 			cancel_token: CancellationToken::new(),
-			event_sender: sender,
-			event_receiver: receiver,
-			tick_rate: Duration::from_secs_f64(1.0 / f64::from(tps)),
-			frame_rate: Duration::from_secs_f64(1.0 / f64::from(fps)),
+			event_channel: UnboundedChannel::new(),
+			tick_rate: Duration::try_from_secs_f64(1.0 / specs.tps)?,
+			frame_rate: Duration::try_from_secs_f64(1.0 / specs.fps)?,
 		})
 	}
 
 	/// Receives the next [TUI event](TuiEvent).
 	pub async fn next_event(&mut self) -> Option<TuiEvent> {
-		self.event_receiver.recv().await
+		self.event_channel.get_mut_receiver().recv().await
 	}
 
 	/// Event loop to interact with the terminal.
@@ -141,13 +142,13 @@ impl Tui {
 		cancel_token: CancellationToken,
 		tick_rate: Duration,
 		frame_rate: Duration,
-	) -> () {
+	) {
 		let mut event_stream = CrosstermEventStream::new();
 		let mut tick_interval = interval(tick_rate);
 		let mut render_interval = interval(frame_rate);
 
 		if let Err(err) = event_sender.send(TuiEvent::Init) {
-			error!("unable to send initial event: {err}");
+			error!(%err, "unable to send initial event");
 			return;
 		}
 
@@ -164,7 +165,7 @@ impl Tui {
 						event.into()
 					},
 					Some(Err(err)) => {
-						error!("while receiving from event stream: {err}");
+						error!(%err, "while receiving from event stream");
 						TuiEvent::Error(err.to_string())
 					},
 					None => {
@@ -173,7 +174,6 @@ impl Tui {
 					}
 				},
 			};
-			debug!("sending crossterm event: {tui_event:?}");
 			if let Err(err) = event_sender.send(tui_event) {
 				error!("failed to send tui event: {err}; quitting now");
 				break;
@@ -186,6 +186,7 @@ impl Tui {
 	#[instrument(skip(self))]
 	pub fn enter(&mut self) -> crate::Result<()> {
 		info!("entering the tui");
+		self.clear()?;
 		Self::set_terminal_rules()?;
 		self.start();
 		Ok(())
@@ -195,6 +196,7 @@ impl Tui {
 	#[instrument(skip(self))]
 	pub fn exit(&mut self) -> crate::Result<()> {
 		info!("exiting the tui");
+		self.clear()?;
 		self.stop()?;
 		Self::reset_terminal_rules()?;
 		Ok(())
@@ -207,7 +209,7 @@ impl Tui {
 		self.cancel_token = CancellationToken::new();
 
 		let event_loop = Self::event_loop(
-			self.event_sender.clone(),
+			self.event_channel.get_sender().clone(),
 			self.cancel_token.clone(),
 			self.tick_rate,
 			self.frame_rate,
@@ -244,32 +246,12 @@ impl Tui {
 		Ok(())
 	}
 
-	/// Suspends the terminal interface - think force-quit-ish [`Self::exit`].
-	/// Also [raise](signal_hook::low_level::raise)s a
-	/// [`SIGTSTP`](libc::SIGTSTP) signal.
-	#[instrument(skip(self))]
-	pub fn suspend(&mut self) -> crate::Result<()> {
-		self.exit()?;
-		#[cfg(not(windows))]
-		signal_hook::low_level::raise(libc::SIGTSTP)?;
-		Ok(())
-	}
-
-	/// Resumes the terminal interface. Analogous to calling [`Self::enter`]
-	/// directly.
-	#[instrument(skip(self))]
-	pub fn resume(&mut self) -> crate::Result<()> {
-		self.enter()?;
-		Ok(())
-	}
-
 	/// Sets global terminal rules.
-	fn set_terminal_rules() -> crate::Result<()> {
+	pub fn set_terminal_rules() -> crate::Result<()> {
 		enable_raw_mode()?;
 		execute!(
 			stdout(),
 			EnableBracketedPaste,
-			EnableMouseCapture,
 			EnableFocusChange,
 			DisableBlinking,
 			EnterAlternateScreen,
@@ -280,7 +262,7 @@ impl Tui {
 	}
 
 	/// Resets global terminal rules set by [`Self::set_terminal_rules`].
-	pub(crate) fn reset_terminal_rules() -> crate::Result<()> {
+	pub fn reset_terminal_rules() -> crate::Result<()> {
 		disable_raw_mode()?;
 		execute!(
 			stdout(),
@@ -291,6 +273,18 @@ impl Tui {
 			LeaveAlternateScreen,
 			Show,
 		)?;
+		Ok(())
+	}
+
+	/// Enables mouse capture.
+	pub fn enable_mouse_capture() -> crate::Result<()> {
+		execute!(stdout(), EnableMouseCapture)?;
+		Ok(())
+	}
+
+	/// Disables mouse capture.
+	pub fn disable_mouse_capture() -> crate::Result<()> {
+		execute!(stdout(), DisableMouseCapture)?;
 		Ok(())
 	}
 }
@@ -342,14 +336,19 @@ pub enum TuiEvent {
 	/// Some text is pasted by the user.
 	Paste(String),
 
-	/// The terminal is resized to `(x, y)`.
+	/// The terminal is resized to `(width, height)`.
 	Resize(u16, u16),
 
-	/// The terminal lost focus.
-	FocusLost,
+	/// The terminal changed focus.
+	Focus(FocusChange),
+}
 
-	/// The terminal gained focus.
-	FocusGained,
+/// A change in focus of the terminal.
+#[derive(Debug, Clone, Copy, Hash)]
+#[allow(missing_docs)] // Obvious variant names
+pub enum FocusChange {
+	Lost,
+	Gained,
 }
 
 impl From<CrosstermEvent> for TuiEvent {
@@ -358,9 +357,11 @@ impl From<CrosstermEvent> for TuiEvent {
 			CrosstermEvent::Key(key) => Self::Key(key),
 			CrosstermEvent::Mouse(mouse) => Self::Mouse(mouse),
 			CrosstermEvent::Paste(text) => Self::Paste(text),
-			CrosstermEvent::Resize(x, y) => Self::Resize(x, y),
-			CrosstermEvent::FocusLost => Self::FocusLost,
-			CrosstermEvent::FocusGained => Self::FocusGained,
+			CrosstermEvent::Resize(width, height) => {
+				Self::Resize(width, height)
+			},
+			CrosstermEvent::FocusLost => Self::Focus(FocusChange::Lost),
+			CrosstermEvent::FocusGained => Self::Focus(FocusChange::Gained),
 		}
 	}
 }

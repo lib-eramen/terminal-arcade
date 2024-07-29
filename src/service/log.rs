@@ -1,4 +1,5 @@
-//! Utilities for logging in Terminal Arcade, using [tracing].
+//! Utilities for tracing in Terminal Arcade, using [`tracing`].
+//! It's named `log` because, well, [`tracing`].
 
 use tracing::{
 	info,
@@ -12,7 +13,7 @@ use tracing_subscriber::{
 	Layer,
 };
 
-use crate::util::{
+use crate::service::{
 	dirs::get_data_dir,
 	fmt_run_timestamp,
 	PROJECT_NAME,
@@ -43,20 +44,21 @@ pub fn init_logging() -> crate::Result<()> {
 	let log_file_path = log_dir.join(get_log_file_name()?);
 	let log_file = std::fs::File::create(log_file_path)?;
 
-	let env_filter =
-		EnvFilter::builder().with_default_directive(LevelFilter::INFO.into());
+	let env_filter = EnvFilter::builder().with_default_directive(
+		match cfg!(debug_assertions) {
+			true => LevelFilter::TRACE,
+			false => LevelFilter::INFO,
+		}
+		.into(),
+	);
 	let env_filter = env_filter
 		.try_from_env()
 		.or_else(|_| env_filter.with_env_var(LOG_ENV_VAR.clone()).from_env())?;
-
 	let file_subscriber = tracing_subscriber::fmt::layer()
 		.with_ansi(false)
-		.with_file(true)
-		.with_line_number(true)
-		.with_target(true)
-		.with_thread_names(true)
 		.with_writer(log_file)
 		.with_filter(env_filter);
+
 	tracing_subscriber::registry()
 		.with(file_subscriber)
 		.with(ErrorLayer::default())

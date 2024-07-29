@@ -10,37 +10,57 @@ use config::{
 	ConfigBuilder,
 	FileFormat,
 };
+use derive_new::new;
 use serde::{
 	Deserialize,
 	Serialize,
 };
 
-use crate::util::dirs::{
+use crate::service::dirs::{
 	get_config_dir,
 	get_data_dir,
 	AppDirs,
 };
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+/// Wrapper struct around two [`f64`]s for the ticks per second and the frames
+/// per second numbers.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, new)]
+pub struct GameSpecs {
+	/// Ticks per second.
+	pub tps: f64,
+
+	/// Frames per second.
+	pub fps: f64,
+}
+
+impl Default for GameSpecs {
+	fn default() -> Self {
+		Self::new(64.0, 60.0)
+	}
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, new)]
+#[serde(rename_all = "kebab-case")]
 pub struct Config {
 	/// Directories that Terminal Arcade depends on.
-	#[serde(flatten)]
-	app_dirs: AppDirs,
+	pub app_dirs: AppDirs,
+
+	/// Terminal Arcade's game specifications.
+	pub game_specs: GameSpecs,
 }
 
 impl Config {
-	/// Constructs a new configuration object for Terminal Arcade.
+	/// Fetches a new configuration object for Terminal Arcade.
 	///
 	/// If none is found, a default one will be created at the config folder and
 	/// returned.
-	pub fn new() -> crate::Result<Self> {
+	pub fn fetch() -> crate::Result<Self> {
 		let config_dir = get_config_dir();
 		let data_dir = get_data_dir();
 		let mut config_builder = ConfigBuilder::<DefaultState>::default()
 			.set_default("config_dir", config_dir.to_str())?
 			.set_default("data_dir", data_dir.to_str())?;
 
-		// TODO: Remove hardcoded "config.toml"
 		let config_path = config_dir.join("config.toml");
 		if !config_path.exists() {
 			let config = Self::default();
@@ -65,3 +85,5 @@ impl Config {
 		Ok(())
 	}
 }
+
+// TODO: Add config validation

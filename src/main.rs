@@ -10,13 +10,21 @@
 #![warn(clippy::complexity, clippy::perf, clippy::style, clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
+use tracing::instrument;
+
 use crate::{
+	app::App,
 	config::Config,
+	service::initialize_utils,
 	tui::Tui,
 };
 
+mod app;
 mod config;
+mod event;
+mod service;
 mod tui;
+mod ui;
 mod util;
 
 /// Result type for the entire crate. Uses [`color_eyre`]'s
@@ -24,13 +32,11 @@ mod util;
 type Result<T, E = color_eyre::eyre::Report> = color_eyre::eyre::Result<T, E>;
 
 #[tokio::main]
+#[instrument]
 async fn main() -> Result<()> {
-	util::initialize_utils()?;
-	let _config = Config::new()?;
-	let mut tui = Tui::new(10, 60)?;
-	tui.enter()?;
-	std::thread::sleep(std::time::Duration::from_secs(5));
-	drop(tui);
-	println!("See you next time! 🕹️ 👋");
+	initialize_utils()?;
+	let config = Config::fetch()?;
+	let tui = Tui::with_specs(config.game_specs)?;
+	App::with_config(config).run(tui).await?;
 	Ok(())
 }

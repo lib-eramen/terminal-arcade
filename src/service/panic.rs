@@ -50,7 +50,7 @@ fn prod_panic_hook(panic_hook: &PanicHook, panic_info: &PanicInfo) {
 /// addition to previous panic handling.
 fn custom_panic_hook(panic_hook: &PanicHook, panic_info: &PanicInfo) {
 	if let Err(err) = crate::tui::Tui::reset_terminal_rules() {
-		error!("could not reset terminal rules: {err}");
+		error!(%err, "could not reset terminal rules");
 	}
 	let msg = format!("{}", panic_hook.panic_report(panic_info));
 	error!("panic: {}", strip_ansi_escapes::strip_str(msg));
@@ -60,19 +60,24 @@ fn custom_panic_hook(panic_hook: &PanicHook, panic_info: &PanicInfo) {
 	#[cfg(not(debug_assertions))]
 	prod_panic_hook(panic_hook, panic_info);
 
+	eprintln!("{}", PANIC_MSG.clone());
 	std::process::exit(libc::EXIT_FAILURE);
 }
 
 /// Initializes utilities for error/panic reporting.
 /// Includes [`human_panic`], [`better_panic`] and [`color_eyre`].
 pub fn init_panic_handling() -> crate::Result<()> {
-	info!("initializing panic handling");
+	info!("initializing error & panic handling");
+	std::env::set_var("RUST_BACKTRACE", match cfg!(debug_assertions) {
+		true => "full",
+		false => "1",
+	});
+
 	let (panic_hook, eyre_hook) = color_eyre::config::HookBuilder::default()
 		.panic_section(PANIC_MSG.clone())
-		.capture_span_trace_by_default(false)
-		.display_location_section(false)
-		.display_env_section(false)
-		.into_hooks();
+		.capture_span_trace_by_default(true)
+		.display_location_section(true)
+		.try_into_hooks()?;
 
 	eyre_hook.install()?;
 	std::panic::set_hook(Box::new(move |panic_info| {
