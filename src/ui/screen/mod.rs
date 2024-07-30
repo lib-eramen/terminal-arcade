@@ -23,6 +23,11 @@ pub mod state;
 pub enum Screen {}
 
 impl Screen {
+	/// Returns the initial metadata that's associated with the screen.
+	fn init_metadata(&self) -> ScreenState {
+		todo!()
+	}
+
 	/// Handles an incoming [`Event`].
 	fn event(
 		&mut self,
@@ -38,11 +43,6 @@ impl Screen {
 		frame: &mut Frame,
 		state: &mut ScreenState,
 	) -> crate::Result<()> {
-		todo!()
-	}
-
-	/// Returns the initial metadata that's associated with the screen.
-	fn init_metadata(&self) -> ScreenState {
 		todo!()
 	}
 
