@@ -5,7 +5,10 @@
 
 use std::path::PathBuf;
 
-use color_eyre::eyre::eyre;
+use color_eyre::{
+	eyre::Context,
+	Section,
+};
 use config::{
 	builder::DefaultState,
 	ConfigBuilder,
@@ -16,10 +19,7 @@ use serde::{
 	Deserialize,
 	Serialize,
 };
-use tracing::{
-	error,
-	info,
-};
+use tracing::info;
 
 use crate::{
 	service::dirs::{
@@ -69,15 +69,17 @@ impl Config {
 			)
 			.add_source(config::Environment::with_prefix("TA"));
 
-		config_builder.build()?.try_deserialize().map_err(|err| {
-			let msg = "unable to deserialize config";
-			error!(
-				path = config_path.display().to_string(),
-				%err,
-				"unable to deserialize config"
-			);
-			eyre!("{msg} from {}: {err}", config_path.display())
-		})
+		config_builder
+			.build()?
+			.try_deserialize()
+			.wrap_err("unable to parse & deserialize config")
+			.warning(
+				"your config might have been modified - it is missing fields, \
+				 misformatted, etc.",
+			)
+			.with_suggestion(|| {
+				format!("check your config at {}!", config_path.display())
+			})
 	}
 
 	/// Creates a new default config with the provided path,
@@ -99,5 +101,3 @@ impl Config {
 		Ok(())
 	}
 }
-
-// TODO: Add config validation

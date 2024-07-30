@@ -10,12 +10,15 @@
 #![warn(clippy::complexity, clippy::perf, clippy::style, clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
-use tracing::instrument;
+use color_eyre::Section;
 
 use crate::{
 	app::App,
 	config::Config,
-	service::initialize_utils,
+	service::{
+		errors::ERROR_MSG,
+		initialize_utils,
+	},
 	tui::Tui,
 };
 
@@ -31,13 +34,23 @@ mod util;
 /// [Result](color_eyre::eyre::Result) type.
 type Result<T, E = color_eyre::eyre::Report> = color_eyre::eyre::Result<T, E>;
 
-#[tokio::main]
-#[instrument]
-async fn main() -> Result<()> {
+async fn run() -> Result<()> {
 	initialize_utils()?;
 	let config = Config::fetch()?;
 	let tui = Tui::with_specs(config.game_specs)?;
 	App::with_config(config).run(tui).await?;
-	println!("See you next time! 🕹️ 👋");
 	Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+	if let Err(err) = run().await {
+		Err(err
+			.wrap_err("an error happened!")
+			.note("someone get me a paper bag PRONTO")
+			.with_section(|| ERROR_MSG.clone()))
+	} else {
+		println!("See you next time! 🕹️ 👋");
+		Ok(())
+	}
 }

@@ -14,10 +14,10 @@ use tracing::{
 lazy_static::lazy_static! {
 	static ref REPO_URL: String = env!("CARGO_PKG_REPOSITORY").to_string();
 
-	static ref PANIC_MSG: String = format!(
-		"Terminal Arcade panicked! No, they does not need therapy and a bottle of Xanax, but they \
-		 do need a bug report to {}! Please do they a favor and book it a trip to Bali. Thank \
-		 you! 🎮 🐞",
+	pub static ref ERROR_MSG: String = format!(
+		"Something happened to Terminal Arcade! No, they does not need therapy \
+		and a bottle of Xanax, but they do need a bug report to:\n\t{}/issues/new\n\
+		Please do them a favor and book them a trip to Bali. Thank you! 🎮 🐞",
 		REPO_URL.clone()
 	);
 }
@@ -60,7 +60,7 @@ fn custom_panic_hook(panic_hook: &PanicHook, panic_info: &PanicInfo) {
 	#[cfg(not(debug_assertions))]
 	prod_panic_hook(panic_hook, panic_info);
 
-	eprintln!("{}", PANIC_MSG.clone());
+	eprintln!("{}", ERROR_MSG.clone());
 	std::process::exit(libc::EXIT_FAILURE);
 }
 
@@ -71,7 +71,8 @@ pub fn init_panic_handling() -> crate::Result<()> {
 	std::env::set_var("RUST_BACKTRACE", "full");
 
 	let (panic_hook, eyre_hook) = color_eyre::config::HookBuilder::default()
-		.panic_section(PANIC_MSG.clone())
+		.add_default_filters()
+		.panic_section(ERROR_MSG.clone())
 		.capture_span_trace_by_default(true)
 		.display_location_section(true)
 		.try_into_hooks()?;

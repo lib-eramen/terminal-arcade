@@ -1,20 +1,20 @@
 //! Services for the backend application side of Terminal Arcade, such as
 //! [logging](log), [error and panic handling](panic), [directories](dirs), etc.
 
-use color_eyre::eyre::eyre;
+use color_eyre::eyre::Context;
 use time::{
 	format_description::well_known::Iso8601,
 	OffsetDateTime,
 };
 use tracing::{
+	debug,
 	info,
 	instrument,
-	trace,
 };
 
 pub mod dirs;
+pub mod errors;
 pub mod log;
-pub mod panic;
 
 lazy_static::lazy_static! {
 	/// This crate/app/project's name in lowercase.
@@ -39,7 +39,7 @@ fn debug_either<T>(debug: T, other: T) -> T {
 fn fmt_run_timestamp() -> crate::Result<String> {
 	RUN_TIMESTAMP
 		.format(&Iso8601::DEFAULT)
-		.map_err(|err| eyre!("unable to format run timestamp: {err}"))
+		.wrap_err("unable to format run timestamp")
 }
 
 /// Logs the current running mode.
@@ -65,11 +65,9 @@ pub fn initialize_utils() -> crate::Result<()> {
 	log::init_logging()?;
 	log_current_running_mode();
 
-	let fmted_timestamp = fmt_run_timestamp()
-		.map_err(|err| eyre!("unable to fmt run timestamp: {err}"))?;
-	trace!("initialized run timestamp: {fmted_timestamp}");
+	debug!("initialized run timestamp: {}", fmt_run_timestamp()?);
 
-	panic::init_panic_handling()?;
+	errors::init_panic_handling()?;
 	dirs::init_project_dirs()?;
 	Ok(())
 }

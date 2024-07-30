@@ -125,19 +125,16 @@ impl App {
 		event: AppEvent,
 	) -> crate::Result<()> {
 		match event {
-			// TODO: Buffer for state-affecting events, not just keys (maybe
-			// with a type). Documentation in some of these methods will also
-			// have to change.
-			AppEvent::Tick => self.tick()?,
-			AppEvent::Render => self.render(tui)?,
-			AppEvent::Quit(forced) => self.quit(tui, forced)?,
-			AppEvent::Error(ref msg) => self.error(msg)?,
-			AppEvent::Resize(w, h) => self.resize(tui, w, h)?,
-			AppEvent::Paste(text) => self.paste(text)?,
-			AppEvent::Focus(change) => self.focus(change)?,
-			AppEvent::Events(events) => self.events(events)?,
-			AppEvent::Buffer(event) => self.tick_event_buffer.push(event),
-		}
+			AppEvent::Tick => self.tick(),
+			AppEvent::Render => self.render(tui),
+			AppEvent::Quit(forced) => self.quit(tui, forced),
+			AppEvent::Error(msg) => self.error(msg),
+			AppEvent::Buffer(event) => self.buffer(event),
+			AppEvent::Events(events) => self.events(events),
+			AppEvent::Resize(w, h) => self.resize(tui, w, h),
+			AppEvent::Paste(text) => self.paste(text),
+			AppEvent::Focus(change) => self.focus(change),
+		}?;
 		Ok(())
 	}
 
@@ -179,22 +176,16 @@ impl App {
 
 	/// Handles an [`AppEvent::Error`] event. The error is logged and displayed
 	/// on a popup on the terminal.
-	fn error(&mut self, msg: &str) -> crate::Result<()> {
+	fn error(&mut self, msg: String) -> crate::Result<()> {
 		let msg = format!("received an error message: {msg}");
 		error!(msg, "received an error");
-		// TODO: Additional error handling (i.e. displaying it on a
-		// popup), putting the screen that caused the error in the
-		// log there
-		Ok(())
+		todo!();
 	}
 
-	/// Resizes the terminal and sends a [render](AppEvent::Render) event to
-	/// re-render.
-	fn resize(&mut self, tui: &mut Tui, w: u16, h: u16) -> crate::Result<()> {
-		tui.resize(Rect::new(0, 0, w, h))?;
-		self.event_channel
-			.get_sender()
-			.send(Event::App(AppEvent::Render))?;
+	/// Adds a buffered (key or mouse) event to the [event
+	/// buffer](Self::tick_event_buffer).
+	fn buffer(&mut self, event: BufferedAppEvent) -> crate::Result<()> {
+		self.tick_event_buffer.push(event);
 		Ok(())
 	}
 
@@ -209,28 +200,34 @@ impl App {
 		Ok(())
 	}
 
+	/// Resizes the terminal and sends a [render](AppEvent::Render) event to
+	/// re-render.
+	fn resize(&mut self, tui: &mut Tui, w: u16, h: u16) -> crate::Result<()> {
+		tui.resize(Rect::new(0, 0, w, h))?;
+		self.event_channel
+			.get_sender()
+			.send(Event::App(AppEvent::Render))?;
+		Ok(())
+	}
+
 	/// Handles a [`KeyEvent`].
 	fn key(&mut self, key: KeyEvent) -> crate::Result<()> {
-		// TODO: Handle keys event
-		Ok(())
+		todo!()
 	}
 
 	/// Handles a [`MouseEvent`].
 	fn mouse(&mut self, mouse: MouseEvent) -> crate::Result<()> {
-		// TODO: Handle mouse event
-		Ok(())
+		todo!()
 	}
 
 	/// Handles a paste event.
 	fn paste(&mut self, text: String) -> crate::Result<()> {
-		// TODO: Handle paste
-		Ok(())
+		todo!()
 	}
 
 	/// Handles an focus change event.
 	fn focus(&mut self, change: FocusChange) -> crate::Result<()> {
-		// TODO: Handle focus change
-		Ok(())
+		todo!()
 	}
 
 	/// Sends an [`AppEvent`] through this struct's
@@ -277,6 +274,10 @@ pub enum AppEvent {
 	/// An error occurred in the application, sent with the provided message.
 	Error(String),
 
+	/// An event that changes the app state and potentially numerous - thus
+	/// should be buffered.
+	Buffer(BufferedAppEvent),
+
 	/// Events accumulated from one [tick](Self::Tick).
 	Events(Vec<BufferedAppEvent>),
 
@@ -288,10 +289,6 @@ pub enum AppEvent {
 
 	/// The terminal changed focus.
 	Focus(FocusChange),
-
-	/// An event that changes the app state and potentially numerous - thus
-	/// should be buffered.
-	Buffer(BufferedAppEvent),
 }
 
 /// Event that changes the app state and is buffered by the [`App`] struct.
