@@ -1,7 +1,6 @@
 //! Handles the state of the application, including the actual data as well as
 //! rendering of it.
 
-use color_eyre::eyre::eyre;
 use crossterm::event::{
 	KeyEvent,
 	MouseEvent,
@@ -91,12 +90,6 @@ impl App {
 		Ok(())
 	}
 
-	/// Quits the app.
-	#[instrument(name = "quit-app", skip(self, _tui))]
-	pub async fn quit(&mut self, _tui: Tui, forced: bool) -> crate::Result<()> {
-		Ok(())
-	}
-
 	/// App event loop.
 	async fn event_loop(&mut self, mut tui: Tui) -> crate::Result<()> {
 		loop {
@@ -104,17 +97,10 @@ impl App {
 			self.handle_app_events(&mut tui)?;
 			if let RunState::Quitting(forced) = self.run_state {
 				info!("quitting the app");
-				self.quit(tui, forced).await?;
+				self.quit(&mut tui, forced)?;
 				break;
 			}
 		}
-		Ok(())
-	}
-
-	/// Renders the application to the terminal.
-	fn render(&mut self, tui: &mut Tui) -> crate::Result<()> {
-		tui.clear()?;
-		tui.draw(|frame| {})?;
 		Ok(())
 	}
 
@@ -142,14 +128,14 @@ impl App {
 			// TODO: Buffer for state-affecting events, not just keys (maybe
 			// with a type). Documentation in some of these methods will also
 			// have to change.
-			AppEvent::Tick => self.handle_tick_event()?,
+			AppEvent::Tick => self.tick()?,
 			AppEvent::Render => self.render(tui)?,
-			AppEvent::Quit(forced) => self.handle_quit_event(forced)?,
-			AppEvent::Error(ref msg) => self.handle_error_event(msg)?,
-			AppEvent::Resize(w, h) => self.handle_resize_event(tui, w, h)?,
-			AppEvent::Paste(text) => self.handle_paste_event(text)?,
-			AppEvent::Focus(change) => self.handle_focus_event(change)?,
-			AppEvent::Events(events) => self.handle_buffered_events(events)?,
+			AppEvent::Quit(forced) => self.quit(tui, forced)?,
+			AppEvent::Error(ref msg) => self.error(msg)?,
+			AppEvent::Resize(w, h) => self.resize(tui, w, h)?,
+			AppEvent::Paste(text) => self.paste(text)?,
+			AppEvent::Focus(change) => self.focus(change)?,
+			AppEvent::Events(events) => self.events(events)?,
 			AppEvent::Buffer(event) => self.tick_event_buffer.push(event),
 		}
 		Ok(())
@@ -166,17 +152,10 @@ impl App {
 		Ok(())
 	}
 
-	/// Handles an [`AppEvent::Quit`] event by [indicating a quit
-	/// status](Self::indicate_quit).
-	fn handle_quit_event(&mut self, forced: bool) -> crate::Result<()> {
-		self.indicate_quit(forced);
-		Ok(())
-	}
-
-	/// Handles an [`AppEvent::Tick`] event by sending a [`Keys`]
+	/// Advances through one tick. The function sends a [`Keys`]
 	/// (`AppEvent::Keys`) event with the [`KeyEvent`]s [`drain`](Vec::drain)ed
 	/// from [`Self::tick_key_events`].
-	fn handle_tick_event(&mut self) -> crate::Result<()> {
+	fn tick(&mut self) -> crate::Result<()> {
 		if !self.tick_event_buffer.is_empty() {
 			let events = self.tick_event_buffer.drain(..).collect();
 			self.send_app_event(AppEvent::Events(events))?;
@@ -184,8 +163,23 @@ impl App {
 		Ok(())
 	}
 
-	/// Handles an [`AppEvent::Error`] event.
-	fn handle_error_event(&mut self, msg: &str) -> crate::Result<()> {
+	/// Renders the application to the terminal.
+	fn render(&mut self, tui: &mut Tui) -> crate::Result<()> {
+		tui.clear()?;
+		tui.draw(|frame| {})?;
+		Ok(())
+	}
+
+	/// Quits the app.
+	#[instrument(name = "quit-app", skip(self, _tui))]
+	pub fn quit(&mut self, _tui: &mut Tui, forced: bool) -> crate::Result<()> {
+		self.indicate_quit(forced);
+		Ok(())
+	}
+
+	/// Handles an [`AppEvent::Error`] event. The error is logged and displayed
+	/// on a popup on the terminal.
+	fn error(&mut self, msg: &str) -> crate::Result<()> {
 		let msg = format!("received an error message: {msg}");
 		error!(msg, "received an error");
 		// TODO: Additional error handling (i.e. displaying it on a
@@ -194,13 +188,9 @@ impl App {
 		Ok(())
 	}
 
-	/// Handles an [`AppEvent::Resize`] event.
-	fn handle_resize_event(
-		&mut self,
-		tui: &mut Tui,
-		w: u16,
-		h: u16,
-	) -> crate::Result<()> {
+	/// Resizes the terminal and sends a [render](AppEvent::Render) event to
+	/// re-render.
+	fn resize(&mut self, tui: &mut Tui, w: u16, h: u16) -> crate::Result<()> {
 		tui.resize(Rect::new(0, 0, w, h))?;
 		self.event_channel
 			.get_sender()
@@ -208,47 +198,37 @@ impl App {
 		Ok(())
 	}
 
-	/// Handles multiple buffered events from an [`AppEvent::Buffered`] event.
-	fn handle_buffered_events(
-		&mut self,
-		buffer: Vec<BufferedAppEvent>,
-	) -> crate::Result<()> {
+	/// Handles multiple buffered (key and mouse) events.
+	fn events(&mut self, buffer: Vec<BufferedAppEvent>) -> crate::Result<()> {
 		for event in buffer {
 			match event {
-				BufferedAppEvent::Key(key) => self.handle_key_event(key)?,
-				BufferedAppEvent::Mouse(mouse) => {
-					self.handle_mouse_event(mouse)?
-				},
+				BufferedAppEvent::Key(key) => self.key(key)?,
+				BufferedAppEvent::Mouse(mouse) => self.mouse(mouse)?,
 			}
 		}
 		Ok(())
 	}
 
-	/// Handles a [`BufferedAppEvent::Key`] event with the provided buffer of
-	/// key events, preferably gotten from draining [`Self::tick_key_events`].
-	fn handle_key_event(&mut self, key: KeyEvent) -> crate::Result<()> {
-		// TODO: Handle keys event - placeholder is quitting on any key input.
-		info!("placeholder key response - quitting");
-		self.send_app_event(AppEvent::Quit(false))?;
+	/// Handles a [`KeyEvent`].
+	fn key(&mut self, key: KeyEvent) -> crate::Result<()> {
+		// TODO: Handle keys event
 		Ok(())
 	}
 
-	/// Handles an [`AppEvent::Mouse`] event.
-	fn handle_mouse_event(&mut self, mouse: MouseEvent) -> crate::Result<()> {
+	/// Handles a [`MouseEvent`].
+	fn mouse(&mut self, mouse: MouseEvent) -> crate::Result<()> {
 		// TODO: Handle mouse event
-		info!("placeholder key response - quitting");
-		self.send_app_event(AppEvent::Quit(false))?;
 		Ok(())
 	}
 
-	/// Handles an [`AppEvent::Paste`] event.
-	fn handle_paste_event(&mut self, text: String) -> crate::Result<()> {
+	/// Handles a paste event.
+	fn paste(&mut self, text: String) -> crate::Result<()> {
 		// TODO: Handle paste
 		Ok(())
 	}
 
-	/// Handles an [`AppEvent::Focus`] event.
-	fn handle_focus_event(&mut self, change: FocusChange) -> crate::Result<()> {
+	/// Handles an focus change event.
+	fn focus(&mut self, change: FocusChange) -> crate::Result<()> {
 		// TODO: Handle focus change
 		Ok(())
 	}

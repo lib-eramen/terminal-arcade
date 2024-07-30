@@ -48,6 +48,7 @@ impl<T> UnboundedChannel<T> {
 	}
 
 	/// Gets a mutable reference to the sender channel.
+	#[allow(unused)]
 	pub fn get_mut_sender(&mut self) -> &mut UnboundedSender<T> {
 		&mut self.channel.0
 	}

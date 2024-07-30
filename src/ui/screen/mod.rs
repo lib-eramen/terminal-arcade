@@ -24,7 +24,7 @@ pub enum Screen {}
 
 impl Screen {
 	/// Handles an incoming [`Event`].
-	fn handle_event(
+	fn event(
 		&mut self,
 		state: &mut ScreenState,
 		event: &Event,
@@ -33,7 +33,7 @@ impl Screen {
 	}
 
 	/// Renders this screen's UI to the terminal.
-	fn render_ui(
+	fn render(
 		&mut self,
 		frame: &mut Frame,
 		state: &mut ScreenState,
@@ -47,7 +47,7 @@ impl Screen {
 	}
 
 	/// Handles an incoming [key event](KeyEvent).
-	fn handle_key_event(
+	fn key(
 		&mut self,
 		state: &mut ScreenState,
 		key: KeyEvent,
@@ -56,7 +56,7 @@ impl Screen {
 	}
 
 	/// Handles an incoming [mouse event](MouseEvent).
-	fn handle_mouse_event(
+	fn mouse(
 		&mut self,
 		state: &mut ScreenState,
 		mouse: MouseEvent,
@@ -65,7 +65,7 @@ impl Screen {
 	}
 
 	/// Handles an incoming paste.
-	fn handle_paste(
+	fn paste(
 		&mut self,
 		state: &mut ScreenState,
 		text: String,
@@ -74,10 +74,10 @@ impl Screen {
 	}
 
 	/// Handles an incoming focus change.
-	fn handle_focus_change(
+	fn focus(
 		&mut self,
 		state: &mut ScreenState,
-		focus: FocusChange,
+		change: FocusChange,
 	) -> crate::Result<()> {
 		todo!()
 	}

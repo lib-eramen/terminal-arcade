@@ -38,5 +38,6 @@ async fn main() -> Result<()> {
 	let config = Config::fetch()?;
 	let tui = Tui::with_specs(config.game_specs)?;
 	App::with_config(config).run(tui).await?;
+	println!("See you next time! 🕹️ 👋");
 	Ok(())
 }

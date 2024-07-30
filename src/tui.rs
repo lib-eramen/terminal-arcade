@@ -78,13 +78,9 @@ type Terminal = ratatui::Terminal<CrosstermBackend<Stdout>>;
 ///
 /// Note that by default, mouse capture is not enabled.
 ///
-/// This struct provides several methods to influence its control flow:
-/// * [`Tui::start`] starts terminal event handling.
-/// * [`Tui::stop`] stops terminal event handling.
-/// * [`Tui::enter`] enters the terminal interface itself. **This should be used
-///   most if not all of the time.**
-/// * [`Tui::exit`] exits the terminal interface.
-/// * [`Tui::suspend`] *suspends* Terminal Arcade.
+/// This struct provides two methods to influence its control flow:
+/// [`Tui::start`] and [`Tui::stop`] (which gets called when dropping this
+/// struct).
 ///
 /// To begin, see [`Tui::enter`] and [`Tui::exit`] for the recommended ways
 /// to start the terminal interface. Typically, only [`Tui::enter`] will need
@@ -199,7 +195,6 @@ impl Tui {
 	pub fn enter(&mut self) -> crate::Result<()> {
 		info!("entering the tui");
 		Self::set_terminal_rules()?;
-		Self::enable_mouse_capture()?;
 		self.start();
 		Ok(())
 	}
@@ -210,7 +205,6 @@ impl Tui {
 		info!("exiting the tui");
 		self.stop()?;
 		Self::reset_terminal_rules()?;
-		Self::disable_mouse_capture()?;
 		Ok(())
 	}
 
