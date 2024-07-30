@@ -144,11 +144,7 @@ impl Tui {
 	}
 
 	/// Event loop to interact with the terminal.
-	#[instrument(
-		level = "info",
-		name = "terminal-event-loop",
-		skip(event_sender, cancel_token)
-	)]
+	#[instrument(level = "info", name = "terminal-event-loop", skip_all)]
 	#[allow(clippy::ignored_unit_patterns)]
 	async fn event_loop(
 		event_sender: UnboundedSender<TuiEvent>,
@@ -203,6 +199,7 @@ impl Tui {
 	pub fn enter(&mut self) -> crate::Result<()> {
 		info!("entering the tui");
 		Self::set_terminal_rules()?;
+		Self::enable_mouse_capture()?;
 		self.start();
 		Ok(())
 	}
@@ -213,6 +210,7 @@ impl Tui {
 		info!("exiting the tui");
 		self.stop()?;
 		Self::reset_terminal_rules()?;
+		Self::disable_mouse_capture()?;
 		Ok(())
 	}
 
@@ -292,12 +290,14 @@ impl Tui {
 
 	/// Enables mouse capture.
 	pub fn enable_mouse_capture() -> crate::Result<()> {
+		info!("enabling mouse capture");
 		execute!(stdout(), EnableMouseCapture)?;
 		Ok(())
 	}
 
 	/// Disables mouse capture.
 	pub fn disable_mouse_capture() -> crate::Result<()> {
+		info!("disabling mouse capture");
 		execute!(stdout(), DisableMouseCapture)?;
 		Ok(())
 	}

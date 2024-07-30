@@ -64,9 +64,9 @@ pub struct App {
 	/// [`Event`] channel.
 	event_channel: UnboundedChannel<Event>,
 
-	/// Key events that accumulate in one tick.
+	/// Stateful events that accumulate in one tick.
 	#[serde(skip)]
-	tick_key_events: Vec<KeyEvent>,
+	tick_event_buffer: Vec<BufferedAppEvent>,
 }
 
 impl App {
@@ -118,15 +118,6 @@ impl App {
 		Ok(())
 	}
 
-	/// Resizes the terminal to the provided dimensions.
-	fn resize(&mut self, tui: &mut Tui, w: u16, h: u16) -> crate::Result<()> {
-		tui.resize(Rect::new(0, 0, w, h))?;
-		self.event_channel
-			.get_sender()
-			.send(Event::App(AppEvent::Render))?;
-		Ok(())
-	}
-
 	/// Handles an event received from from the provided [`Tui`], then.
 	async fn handle_tui_event(&mut self, tui: &mut Tui) -> crate::Result<()> {
 		let Some(event) = tui.next_event().await else {
@@ -153,14 +144,13 @@ impl App {
 			// have to change.
 			AppEvent::Tick => self.handle_tick_event()?,
 			AppEvent::Render => self.render(tui)?,
-			AppEvent::Quit(forced) => self.indicate_quit(forced)?,
+			AppEvent::Quit(forced) => self.handle_quit_event(forced)?,
 			AppEvent::Error(ref msg) => self.handle_error_event(msg)?,
-			AppEvent::Key(key) => self.tick_key_events.push(key),
-			AppEvent::Keys(keys) => self.handle_keys_event(keys)?,
-			AppEvent::Mouse(mouse) => self.handle_mouse_event(mouse)?,
+			AppEvent::Resize(w, h) => self.handle_resize_event(tui, w, h)?,
 			AppEvent::Paste(text) => self.handle_paste_event(text)?,
-			AppEvent::Resize(w, h) => self.resize(tui, w, h)?,
 			AppEvent::Focus(change) => self.handle_focus_event(change)?,
+			AppEvent::Events(events) => self.handle_buffered_events(events)?,
+			AppEvent::Buffer(event) => self.tick_event_buffer.push(event),
 		}
 		Ok(())
 	}
@@ -179,7 +169,7 @@ impl App {
 	/// Handles an [`AppEvent::Quit`] event by [indicating a quit
 	/// status](Self::indicate_quit).
 	fn handle_quit_event(&mut self, forced: bool) -> crate::Result<()> {
-		self.indicate_quit(forced)?;
+		self.indicate_quit(forced);
 		Ok(())
 	}
 
@@ -187,9 +177,9 @@ impl App {
 	/// (`AppEvent::Keys`) event with the [`KeyEvent`]s [`drain`](Vec::drain)ed
 	/// from [`Self::tick_key_events`].
 	fn handle_tick_event(&mut self) -> crate::Result<()> {
-		if !self.tick_key_events.is_empty() {
-			let key_events = self.tick_key_events.drain(..).collect();
-			self.send_app_event(AppEvent::Keys(key_events))?;
+		if !self.tick_event_buffer.is_empty() {
+			let events = self.tick_event_buffer.drain(..).collect();
+			self.send_app_event(AppEvent::Events(events))?;
 		}
 		Ok(())
 	}
@@ -204,9 +194,39 @@ impl App {
 		Ok(())
 	}
 
-	/// Handles an [`AppEvent::Keys`] event with the provided buffer of key
-	/// events, preferably gotten from draining [`Self::tick_key_events`].
-	fn handle_keys_event(&mut self, keys: Vec<KeyEvent>) -> crate::Result<()> {
+	/// Handles an [`AppEvent::Resize`] event.
+	fn handle_resize_event(
+		&mut self,
+		tui: &mut Tui,
+		w: u16,
+		h: u16,
+	) -> crate::Result<()> {
+		tui.resize(Rect::new(0, 0, w, h))?;
+		self.event_channel
+			.get_sender()
+			.send(Event::App(AppEvent::Render))?;
+		Ok(())
+	}
+
+	/// Handles multiple buffered events from an [`AppEvent::Buffered`] event.
+	fn handle_buffered_events(
+		&mut self,
+		buffer: Vec<BufferedAppEvent>,
+	) -> crate::Result<()> {
+		for event in buffer {
+			match event {
+				BufferedAppEvent::Key(key) => self.handle_key_event(key)?,
+				BufferedAppEvent::Mouse(mouse) => {
+					self.handle_mouse_event(mouse)?
+				},
+			}
+		}
+		Ok(())
+	}
+
+	/// Handles a [`BufferedAppEvent::Key`] event with the provided buffer of
+	/// key events, preferably gotten from draining [`Self::tick_key_events`].
+	fn handle_key_event(&mut self, key: KeyEvent) -> crate::Result<()> {
 		// TODO: Handle keys event - placeholder is quitting on any key input.
 		info!("placeholder key response - quitting");
 		self.send_app_event(AppEvent::Quit(false))?;
@@ -216,6 +236,8 @@ impl App {
 	/// Handles an [`AppEvent::Mouse`] event.
 	fn handle_mouse_event(&mut self, mouse: MouseEvent) -> crate::Result<()> {
 		// TODO: Handle mouse event
+		info!("placeholder key response - quitting");
+		self.send_app_event(AppEvent::Quit(false))?;
 		Ok(())
 	}
 
@@ -247,14 +269,14 @@ impl App {
 	/// [`Self::quit`] directly, this is the preferred way to end the app by
 	/// setting an internal [flag](Self::run_state) to indicate the run state.
 	///
-	/// This method will return an error if the state is already quitting.
-	fn indicate_quit(&mut self, forced: bool) -> crate::Result<()> {
+	/// This method will do nothing if the app running state is already
+	/// quitting.
+	fn indicate_quit(&mut self, forced: bool) {
 		if let RunState::Quitting(_) = self.run_state {
-			Err(eyre!("app is already set to quitting"))
+			info!("app is already set to quitting; doing nothing");
 		} else {
 			self.run_state = RunState::Quitting(forced);
 			info!("set app's run state; indicated to quit");
-			Ok(())
 		}
 	}
 }
@@ -275,23 +297,31 @@ pub enum AppEvent {
 	/// An error occurred in the application, sent with the provided message.
 	Error(String),
 
-	/// A key is inputted by the user.
-	Key(KeyEvent),
-
-	/// Key events accumulated from one [tick](Self::Tick).
-	Keys(Vec<KeyEvent>),
-
-	/// The mouse is manipulated by the user.
-	Mouse(MouseEvent),
-
-	/// Some text is pasted by the user.
-	Paste(String),
+	/// Events accumulated from one [tick](Self::Tick).
+	Events(Vec<BufferedAppEvent>),
 
 	/// The terminal is resized to `(width, height)`.
 	Resize(u16, u16),
 
+	/// Some text is pasted by the user.
+	Paste(String),
+
 	/// The terminal changed focus.
 	Focus(FocusChange),
+
+	/// An event that changes the app state and potentially numerous - thus
+	/// should be buffered.
+	Buffer(BufferedAppEvent),
+}
+
+/// Event that changes the app state and is buffered by the [`App`] struct.
+#[derive(Debug, Clone, Hash)]
+pub enum BufferedAppEvent {
+	/// A key is inputted by the user.
+	Key(KeyEvent),
+
+	/// The mouse is manipulated by the user.
+	Mouse(MouseEvent),
 }
 
 impl AppEvent {
@@ -300,7 +330,7 @@ impl AppEvent {
 	/// for individual events that should be buffered and released with every
 	/// app tick.
 	pub fn should_be_logged(&self) -> bool {
-		!matches!(self, Self::Tick | Self::Render | Self::Key(_))
+		!matches!(self, Self::Tick | Self::Render | Self::Buffer(_))
 	}
 }
 
@@ -315,11 +345,13 @@ impl From<TuiEvent> for AppEvent {
 			TuiEvent::Tick => Self::Tick,
 			TuiEvent::Render => Self::Render,
 			TuiEvent::Error(msg) => Self::Error(msg),
-			TuiEvent::Key(key) => Self::Key(key),
-			TuiEvent::Mouse(mouse) => Self::Mouse(mouse),
-			TuiEvent::Paste(text) => Self::Paste(text),
 			TuiEvent::Resize(w, h) => Self::Resize(w, h),
+			TuiEvent::Paste(text) => Self::Paste(text),
 			TuiEvent::Focus(change) => Self::Focus(change),
+			TuiEvent::Key(key) => Self::Buffer(BufferedAppEvent::Key(key)),
+			TuiEvent::Mouse(mouse) => {
+				Self::Buffer(BufferedAppEvent::Mouse(mouse))
+			},
 		}
 	}
 }

@@ -16,7 +16,7 @@ use crate::{
 };
 
 pub mod handler;
-pub mod metadata;
+pub mod state;
 
 /// A screen that holds state, receives events and renders to the terminal.
 #[derive(Debug, Serialize, Deserialize)]
@@ -83,7 +83,7 @@ impl Screen {
 	}
 }
 
-pub use metadata::{
+pub use state::{
+	ScreenHandle,
 	ScreenState,
-	ScreenWithState,
 };

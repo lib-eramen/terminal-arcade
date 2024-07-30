@@ -11,9 +11,9 @@ use crate::ui::screen::Screen;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ScreenState {}
 
-/// Wrapper struct for a [screen](Screens) and its [metadata](ScreenMetadata).
+/// Wrapper struct for a [screen](Screens) and its [state](ScreenState).
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ScreenWithState {
+pub struct ScreenHandle {
 	screen: Screen,
 	metadata: ScreenState,
 }

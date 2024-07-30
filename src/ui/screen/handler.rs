@@ -5,7 +5,7 @@ use serde::{
 	Serialize,
 };
 
-use crate::ui::screen::ScreenWithState;
+use crate::ui::screen::ScreenHandle;
 
 /// Handler for screens.
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -13,5 +13,5 @@ pub struct ScreenHandler {
 	/// A stack of screens.
 	///
 	/// The top most screen (last element) renders and receives events.
-	stack: Vec<ScreenWithState>,
+	stack: Vec<ScreenHandle>,
 }
