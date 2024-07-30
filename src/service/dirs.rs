@@ -49,6 +49,7 @@ pub enum PathSource {
 
 /// Directories used in Terminal Arcade.
 #[derive(Debug, Clone, Serialize, Deserialize, new)]
+#[serde(rename_all = "kebab-case")]
 pub struct AppDirs {
 	/// Directory holding Terminal Arcade's config.
 	pub config_dir: PathBuf,

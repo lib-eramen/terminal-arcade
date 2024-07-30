@@ -17,7 +17,6 @@ use tracing::{
 	error,
 	info,
 	instrument,
-	trace,
 };
 
 use crate::{
@@ -102,7 +101,7 @@ impl App {
 	async fn event_loop(&mut self, mut tui: Tui) -> crate::Result<()> {
 		loop {
 			self.handle_tui_event(&mut tui).await?;
-			self.handle_app_events(&mut tui).await?;
+			self.handle_app_events(&mut tui)?;
 			if let RunState::Quitting(forced) = self.run_state {
 				info!("quitting the app");
 				self.quit(tui, forced).await?;
@@ -114,18 +113,14 @@ impl App {
 
 	/// Renders the application to the terminal.
 	fn render(&mut self, tui: &mut Tui) -> crate::Result<()> {
-		tui.draw(|frame| todo!())?;
+		tui.clear()?;
+		tui.draw(|frame| {})?;
 		Ok(())
 	}
 
-	/// Handles a terminal resizing event.
-	fn resize(
-		&mut self,
-		tui: &mut Tui,
-		width: u16,
-		height: u16,
-	) -> crate::Result<()> {
-		tui.resize(Rect::new(0, 0, width, height))?;
+	/// Resizes the terminal to the provided dimensions.
+	fn resize(&mut self, tui: &mut Tui, w: u16, h: u16) -> crate::Result<()> {
+		tui.resize(Rect::new(0, 0, w, h))?;
 		self.event_channel
 			.get_sender()
 			.send(Event::App(AppEvent::Render))?;
@@ -138,83 +133,113 @@ impl App {
 			info!("no tui events were received");
 			return Ok(());
 		};
-		trace!(?event, "received tui event");
-
-		let event_sender = self.event_channel.get_sender().clone();
-		match event {
-			TuiEvent::Init => {
-				info!("thanks for the init event! very considerate");
-			},
-			TuiEvent::Tick => event_sender.send(Event::App(AppEvent::Tick))?,
-			TuiEvent::Render => {
-				event_sender.send(Event::App(AppEvent::Render))?;
-			},
-			TuiEvent::Error(msg) => {
-				event_sender.send(Event::App(AppEvent::Error(format!(
-					"something happened on the tui side: {msg}"
-				))))?;
-			},
-			TuiEvent::Key(key) => self.tick_key_events.push(key),
-			TuiEvent::Mouse(mouse) => {
-				event_sender.send(Event::App(AppEvent::Mouse(mouse)))?;
-			},
-			TuiEvent::Paste(text) => {
-				event_sender.send(Event::App(AppEvent::Paste(text)))?;
-			},
-			TuiEvent::Resize(width, height) => {
-				self.resize(tui, width, height)?;
-			},
-			TuiEvent::Focus(change) => {
-				event_sender.send(Event::App(AppEvent::Focus(change)))?;
-			},
+		if let TuiEvent::Init = event {
+			info!("received init event! very considerate of you, kind tui");
+			Ok(())
+		} else {
+			self.send_app_event(event.into())
 		}
-		Ok(())
 	}
 
 	/// Handles an [app event](AppEvent).
-	async fn handle_app_event(
+	fn handle_app_event(
 		&mut self,
 		tui: &mut Tui,
 		event: AppEvent,
 	) -> crate::Result<()> {
-		if event.should_be_logged() {
-			debug!(app_event = ?event, "received app event"); // TODO: Mouse events?
-		}
-		let event_sender = self.event_channel.get_sender();
 		match event {
-			AppEvent::Tick => {
-				event_sender.send(Event::App(AppEvent::Keys(
-					self.tick_key_events.drain(..).collect(),
-				)))?;
-			},
+			// TODO: Buffer for state-affecting events, not just keys (maybe
+			// with a type). Documentation in some of these methods will also
+			// have to change.
+			AppEvent::Tick => self.handle_tick_event()?,
 			AppEvent::Render => self.render(tui)?,
-			AppEvent::Quit(forced) => {
-				self.indicate_quit(forced)?;
-			},
-			AppEvent::Error(msg) => {
-				let msg = format!("received an error message: {msg}");
-				error!(msg, "received an error");
-				// TODO: Additional error handling (i.e. displaying it on a
-				// popup), putting the screen that caused the error in the
-				// log there
-			},
-			AppEvent::Keys(keys) => todo!(),
-			AppEvent::Mouse(mouse) => todo!(),
-			AppEvent::Paste(text) => todo!(),
-			AppEvent::Resize(width, height) => todo!(),
-			AppEvent::Focus(change) => {},
+			AppEvent::Quit(forced) => self.indicate_quit(forced)?,
+			AppEvent::Error(ref msg) => self.handle_error_event(msg)?,
+			AppEvent::Key(key) => self.tick_key_events.push(key),
+			AppEvent::Keys(keys) => self.handle_keys_event(keys)?,
+			AppEvent::Mouse(mouse) => self.handle_mouse_event(mouse)?,
+			AppEvent::Paste(text) => self.handle_paste_event(text)?,
+			AppEvent::Resize(w, h) => self.resize(tui, w, h)?,
+			AppEvent::Focus(change) => self.handle_focus_event(change)?,
 		}
 		Ok(())
 	}
 
 	/// Receives and handles all incoming events from the [event
 	/// channel](Self::event_channel).
-	async fn handle_app_events(&mut self, tui: &mut Tui) -> crate::Result<()> {
+	fn handle_app_events(&mut self, tui: &mut Tui) -> crate::Result<()> {
 		while let Ok(Event::App(event)) =
 			self.event_channel.get_mut_receiver().try_recv()
 		{
-			self.handle_app_event(tui, event).await?;
+			self.handle_app_event(tui, event)?;
 		}
+		Ok(())
+	}
+
+	/// Handles an [`AppEvent::Quit`] event by [indicating a quit
+	/// status](Self::indicate_quit).
+	fn handle_quit_event(&mut self, forced: bool) -> crate::Result<()> {
+		self.indicate_quit(forced)?;
+		Ok(())
+	}
+
+	/// Handles an [`AppEvent::Tick`] event by sending a [`Keys`]
+	/// (`AppEvent::Keys`) event with the [`KeyEvent`]s [`drain`](Vec::drain)ed
+	/// from [`Self::tick_key_events`].
+	fn handle_tick_event(&mut self) -> crate::Result<()> {
+		if !self.tick_key_events.is_empty() {
+			let key_events = self.tick_key_events.drain(..).collect();
+			self.send_app_event(AppEvent::Keys(key_events))?;
+		}
+		Ok(())
+	}
+
+	/// Handles an [`AppEvent::Error`] event.
+	fn handle_error_event(&mut self, msg: &str) -> crate::Result<()> {
+		let msg = format!("received an error message: {msg}");
+		error!(msg, "received an error");
+		// TODO: Additional error handling (i.e. displaying it on a
+		// popup), putting the screen that caused the error in the
+		// log there
+		Ok(())
+	}
+
+	/// Handles an [`AppEvent::Keys`] event with the provided buffer of key
+	/// events, preferably gotten from draining [`Self::tick_key_events`].
+	fn handle_keys_event(&mut self, keys: Vec<KeyEvent>) -> crate::Result<()> {
+		// TODO: Handle keys event - placeholder is quitting on any key input.
+		info!("placeholder key response - quitting");
+		self.send_app_event(AppEvent::Quit(false))?;
+		Ok(())
+	}
+
+	/// Handles an [`AppEvent::Mouse`] event.
+	fn handle_mouse_event(&mut self, mouse: MouseEvent) -> crate::Result<()> {
+		// TODO: Handle mouse event
+		Ok(())
+	}
+
+	/// Handles an [`AppEvent::Paste`] event.
+	fn handle_paste_event(&mut self, text: String) -> crate::Result<()> {
+		// TODO: Handle paste
+		Ok(())
+	}
+
+	/// Handles an [`AppEvent::Focus`] event.
+	fn handle_focus_event(&mut self, change: FocusChange) -> crate::Result<()> {
+		// TODO: Handle focus change
+		Ok(())
+	}
+
+	/// Sends an [`AppEvent`] through this struct's
+	/// [channel](Self::event_channel).
+	fn send_app_event(&self, app_event: AppEvent) -> crate::Result<()> {
+		if app_event.should_be_logged() {
+			debug!(?app_event, "sending app event");
+		}
+		self.event_channel
+			.get_sender()
+			.send(Event::App(app_event))?;
 		Ok(())
 	}
 
@@ -250,6 +275,9 @@ pub enum AppEvent {
 	/// An error occurred in the application, sent with the provided message.
 	Error(String),
 
+	/// A key is inputted by the user.
+	Key(KeyEvent),
+
 	/// Key events accumulated from one [tick](Self::Tick).
 	Keys(Vec<KeyEvent>),
 
@@ -267,8 +295,31 @@ pub enum AppEvent {
 }
 
 impl AppEvent {
-	/// Returns whether this event should be logged.
+	/// Returns whether this event should be logged. This function will return
+	/// `false` for repetitive events ([`Self::Tick`] and [`Self::Render`]) and
+	/// for individual events that should be buffered and released with every
+	/// app tick.
 	pub fn should_be_logged(&self) -> bool {
-		!matches!(self, Self::Tick | Self::Render)
+		!matches!(self, Self::Tick | Self::Render | Self::Key(_))
+	}
+}
+
+impl From<TuiEvent> for AppEvent {
+	/// Converts a [`TuiEvent`] to an [`AppEvent`]. Panics if the [`TuiEvent`]
+	/// is a [`TuiEvent::Init`] event.
+	fn from(value: TuiEvent) -> Self {
+		match value {
+			TuiEvent::Init => {
+				panic!("cannot convert init tui event to app event")
+			},
+			TuiEvent::Tick => Self::Tick,
+			TuiEvent::Render => Self::Render,
+			TuiEvent::Error(msg) => Self::Error(msg),
+			TuiEvent::Key(key) => Self::Key(key),
+			TuiEvent::Mouse(mouse) => Self::Mouse(mouse),
+			TuiEvent::Paste(text) => Self::Paste(text),
+			TuiEvent::Resize(w, h) => Self::Resize(w, h),
+			TuiEvent::Focus(change) => Self::Focus(change),
+		}
 	}
 }

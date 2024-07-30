@@ -2,19 +2,13 @@
 //! the terminal (usually via [`Event::Tui`]) or more abstract and resemble a
 //! command, coming from [`Screen`](crate::ui::screen::Screen)s.
 
-use crate::{
-	app::AppEvent,
-	tui::TuiEvent,
-};
+use crate::app::AppEvent;
 
 /// Events sent throughout the app.
 /// Each variant should be a tuple struct containing a subset of events
 /// sent from a particular source.
 #[derive(Debug, Clone, Hash)]
 pub enum Event {
-	/// Events sent from the [terminal](crate::tui::Tui).
-	Tui(TuiEvent),
-
 	/// General events for the [app](crate::app::App) to handle.
 	App(AppEvent),
 }
@@ -29,5 +23,4 @@ macro_rules! impl_action_from_event {
 	};
 }
 
-impl_action_from_event!(TuiEvent, Tui);
 impl_action_from_event!(AppEvent, App);

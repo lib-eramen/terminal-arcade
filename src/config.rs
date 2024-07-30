@@ -5,6 +5,7 @@
 
 use std::path::PathBuf;
 
+use color_eyre::eyre::eyre;
 use config::{
 	builder::DefaultState,
 	ConfigBuilder,
@@ -15,29 +16,19 @@ use serde::{
 	Deserialize,
 	Serialize,
 };
-
-use crate::service::dirs::{
-	get_config_dir,
-	get_data_dir,
-	AppDirs,
+use tracing::{
+	error,
+	info,
 };
 
-/// Wrapper struct around two [`f64`]s for the ticks per second and the frames
-/// per second numbers.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, new)]
-pub struct GameSpecs {
-	/// Ticks per second.
-	pub tps: f64,
-
-	/// Frames per second.
-	pub fps: f64,
-}
-
-impl Default for GameSpecs {
-	fn default() -> Self {
-		Self::new(64.0, 60.0)
-	}
-}
+use crate::{
+	service::dirs::{
+		get_config_dir,
+		get_data_dir,
+		AppDirs,
+	},
+	tui::GameSpecs,
+};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, new)]
 #[serde(rename_all = "kebab-case")]
@@ -51,9 +42,9 @@ pub struct Config {
 
 impl Config {
 	/// Fetches a new configuration object for Terminal Arcade.
-	///
 	/// If none is found, a default one will be created at the config folder and
-	/// returned.
+	/// returned. If one is found, the function tries to deserialize it and
+	/// returns the resulting config.
 	pub fn fetch() -> crate::Result<Self> {
 		let config_dir = get_config_dir();
 		let data_dir = get_data_dir();
@@ -63,24 +54,47 @@ impl Config {
 
 		let config_path = config_dir.join("config.toml");
 		if !config_path.exists() {
-			let config = Self::default();
-			config.save(config_path)?;
-			return Ok(config);
+			info!(
+				expected_path = config_path.clone().display().to_string(),
+				"no config exists; using default config"
+			);
+			return Self::create_default(config_path);
 		}
 
 		config_builder = config_builder
 			.add_source(
-				config::File::from(config_path)
+				config::File::from(config_path.clone())
 					.format(FileFormat::Toml)
 					.required(true),
 			)
 			.add_source(config::Environment::with_prefix("TA"));
-		let result = config_builder.build()?.try_deserialize()?;
-		Ok(result)
+
+		config_builder.build()?.try_deserialize().map_err(|err| {
+			let msg = "unable to deserialize config";
+			error!(
+				path = config_path.display().to_string(),
+				%err,
+				"unable to deserialize config"
+			);
+			eyre!("{msg} from {}: {err}", config_path.display())
+		})
+	}
+
+	/// Creates a new default config with the provided path,
+	/// returning said default config in the process.
+	pub fn create_default(path: PathBuf) -> crate::Result<Config> {
+		let default_config = Self::default();
+		default_config.save(path)?;
+		Ok(default_config)
 	}
 
 	/// Saves the current config to the provided path.
 	pub fn save(&self, path: PathBuf) -> crate::Result<()> {
+		info!(
+			config = ?self,
+			path = path.clone().display().to_string(),
+			"writing config to file"
+		);
 		std::fs::write(path, toml::to_string(self)?)?;
 		Ok(())
 	}
