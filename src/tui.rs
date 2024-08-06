@@ -66,7 +66,7 @@ use tracing::{
 	warn,
 };
 
-use crate::util::UnboundedChannel;
+use crate::utils::UnboundedChannel;
 
 /// Terminal type used by Terminal Arcade.
 type Terminal = ratatui::Terminal<CrosstermBackend<Stdout>>;
@@ -110,14 +110,14 @@ pub struct Tui {
 impl Tui {
 	/// Constructs a new terminal interface object with the provided
 	/// [`GameSpecs`].
-	pub fn with_specs(specs: GameSpecs) -> crate::Result<Self> {
+	pub fn with_specs(game_specs: GameSpecs) -> crate::Result<Self> {
 		Ok(Self {
 			terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
 			event_task: tokio::spawn(async {}),
 			cancel_token: CancellationToken::new(),
 			event_channel: UnboundedChannel::new(),
-			tick_rate: Duration::try_from_secs_f64(1.0 / specs.tps)?,
-			frame_rate: Duration::try_from_secs_f64(1.0 / specs.fps)?,
+			tick_rate: game_specs.get_tick_rate()?,
+			frame_rate: game_specs.get_frame_rate()?,
 		})
 	}
 
@@ -328,6 +328,16 @@ pub struct GameSpecs {
 
 	/// Frames per second.
 	pub fps: f64,
+}
+
+impl GameSpecs {
+	fn get_tick_rate(&self) -> crate::Result<Duration> {
+		Ok(Duration::try_from_secs_f64(self.tps)?)
+	}
+
+	fn get_frame_rate(&self) -> crate::Result<Duration> {
+		Ok(Duration::try_from_secs_f64(self.fps)?)
+	}
 }
 
 impl Default for GameSpecs {

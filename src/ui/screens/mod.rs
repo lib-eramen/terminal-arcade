@@ -23,13 +23,18 @@ pub mod state;
 pub enum Screen {}
 
 impl Screen {
-	/// Returns the initial metadata that's associated with the screen.
-	fn init_metadata(&self) -> ScreenState {
+	/// Returns the initial state that's associated with the screen.
+	pub fn get_init_state(&self) -> ScreenState {
+		todo!()
+	}
+
+	/// Closes the screen.
+	pub fn close(&mut self, state: &mut ScreenState) -> crate::Result<()> {
 		todo!()
 	}
 
 	/// Handles an incoming [`Event`].
-	fn event(
+	pub fn event(
 		&mut self,
 		state: &mut ScreenState,
 		event: &Event,
@@ -37,17 +42,17 @@ impl Screen {
 		todo!()
 	}
 
-	/// Renders this screen's UI to the terminal.
-	fn render(
+	/// Renders this screen.
+	pub fn render(
 		&mut self,
-		frame: &mut Frame,
 		state: &mut ScreenState,
+		frame: &mut Frame,
 	) -> crate::Result<()> {
 		todo!()
 	}
 
 	/// Handles an incoming [key event](KeyEvent).
-	fn key(
+	pub fn key(
 		&mut self,
 		state: &mut ScreenState,
 		key: KeyEvent,
@@ -56,7 +61,7 @@ impl Screen {
 	}
 
 	/// Handles an incoming [mouse event](MouseEvent).
-	fn mouse(
+	pub fn mouse(
 		&mut self,
 		state: &mut ScreenState,
 		mouse: MouseEvent,
@@ -65,7 +70,7 @@ impl Screen {
 	}
 
 	/// Handles an incoming paste.
-	fn paste(
+	pub fn paste(
 		&mut self,
 		state: &mut ScreenState,
 		text: String,
@@ -73,8 +78,8 @@ impl Screen {
 		todo!()
 	}
 
-	/// Handles an incoming focus change.
-	fn focus(
+	/// Handles an incoming [`FocusChange`].
+	pub fn focus(
 		&mut self,
 		state: &mut ScreenState,
 		change: FocusChange,

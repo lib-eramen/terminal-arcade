@@ -26,8 +26,8 @@ use crate::{
 		Tui,
 		TuiEvent,
 	},
-	ui::screen::handler::ScreenHandler,
-	util::UnboundedChannel,
+	ui::screens::handler::ScreenHandler,
+	utils::UnboundedChannel,
 };
 
 /// Running state of the application.
@@ -128,12 +128,13 @@ impl App {
 			AppEvent::Tick => self.tick(),
 			AppEvent::Render => self.render(tui),
 			AppEvent::Quit(forced) => self.quit(tui, forced),
+			AppEvent::Close => self.close(tui),
 			AppEvent::Error(msg) => self.error(msg),
 			AppEvent::Buffer(event) => self.buffer(event),
 			AppEvent::Events(events) => self.events(events),
 			AppEvent::Resize(w, h) => self.resize(tui, w, h),
 			AppEvent::Paste(text) => self.paste(text),
-			AppEvent::Focus(change) => self.focus(change),
+			AppEvent::Focus(change) => self.focus(tui, change),
 		}?;
 		Ok(())
 	}
@@ -167,9 +168,14 @@ impl App {
 		Ok(())
 	}
 
+	/// Closes the active screen.
+	fn close(&mut self, tui: &mut Tui) -> crate::Result<()> {
+		Ok(())
+	}
+
 	/// Quits the app.
 	#[instrument(name = "quit-app", skip(self, _tui))]
-	pub fn quit(&mut self, _tui: &mut Tui, forced: bool) -> crate::Result<()> {
+	fn quit(&mut self, _tui: &mut Tui, forced: bool) -> crate::Result<()> {
 		self.indicate_quit(forced);
 		Ok(())
 	}
@@ -226,8 +232,15 @@ impl App {
 	}
 
 	/// Handles an focus change event.
-	fn focus(&mut self, change: FocusChange) -> crate::Result<()> {
-		todo!()
+	fn focus(
+		&mut self,
+		tui: &mut Tui,
+		change: FocusChange,
+	) -> crate::Result<()> {
+		match change {
+			FocusChange::Lost => todo!(),
+			FocusChange::Gained => todo!(),
+		}
 	}
 
 	/// Sends an [`AppEvent`] through this struct's
@@ -267,8 +280,11 @@ pub enum AppEvent {
 	/// Renders the application to the terminal.
 	Render,
 
+	/// Closes the active screen.
+	Close,
+
 	/// Quits the application. The included boolean indicates whether
-	/// the action is forced
+	/// the action is forced.
 	Quit(bool),
 
 	/// An error occurred in the application, sent with the provided message.

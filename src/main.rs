@@ -28,7 +28,7 @@ mod event;
 mod service;
 mod tui;
 mod ui;
-mod util;
+mod utils;
 
 /// Result type for the entire crate. Uses [`color_eyre`]'s
 /// [Result](color_eyre::eyre::Result) type.

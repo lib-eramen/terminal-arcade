@@ -1,4 +1,15 @@
-//! General code utilties.
+//! A wrapper struct for an unbounded [sender](UnboundedSender) and
+//! [receiver](UnboundedReceiver) that can also ([mutably](DerefMut))
+//! [deref](Deref)erence into a tuple of both channel sides if you need it. Used
+//! as a utility for working with structs that need [`Serialize`] and
+//! [`Deserialize`].
+//!
+//! In addition, this acts as a solution to include channels in
+//! a struct that needs to derive [`Serialize`] and [`Deserialize`].
+//! This struct has a default implementation (which only [creates a
+//! channel](unbounded_channel)) and is used when deserializing,
+//! and the [inner property](Self::channel) is marked to be skipped
+//! when (de)serializing.
 
 use std::ops::{
 	Deref,
@@ -15,18 +26,11 @@ use tokio::sync::mpsc::{
 	UnboundedSender,
 };
 
-/// A wrapper struct for an unbounded [sender](UnboundedSender) and
-/// [receiver](UnboundedReceiver) that can also ([mutably](DerefMut))
-/// [deref](Deref)erence into a tuple of both channel sides if you need it. Used
-/// as a utility for working with structs that need [`Serialize`] and
-/// [`Deserialize`].
+/// A wrapper struct for the two ends of an [`unbounded_channel`] that
+/// serializes into nothing and deserializes into a new pair of channels.
+/// Used to appease [`serde`].
 ///
-/// In addition, this acts as a solution to include channels in
-/// a struct that needs to derive [`Serialize`] and [`Deserialize`].
-/// This struct has a default implementation (which only [creates a
-/// channel](unbounded_channel)) and is used when deserializing,
-/// and the [inner property](Self::channel) is marked to be skipped
-/// when (de)serializing.
+/// See the [module-level docs](self) for more info.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UnboundedChannel<T> {
