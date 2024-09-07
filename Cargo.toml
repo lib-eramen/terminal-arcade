@@ -53,6 +53,7 @@ tracing-subscriber = { version = "0.3.18", features = [
     "local-time",
     "time",
 ] }
+typetag = "0.2.18"
 
 [build-dependencies]
 vergen-gix = { version = "1.0.0", features = ["build", "cargo", "rustc", "si"] }

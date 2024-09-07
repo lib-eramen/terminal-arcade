@@ -1,94 +1,43 @@
+//! Screens - a core construct in Terminal Arcade for rendering and receiving
+//! input. A screen (usually used through a [`ScreenHandle`] which is where
+//! screens works best) receives and produces events.
+
 //! Handler to manage screens and rendering them.
 
-use crossterm::event::{
-	KeyEvent,
-	MouseEvent,
-};
 use ratatui::Frame;
-use serde::{
-	Deserialize,
-	Serialize,
-};
+use tokio::sync::mpsc::UnboundedSender;
 
-use crate::{
-	event::Event,
-	tui::FocusChange,
-};
+use crate::events::Event;
 
+pub mod handle;
 pub mod handler;
 pub mod state;
 
+pub use handle::ScreenHandle;
+pub use handler::ScreenHandler;
+pub use state::ScreenState;
+
+// FUTURE: When `typetag` supports associated types, switch to an `Either` API
+// or the sorts with the events.
+
 /// A screen that holds state, receives events and renders to the terminal.
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Screen {}
-
-impl Screen {
+#[typetag::serde(tag = "type")]
+pub trait Screen: std::fmt::Debug {
 	/// Returns the initial state that's associated with the screen.
-	pub fn get_init_state(&self) -> ScreenState {
-		todo!()
-	}
-
-	/// Closes the screen.
-	pub fn close(&mut self, state: &mut ScreenState) -> crate::Result<()> {
-		todo!()
-	}
+	fn get_init_state(&self) -> ScreenState;
 
 	/// Handles an incoming [`Event`].
-	pub fn event(
+	fn event(
 		&mut self,
 		state: &mut ScreenState,
+		event_sender: &UnboundedSender<Event>,
 		event: &Event,
-	) -> crate::Result<()> {
-		todo!()
-	}
+	) -> crate::Result<()>;
 
 	/// Renders this screen.
-	pub fn render(
+	fn render(
 		&mut self,
 		state: &mut ScreenState,
 		frame: &mut Frame,
-	) -> crate::Result<()> {
-		todo!()
-	}
-
-	/// Handles an incoming [key event](KeyEvent).
-	pub fn key(
-		&mut self,
-		state: &mut ScreenState,
-		key: KeyEvent,
-	) -> crate::Result<()> {
-		todo!()
-	}
-
-	/// Handles an incoming [mouse event](MouseEvent).
-	pub fn mouse(
-		&mut self,
-		state: &mut ScreenState,
-		mouse: MouseEvent,
-	) -> crate::Result<()> {
-		todo!()
-	}
-
-	/// Handles an incoming paste.
-	pub fn paste(
-		&mut self,
-		state: &mut ScreenState,
-		text: String,
-	) -> crate::Result<()> {
-		todo!()
-	}
-
-	/// Handles an incoming [`FocusChange`].
-	pub fn focus(
-		&mut self,
-		state: &mut ScreenState,
-		change: FocusChange,
-	) -> crate::Result<()> {
-		todo!()
-	}
+	) -> crate::Result<()>;
 }
-
-pub use state::{
-	ScreenHandle,
-	ScreenState,
-};

@@ -29,10 +29,7 @@ use crossterm::{
 		EnableBracketedPaste,
 		EnableFocusChange,
 		EnableMouseCapture,
-		Event as CrosstermEvent,
 		EventStream as CrosstermEventStream,
-		KeyEvent,
-		MouseEvent,
 	},
 	execute,
 	terminal::{
@@ -66,7 +63,10 @@ use tracing::{
 	warn,
 };
 
-use crate::utils::UnboundedChannel;
+use crate::{
+	events::TuiEvent,
+	utils::UnboundedChannel,
+};
 
 /// Terminal type used by Terminal Arcade.
 type Terminal = ratatui::Terminal<CrosstermBackend<Stdout>>;
@@ -95,35 +95,35 @@ pub struct Tui {
 	event_task: JoinHandle<()>,
 
 	/// This handler's cancellation token.
-	cancel_token: CancellationToken,
+	pub cancel_token: CancellationToken,
 
 	/// [`TuiEvent`] channel.
-	event_channel: UnboundedChannel<TuiEvent>,
+	pub event_channel: UnboundedChannel<TuiEvent>,
 
 	/// Tick rate - how rapidly to update state.
-	tick_rate: Duration,
+	pub tick_rate: Duration,
 
 	/// Frame rate - how rapidly to render.
-	frame_rate: Duration,
+	pub frame_rate: Duration,
 }
 
 impl Tui {
 	/// Constructs a new terminal interface object with the provided
 	/// [`GameSpecs`].
-	pub fn with_specs(game_specs: GameSpecs) -> crate::Result<Self> {
-		Ok(Self {
-			terminal: Terminal::new(CrosstermBackend::new(stdout()))?,
-			event_task: tokio::spawn(async {}),
-			cancel_token: CancellationToken::new(),
-			event_channel: UnboundedChannel::new(),
-			tick_rate: game_specs.get_tick_rate()?,
-			frame_rate: game_specs.get_frame_rate()?,
-		})
+	pub fn with_specs(game_specs: &GameSpecs) -> crate::Result<Self> {
+		Ok(Self::new(
+			Terminal::new(CrosstermBackend::new(stdout()))?,
+			tokio::spawn(async {}),
+			CancellationToken::new(),
+			UnboundedChannel::new(),
+			game_specs.get_tick_rate()?,
+			game_specs.get_frame_rate()?,
+		))
 	}
 
 	/// Receives the next [TUI event](TuiEvent).
-	pub async fn next_event(&mut self) -> Option<TuiEvent> {
-		self.event_channel.get_mut_receiver().recv().await
+	pub async fn recv_tui_event(&mut self) -> Option<TuiEvent> {
+		self.event_channel.recv().await
 	}
 
 	/// Sends one [TUI event](TuiEvent) to the [event
@@ -141,7 +141,6 @@ impl Tui {
 
 	/// Event loop to interact with the terminal.
 	#[instrument(level = "info", name = "terminal-event-loop", skip_all)]
-	#[allow(clippy::ignored_unit_patterns)]
 	async fn event_loop(
 		event_sender: UnboundedSender<TuiEvent>,
 		cancel_token: CancellationToken,
@@ -152,17 +151,21 @@ impl Tui {
 		let mut tick_interval = interval(tick_rate);
 		let mut render_interval = interval(frame_rate);
 
-		if let Err(err) = event_sender.send(TuiEvent::Init) {
-			error!(%err, "unable to send initial event");
+		if let Err(err) = event_sender.send(TuiEvent::Hello) {
+			error!(%err, "unable to send greetings");
 			return;
 		}
 
 		loop {
 			let tui_event = tokio::select! {
-				_ = cancel_token.cancelled() => {
-					debug!("tui's cancel token cancelled");
+				() = cancel_token.cancelled() => {
+					info!("tui's cancel token cancelled");
 					break;
-				}
+				},
+				() = event_sender.closed() => {
+					info!("event sender closed");
+					break;
+				},
 				_ = tick_interval.tick() => TuiEvent::Tick,
 				_ = render_interval.tick() => TuiEvent::Render,
 				crossterm_event = event_stream.next().fuse() => match crossterm_event {
@@ -181,7 +184,8 @@ impl Tui {
 			};
 			if let Err(err) = Self::send_tui_event(&event_sender, tui_event) {
 				error!(
-					"failed to send tui event: {err}; breaking tui event loop \
+					%err,
+					"failed to send tui event; breaking tui event loop \
 					 now"
 				);
 				break;
@@ -331,79 +335,17 @@ pub struct GameSpecs {
 }
 
 impl GameSpecs {
-	fn get_tick_rate(&self) -> crate::Result<Duration> {
-		Ok(Duration::try_from_secs_f64(self.tps)?)
+	pub fn get_tick_rate(&self) -> crate::Result<Duration> {
+		Ok(Duration::try_from_secs_f64(1.0 / self.tps)?)
 	}
 
-	fn get_frame_rate(&self) -> crate::Result<Duration> {
-		Ok(Duration::try_from_secs_f64(self.fps)?)
+	pub fn get_frame_rate(&self) -> crate::Result<Duration> {
+		Ok(Duration::try_from_secs_f64(1.0 / self.fps)?)
 	}
 }
 
 impl Default for GameSpecs {
 	fn default() -> Self {
 		Self::new(16.0, 60.0)
-	}
-}
-
-/// Events sent by [`Tui`].
-#[derive(Debug, Clone, Hash)]
-pub enum TuiEvent {
-	/// Checks if event transmission works.
-	Init,
-
-	/// Updates game state.
-	Tick,
-
-	/// Renders the application to the terminal.
-	Render,
-
-	/// An error occurred (while retrieving the next terminal event from
-	/// [`EventStream`](CrosstermEventStream)).
-	Error(String),
-
-	/// A key is inputted by the user.
-	Key(KeyEvent),
-
-	/// The mouse is manipulated by the user.
-	Mouse(MouseEvent),
-
-	/// Some text is pasted by the user.
-	Paste(String),
-
-	/// The terminal is resized to `(width, height)`.
-	Resize(u16, u16),
-
-	/// The terminal changed focus.
-	Focus(FocusChange),
-}
-
-impl TuiEvent {
-	/// Returns whether this TUI event should be logged (e.g. not
-	/// [`Tick`](TuiEvent::Tick) or [`Render`](TuiEvent::Render) since they are
-	/// repetitive and potentially wasteful space-wise in a log file).
-	pub fn should_be_logged(&self) -> bool {
-		!matches!(self, Self::Tick | Self::Render)
-	}
-}
-
-/// A change in focus of the terminal.
-#[derive(Debug, Clone, Copy, Hash)]
-#[allow(missing_docs)] // Obvious variant names
-pub enum FocusChange {
-	Lost,
-	Gained,
-}
-
-impl From<CrosstermEvent> for TuiEvent {
-	fn from(value: CrosstermEvent) -> Self {
-		match value {
-			CrosstermEvent::Key(key) => Self::Key(key),
-			CrosstermEvent::Mouse(mouse) => Self::Mouse(mouse),
-			CrosstermEvent::Paste(text) => Self::Paste(text),
-			CrosstermEvent::Resize(w, h) => Self::Resize(w, h),
-			CrosstermEvent::FocusLost => Self::Focus(FocusChange::Lost),
-			CrosstermEvent::FocusGained => Self::Focus(FocusChange::Gained),
-		}
 	}
 }

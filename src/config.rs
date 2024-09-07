@@ -22,7 +22,7 @@ use serde::{
 use tracing::info;
 
 use crate::{
-	service::dirs::{
+	services::dirs::{
 		get_config_dir,
 		get_data_dir,
 		AppDirs,
@@ -75,14 +75,14 @@ impl Config {
 			.wrap_err("unable to parse & deserialize config")
 			.warning(
 				"your config might have been modified - it is missing fields, \
-				 misformatted, etc.",
+				 malformatted, etc.",
 			)
 			.with_suggestion(|| {
 				format!("check your config at {}!", config_path.display())
 			})
 	}
 
-	/// Creates a new default config with the provided path,
+	/// Constructs a new default config with the provided path,
 	/// returning said default config in the process.
 	pub fn create_default(path: PathBuf) -> crate::Result<Config> {
 		let default_config = Self::default();

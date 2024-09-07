@@ -13,7 +13,7 @@ use tracing_subscriber::{
 	Layer,
 };
 
-use crate::service::{
+use crate::services::{
 	debug_either,
 	dirs::get_data_dir,
 	fmt_run_timestamp,

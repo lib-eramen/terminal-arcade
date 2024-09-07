@@ -46,6 +46,26 @@ impl<T> UnboundedChannel<T> {
 		}
 	}
 
+	/// Sends something with the sender channel.
+	pub fn send(&self, thing: T) -> crate::Result<()>
+	where
+		T: Send + Sync + 'static,
+	{
+		self.get_sender().send(thing)?;
+		Ok(())
+	}
+
+	/// Tries to receive an event with the receiver channel.
+	/// For more info, see [the delegated method's docs].
+	pub fn try_recv(&mut self) -> crate::Result<T> {
+		Ok(self.get_mut_receiver().try_recv()?)
+	}
+
+	/// Receives an event with the receiver channel.
+	pub async fn recv(&mut self) -> Option<T> {
+		self.get_mut_receiver().recv().await
+	}
+
 	/// Gets a reference to the sender channel.
 	pub fn get_sender(&self) -> &UnboundedSender<T> {
 		&self.channel.0

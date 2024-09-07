@@ -14,7 +14,7 @@ use serde::{
 };
 use tracing::info;
 
-use crate::service::PROJECT_NAME;
+use crate::services::PROJECT_NAME;
 
 lazy_static::lazy_static! {
 	static ref DATA_FOLDER_ENV_VAR: String =

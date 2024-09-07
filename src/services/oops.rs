@@ -1,4 +1,4 @@
-//! Utilities for handling and setting up panic reports, using:
+//! Utilities for handling and setting up errors and panic reports, using:
 //! * [`color_eyre`]
 //! * [`better_panic`] in debug builds
 //! * [`human_panic`]

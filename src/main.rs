@@ -15,17 +15,18 @@ use color_eyre::Section;
 use crate::{
 	app::App,
 	config::Config,
-	service::{
-		errors::ERROR_MSG,
+	services::{
 		initialize_utils,
+		oops::ERROR_MSG,
 	},
 	tui::Tui,
 };
 
 mod app;
+mod components;
 mod config;
-mod event;
-mod service;
+mod events;
+mod services;
 mod tui;
 mod ui;
 mod utils;
@@ -37,8 +38,8 @@ type Result<T, E = color_eyre::eyre::Report> = color_eyre::eyre::Result<T, E>;
 async fn run() -> Result<()> {
 	initialize_utils()?;
 	let config = Config::fetch()?;
-	let tui = Tui::with_specs(config.game_specs)?;
-	App::with_config(config).run(tui).await?;
+	let tui = Tui::with_specs(&config.game_specs)?;
+	App::default().run(tui, config).await?;
 	Ok(())
 }
 
@@ -46,7 +47,7 @@ async fn run() -> Result<()> {
 async fn main() -> Result<()> {
 	if let Err(err) = run().await {
 		Err(err
-			.wrap_err("an error happened!")
+			.wrap_err("oh no! something went unhandled!")
 			.note("someone get me a paper bag PRONTO")
 			.with_section(|| ERROR_MSG.clone()))
 	} else {

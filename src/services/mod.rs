@@ -13,8 +13,8 @@ use tracing::{
 };
 
 pub mod dirs;
-pub mod errors;
 pub mod log;
+pub mod oops;
 
 lazy_static::lazy_static! {
 	/// This crate/app/project's name in lowercase.
@@ -67,7 +67,7 @@ pub fn initialize_utils() -> crate::Result<()> {
 
 	debug!("initialized run timestamp: {}", fmt_run_timestamp()?);
 
-	errors::init_panic_handling()?;
+	oops::init_panic_handling()?;
 	dirs::init_project_dirs()?;
 	Ok(())
 }
