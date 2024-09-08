@@ -72,7 +72,6 @@ impl TryFrom<TuiEvent> for AppEvent {
 			},
 			TuiEvent::Tick => Self::Tick,
 			TuiEvent::Render => Self::Render,
-			TuiEvent::Error(msg) => Self::ErrorOccurred(msg),
 			TuiEvent::Focus(change) => Self::ChangeFocus(change),
 			TuiEvent::Paste(text) => Self::PasteText(text),
 			TuiEvent::Resize(w, h) => Self::ResizeTerminal(w, h),

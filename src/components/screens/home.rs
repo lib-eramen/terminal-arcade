@@ -44,7 +44,7 @@ impl Screen for HomeScreen {
 		tracing::info!(?event, "receiving an event honey");
 		if let Event::App(AppEvent::UserInputs(inputs)) = event {
 			for input in inputs {
-				if let InputEvent::Key(key) = input {
+				if let InputEvent::Key(_key) = input {
 					event_sender.send(Event::App(AppEvent::CloseApp))?;
 				}
 			}
@@ -55,7 +55,7 @@ impl Screen for HomeScreen {
 	/// Renders this screen.
 	fn render(
 		&mut self,
-		state: &mut ScreenState,
+		_state: &mut ScreenState,
 		frame: &mut Frame,
 	) -> crate::Result<()> {
 		frame.render_widget(Paragraph::new("helo, world!"), frame.size());

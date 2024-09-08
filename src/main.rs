@@ -35,17 +35,16 @@ mod utils;
 /// [Result](color_eyre::eyre::Result) type.
 type Result<T, E = color_eyre::eyre::Report> = color_eyre::eyre::Result<T, E>;
 
-async fn run() -> Result<()> {
+fn run() -> Result<()> {
 	initialize_services()?;
 	let config = Config::fetch()?;
 	let tui = Tui::with_specs(&config.game_specs)?;
-	App::default().run(tui, config).await?;
-	Ok(())
+	App::default().run(tui, config)
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-	if let Err(err) = run().await {
+	if let Err(err) = run() {
 		Err(err
 			.wrap_err("oh no! something went unhandled!")
 			.note("someone get me a paper bag PRONTO")

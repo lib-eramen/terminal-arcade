@@ -127,12 +127,6 @@ impl ScreenHandler {
 	}
 
 	/// Gets the current active screen (the final one on the
-	/// [stack](Self::stack)).
-	pub fn get_active_screen(&self) -> Option<&ScreenHandle> {
-		self.screens.last()
-	}
-
-	/// Gets the current active screen (the final one on the
 	/// [stack](Self::stack)) mutably.
 	pub fn get_mut_active_screen(&mut self) -> Option<&mut ScreenHandle> {
 		self.screens.last_mut()

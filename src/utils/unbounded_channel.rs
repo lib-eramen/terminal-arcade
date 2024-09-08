@@ -21,14 +21,17 @@ use serde::{
 	Serialize,
 };
 use tokio::sync::mpsc::{
+	error::{
+		SendError,
+		TryRecvError,
+	},
 	unbounded_channel,
 	UnboundedReceiver,
 	UnboundedSender,
 };
 
-/// A wrapper struct for the two ends of an [`unbounded_channel`] that
-/// serializes into nothing and deserializes into a new pair of channels.
-/// Used to appease [`serde`].
+/// A wrapper struct for an [`unbounded_channel`] that serializes into nothing
+/// and deserializes into a new channel. Used to appease [`serde`].
 ///
 /// See the [module-level docs](self) for more info.
 #[derive(Debug, Serialize, Deserialize)]
@@ -47,24 +50,24 @@ impl<T> UnboundedChannel<T> {
 	}
 
 	/// Sends something with the sender channel.
-	pub fn send(&self, thing: T) -> crate::Result<()>
+	pub fn send(&self, thing: T) -> Result<(), SendError<T>>
 	where
 		T: Send + Sync + 'static,
 	{
-		self.get_sender().send(thing)?;
-		Ok(())
+		self.get_sender().send(thing)
 	}
 
 	/// Tries to receive an event with the receiver channel.
 	/// For more info, see [the delegated method's
 	/// docs](UnboundedReceiver::try_recv).
-	pub fn try_recv(&mut self) -> crate::Result<T> {
-		Ok(self.get_mut_receiver().try_recv()?)
+	pub fn try_recv(&mut self) -> Result<T, TryRecvError> {
+		self.get_mut_receiver().try_recv()
 	}
 
 	/// Receives an event with the receiver channel.
 	/// For more info, see [the delegated method's
 	/// docs](UnboundedReceiver::recv).
+	#[allow(unused, reason = "completeness")]
 	pub async fn recv(&mut self) -> Option<T> {
 		self.get_mut_receiver().recv().await
 	}
@@ -81,6 +84,7 @@ impl<T> UnboundedChannel<T> {
 	}
 
 	/// Gets a reference to the receiver channel.
+	#[allow(unused, reason = "completeness")]
 	pub fn get_receiver(&self) -> &UnboundedReceiver<T> {
 		&self.channel.1
 	}

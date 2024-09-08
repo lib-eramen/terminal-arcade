@@ -13,7 +13,10 @@ use std::{
 	time::Duration,
 };
 
-use color_eyre::eyre::eyre;
+use color_eyre::{
+	eyre::eyre,
+	Section,
+};
 use crossterm::{
 	cursor::{
 		DisableBlinking,
@@ -28,7 +31,6 @@ use crossterm::{
 		DisableMouseCapture,
 		EnableBracketedPaste,
 		EnableFocusChange,
-		EnableMouseCapture,
 		EventStream as CrosstermEventStream,
 	},
 	execute,
@@ -50,7 +52,10 @@ use serde::{
 	Serialize,
 };
 use tokio::{
-	sync::mpsc::UnboundedSender,
+	sync::mpsc::{
+		error::TryRecvError,
+		UnboundedSender,
+	},
 	task::JoinHandle,
 	time::interval,
 };
@@ -92,13 +97,13 @@ pub struct Tui {
 	terminal: Terminal,
 
 	/// Handle for event task.
-	event_task: JoinHandle<()>,
+	event_task: JoinHandle<crate::Result<()>>,
 
 	/// This handler's cancellation token.
 	pub cancel_token: CancellationToken,
 
 	/// [`TuiEvent`] channel.
-	event_channel: UnboundedChannel<TuiEvent>,
+	pub event_channel: UnboundedChannel<TuiEvent>,
 
 	/// Tick rate - how rapidly to update state.
 	tick_rate: Duration,
@@ -113,7 +118,7 @@ impl Tui {
 	pub fn with_specs(game_specs: &GameSpecs) -> crate::Result<Self> {
 		Ok(Self::new(
 			Terminal::new(CrosstermBackend::new(stdout()))?,
-			tokio::spawn(async {}),
+			tokio::spawn(async move { Ok(()) }),
 			CancellationToken::new(),
 			UnboundedChannel::new(),
 			game_specs.get_tick_rate()?,
@@ -121,9 +126,9 @@ impl Tui {
 		))
 	}
 
-	/// Receives the next [TUI event](TuiEvent).
-	pub async fn recv_tui_event(&mut self) -> Option<TuiEvent> {
-		self.event_channel.recv().await
+	/// Tries to receive the next [TUI event](TuiEvent).
+	pub fn try_recv_event(&mut self) -> Result<TuiEvent, TryRecvError> {
+		self.event_channel.try_recv()
 	}
 
 	/// Sends one [TUI event](TuiEvent) to the [event
@@ -146,14 +151,13 @@ impl Tui {
 		cancel_token: CancellationToken,
 		tick_rate: Duration,
 		frame_rate: Duration,
-	) {
+	) -> crate::Result<()> {
 		let mut event_stream = CrosstermEventStream::new();
 		let mut tick_interval = interval(tick_rate);
 		let mut render_interval = interval(frame_rate);
 
 		if let Err(err) = event_sender.send(TuiEvent::Hello) {
-			error!(%err, "unable to send greetings");
-			return;
+			return Err(eyre!("while sending greetings! how rude: {err}"));
 		}
 
 		loop {
@@ -173,8 +177,7 @@ impl Tui {
 						event.into()
 					},
 					Some(Err(err)) => {
-						error!(%err, "while receiving from event stream");
-						TuiEvent::Error(err.to_string())
+						return Err(eyre!("while receiving from event stream: {err}"));
 					},
 					None => {
 						warn!("event stream closed; no more events are to be consumed");
@@ -182,16 +185,16 @@ impl Tui {
 					}
 				},
 			};
-			if let Err(err) = Self::send_tui_event(&event_sender, tui_event) {
-				error!(
-					%err,
-					"failed to send tui event; breaking tui event loop \
-					 now"
-				);
-				break;
+			if let Err(err) =
+				Self::send_tui_event(&event_sender, tui_event.clone())
+			{
+				return Err(eyre!("while sending tui event: {err}").with_note(
+					|| format!("trying to send event: {tui_event:?}"),
+				));
 			}
 		}
 		info!("tui event loop is finished");
+		Ok(())
 	}
 
 	/// Begins event reception and enters the terminal.
@@ -283,20 +286,6 @@ impl Tui {
 			LeaveAlternateScreen,
 			Show,
 		)?;
-		Ok(())
-	}
-
-	/// Enables mouse capture.
-	pub fn enable_mouse_capture() -> crate::Result<()> {
-		info!("enabling mouse capture");
-		execute!(stdout(), EnableMouseCapture)?;
-		Ok(())
-	}
-
-	/// Disables mouse capture.
-	pub fn disable_mouse_capture() -> crate::Result<()> {
-		info!("disabling mouse capture");
-		execute!(stdout(), DisableMouseCapture)?;
 		Ok(())
 	}
 }

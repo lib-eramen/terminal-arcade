@@ -5,9 +5,11 @@
 //! here - "quitting" implies that the exits immediately (in other words,
 //! force-quit), while "closing" doesn't.
 
+use color_eyre::eyre::eyre;
 use derive_new::new;
 use ratatui::layout::Rect;
 use serde::Serialize;
+use tokio::sync::mpsc::error::TryRecvError;
 use tracing::{
 	debug,
 	error,
@@ -91,24 +93,20 @@ impl App {
 	/// Starts the app with the provided terminal interface and with a landing
 	/// [`HomeScreen`].
 	#[instrument(name = "run-app", skip_all)]
-	pub async fn run(
-		mut self,
-		mut tui: Tui,
-		config: Config,
-	) -> crate::Result<()> {
+	pub fn run(mut self, mut tui: Tui, config: Config) -> crate::Result<()> {
 		debug!(?config, "using provided config");
 		self.set_run_state(AppRunState::Running);
 		tui.enter()?;
 		self.screen_handler.push_active_screen(HomeScreen);
-		self.event_loop(tui).await?;
+		self.event_loop(tui)?;
 		Ok(())
 	}
 
 	/// App event loop.
-	async fn event_loop(&mut self, mut tui: Tui) -> crate::Result<()> {
+	fn event_loop(&mut self, mut tui: Tui) -> crate::Result<()> {
 		loop {
-			self.relay_tui_event(&mut tui).await?;
-			self.process_chan_events(&mut tui).await?;
+			self.relay_tui_event(&mut tui)?;
+			self.process_app_events(&mut tui)?;
 			self.update()?;
 			if self.run_state == AppRunState::Finished {
 				break;
@@ -119,12 +117,40 @@ impl App {
 
 	/// Handles an event received from from the provided [`Tui`], then
 	/// sends that event through the [channel].
-	async fn relay_tui_event(&mut self, tui: &mut Tui) -> crate::Result<()> {
-		let Some(event) = tui.recv_tui_event().await else {
-			info!("no tui events were received");
-			return Ok(());
+	fn relay_tui_event(&mut self, tui: &mut Tui) -> crate::Result<()> {
+		let event = match tui.try_recv_event() {
+			Ok(event) => event,
+			Err(err) => return Self::handle_try_recv_err(err, "tui"),
 		};
-		error!("something is BOUND to happen");
+		self.handle_tui_event(event)
+	}
+
+	/// Handles an error encountered while
+	/// [`try_recv`](tokio::sync::mpsc::UnboundedReceiver::try_recv)ing from a
+	/// particular event source. The source name is interpolated directly
+	/// into the log & error messages.
+	///
+	/// The function returns something the event loop can propagate
+	/// back up and handle accordingly. Only a [`TryRecvError::Disconnected`]
+	/// will result in an error.
+	fn handle_try_recv_err(
+		err: TryRecvError,
+		source: &'static str,
+	) -> crate::Result<()> {
+		match err {
+			TryRecvError::Empty => {
+				info!("{source} is currently empty");
+				Ok(())
+			},
+			TryRecvError::Disconnected => Err(eyre!(
+				"while trying to receive from the {source}: {source} event \
+				 channel disconnected"
+			)),
+		}
+	}
+
+	/// Handles a given [`TuiEvent`].
+	fn handle_tui_event(&mut self, event: TuiEvent) -> crate::Result<()> {
 		match event {
 			TuiEvent::Hello => {
 				info!("received init event! very considerate of you, kind tui");
@@ -138,7 +164,6 @@ impl App {
 			event => {
 				self.event_channel
 					.send(Event::App(event.try_into().unwrap()))?;
-				error!("SENDING LOTS OF SHIT");
 			},
 		}
 		Ok(())
@@ -146,14 +171,13 @@ impl App {
 
 	/// Receives and handles all incoming events from the [event
 	/// channel](Self::event_channel).
-	async fn process_chan_events(
-		&mut self,
-		tui: &mut Tui,
-	) -> crate::Result<()> {
-		while let Some(event) = self.event_channel.recv().await {
-			self.event(tui, &event)?;
+	fn process_app_events(&mut self, tui: &mut Tui) -> crate::Result<()> {
+		loop {
+			match self.event_channel.try_recv() {
+				Ok(event) => self.event(tui, &event)?,
+				Err(err) => return Self::handle_try_recv_err(err, "app"),
+			}
 		}
-		Ok(())
 	}
 
 	/// Returns whether the app has reached a point where it can be declared
@@ -252,8 +276,7 @@ impl App {
 
 	/// Logs the error and displays it on a popup in the terminal.
 	fn error_occurred(&mut self, msg: &str) -> crate::Result<()> {
-		let msg = format!("received an error message: {msg}");
-		error!(msg, "received an error");
+		error!(msg, "an error event occurred");
 		todo!();
 	}
 
@@ -271,7 +294,7 @@ impl App {
 	}
 
 	/// Handles an focus change event.
-	fn change_focus(&mut self, change: FocusChange) -> crate::Result<()> {
+	fn change_focus(&mut self, _change: FocusChange) -> crate::Result<()> {
 		todo!()
 	}
 }

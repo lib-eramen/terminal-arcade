@@ -22,10 +22,6 @@ pub enum TuiEvent {
 	/// Renders the application to the terminal.
 	Render,
 
-	/// An error occurred (while retrieving the next terminal event from
-	/// [`EventStream`](CrosstermEventStream)).
-	Error(String),
-
 	/// The terminal is resized to `(width, height)`.
 	Resize(u16, u16),
 
