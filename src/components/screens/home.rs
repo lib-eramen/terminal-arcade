@@ -17,10 +17,10 @@ use crate::{
 		AppEvent,
 		Event,
 	},
-	ui::screens::{
+	ui::{screens::{
 		Screen,
 		ScreenState,
-	},
+	}, UiRunState},
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -41,10 +41,10 @@ impl Screen for HomeScreen {
 		event_sender: &UnboundedSender<Event>,
 		event: &Event,
 	) -> crate::Result<()> {
-		tracing::info!(?event, "receiving an event honey");
 		if let Event::App(AppEvent::UserInputs(inputs)) = event {
 			for input in inputs {
 				if let InputEvent::Key(_key) = input {
+					state.run_state = UiRunState::Finished;
 					event_sender.send(Event::App(AppEvent::CloseApp))?;
 				}
 			}

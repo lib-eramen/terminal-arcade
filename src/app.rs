@@ -138,10 +138,7 @@ impl App {
 		source: &'static str,
 	) -> crate::Result<()> {
 		match err {
-			TryRecvError::Empty => {
-				info!("{source} is currently empty");
-				Ok(())
-			},
+			TryRecvError::Empty => Ok(()),
 			TryRecvError::Disconnected => Err(eyre!(
 				"while trying to receive from the {source}: {source} event \
 				 channel disconnected"
@@ -234,7 +231,10 @@ impl App {
 			},
 			AppEvent::CloseActiveScreen => self.close_active_screen(),
 			AppEvent::ErrorOccurred(msg) => self.error_occurred(msg),
-			AppEvent::ChangeFocus(change) => self.change_focus(*change),
+			AppEvent::ChangeFocus(change) => {
+				self.change_focus(*change);
+				Ok(())
+			},
 			AppEvent::ResizeTerminal(w, h) => self.resize_terminal(tui, *w, *h),
 			AppEvent::PasteText(_) | AppEvent::UserInputs(_) => Ok(()),
 		}
@@ -294,7 +294,5 @@ impl App {
 	}
 
 	/// Handles an focus change event.
-	fn change_focus(&mut self, _change: FocusChange) -> crate::Result<()> {
-		todo!()
-	}
+	fn change_focus(&mut self, _change: FocusChange) {}
 }

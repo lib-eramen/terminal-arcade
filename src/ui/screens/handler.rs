@@ -63,11 +63,12 @@ impl ScreenHandler {
 	pub fn update(&mut self) -> crate::Result<()> {
 		match self.run_state {
 			UiRunState::Running => {
-				while let Some(handle) = self.get_mut_active_screen() {
+				if let Some(handle) = self.get_mut_active_screen() {
 					if handle.state.run_state == UiRunState::Finished {
 						self.pop_active_screen()?;
-						break;
 					}
+				} else {
+					self.run_state = UiRunState::Finished;
 				}
 			},
 			UiRunState::Closing => {
