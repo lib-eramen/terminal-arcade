@@ -56,12 +56,15 @@ impl<T> UnboundedChannel<T> {
 	}
 
 	/// Tries to receive an event with the receiver channel.
-	/// For more info, see [the delegated method's docs].
+	/// For more info, see [the delegated method's
+	/// docs](UnboundedReceiver::try_recv).
 	pub fn try_recv(&mut self) -> crate::Result<T> {
 		Ok(self.get_mut_receiver().try_recv()?)
 	}
 
 	/// Receives an event with the receiver channel.
+	/// For more info, see [the delegated method's
+	/// docs](UnboundedReceiver::recv).
 	pub async fn recv(&mut self) -> Option<T> {
 		self.get_mut_receiver().recv().await
 	}

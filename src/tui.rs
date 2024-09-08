@@ -98,13 +98,13 @@ pub struct Tui {
 	pub cancel_token: CancellationToken,
 
 	/// [`TuiEvent`] channel.
-	pub event_channel: UnboundedChannel<TuiEvent>,
+	event_channel: UnboundedChannel<TuiEvent>,
 
 	/// Tick rate - how rapidly to update state.
-	pub tick_rate: Duration,
+	tick_rate: Duration,
 
 	/// Frame rate - how rapidly to render.
-	pub frame_rate: Duration,
+	frame_rate: Duration,
 }
 
 impl Tui {

@@ -16,7 +16,7 @@ use crate::{
 	app::App,
 	config::Config,
 	services::{
-		initialize_utils,
+		initialize_services,
 		oops::ERROR_MSG,
 	},
 	tui::Tui,
@@ -36,7 +36,7 @@ mod utils;
 type Result<T, E = color_eyre::eyre::Report> = color_eyre::eyre::Result<T, E>;
 
 async fn run() -> Result<()> {
-	initialize_utils()?;
+	initialize_services()?;
 	let config = Config::fetch()?;
 	let tui = Tui::with_specs(&config.game_specs)?;
 	App::default().run(tui, config).await?;

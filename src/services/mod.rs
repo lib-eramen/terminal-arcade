@@ -60,7 +60,7 @@ fn log_current_running_mode() {
 /// This function is intended to be called directly at the start of execution in
 /// order to [RUN_TIMESTAMP] to be (lazily) evaluated right away.
 #[instrument]
-pub fn initialize_utils() -> crate::Result<()> {
+pub fn initialize_services() -> crate::Result<()> {
 	let _ = RUN_TIMESTAMP; // Immediately access and evaluate `RUN_TIMESTAMP`.
 	log::init_logging()?;
 	log_current_running_mode();
