@@ -16,6 +16,9 @@ use crate::events::{
 /// Events sent by [`Tui`].
 #[derive(Debug, Clone)]
 pub enum AppEvent {
+	/// Updates the application state.
+	Tick,
+
 	/// Renders the application to the terminal.
 	Render,
 
@@ -63,12 +66,8 @@ impl TryFrom<TuiEvent> for AppEvent {
 	fn try_from(
 		value: TuiEvent,
 	) -> Result<Self, <Self as TryFrom<TuiEvent>>::Error> {
-		const SUGGEST_MIDDLEMAN_MSG: &str =
-			"(dev) consider handling his variant directly or refactor. the \
-			 code should already be utilizing `crate::event::TuiAppMiddleman` \
-			 to handle these kinds of events.";
-
 		Ok(match value {
+			TuiEvent::Tick => Self::Tick,
 			TuiEvent::Render => Self::Render,
 			TuiEvent::Focus(change) => Self::ChangeFocus(change),
 			TuiEvent::Paste(text) => Self::PasteText(text),
@@ -81,15 +80,16 @@ impl TryFrom<TuiEvent> for AppEvent {
 				))
 				.note("goodbye... i guess")
 			},
-			TuiEvent::Tick => {
-				return Err(eyre!("cannot convert tick event to app event"))
-					.suggestion(SUGGEST_MIDDLEMAN_MSG)
-			},
 			input @ TuiEvent::Input(_) => {
 				return Err(eyre!(
 					"cannot convert individual input event to app event"
 				))
-				.suggestion(SUGGEST_MIDDLEMAN_MSG)
+				.suggestion(
+					"(dev) consider handling his variant directly or \
+					 refactor. the code should already be utilizing \
+					 `crate::event::TuiAppMiddleman` to handle these kinds of \
+					 events.",
+				)
 				.with_note(|| format!("input event sent: {input:?}"))
 			},
 		})
