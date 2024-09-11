@@ -64,7 +64,7 @@ impl TryFrom<TuiEvent> for AppEvent {
 		value: TuiEvent,
 	) -> Result<Self, <Self as TryFrom<TuiEvent>>::Error> {
 		const SUGGEST_MIDDLEMAN_MSG: &str =
-			"(dev) consider handlignt his variant directly or refactor. the \
+			"(dev) consider handling his variant directly or refactor. the \
 			 code should already be utilizing `crate::event::TuiAppMiddleman` \
 			 to handle these kinds of events.";
 
