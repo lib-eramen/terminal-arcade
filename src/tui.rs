@@ -26,10 +26,8 @@ use crossterm::{
 		Show,
 	},
 	event::{
-		DisableBracketedPaste,
 		DisableFocusChange,
 		DisableMouseCapture,
-		EnableBracketedPaste,
 		EnableFocusChange,
 		EventStream as CrosstermEventStream,
 	},
@@ -264,11 +262,10 @@ impl Tui {
 		enable_raw_mode()?;
 		execute!(
 			stdout(),
-			Hide,
-			EnableBracketedPaste,
 			EnableFocusChange,
 			DisableBlinking,
 			EnterAlternateScreen,
+			Hide,
 			MoveTo(0, 0)
 		)?;
 		Ok(())
@@ -279,7 +276,6 @@ impl Tui {
 		disable_raw_mode()?;
 		execute!(
 			stdout(),
-			DisableBracketedPaste,
 			DisableMouseCapture,
 			DisableFocusChange,
 			EnableBlinking,
