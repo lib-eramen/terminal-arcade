@@ -6,6 +6,7 @@ use serde::{
 };
 
 pub mod screens;
+pub mod widgets;
 
 /// Running state of any given UI moving part (a screen, widget) that runs and
 /// closes.

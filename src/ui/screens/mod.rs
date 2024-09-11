@@ -1,8 +1,6 @@
-//! Screens - a core construct in Terminal Arcade for rendering and receiving
-//! input. A screen (usually used through a [`ScreenHandle`] which is where
-//! screens works best) receives and produces events.
-
-//! Handler to manage screens and rendering them.
+//! [`Screen`]s - a core construct in Terminal Arcade for rendering and
+//! receiving input. A screen (usually used through a [`ScreenHandle`] which is
+//! where ) receives and produces events.
 
 use ratatui::Frame;
 use tokio::sync::mpsc::UnboundedSender;

@@ -53,6 +53,7 @@ pub enum FocusChange {
 }
 
 impl From<CrosstermEvent> for TuiEvent {
+	#[allow(clippy::unwrap_used, reason = "infallible")]
 	fn from(value: CrosstermEvent) -> Self {
 		match value {
 			input @ (CrosstermEvent::Key(_) | CrosstermEvent::Mouse(_)) => {

@@ -16,9 +16,6 @@ use crate::events::{
 /// Events sent by [`Tui`].
 #[derive(Debug, Clone)]
 pub enum AppEvent {
-	/// Updates the application state.
-	Tick,
-
 	/// Renders the application to the terminal.
 	Render,
 
@@ -54,7 +51,7 @@ impl AppEvent {
 	/// and for individual events that should be buffered and released with
 	/// every app tick.
 	pub fn should_be_logged(&self) -> bool {
-		!matches!(self, Self::Tick | Self::Render | Self::UserInputs(_))
+		!matches!(self, Self::Render | Self::UserInputs(_))
 	}
 }
 
@@ -66,24 +63,33 @@ impl TryFrom<TuiEvent> for AppEvent {
 	fn try_from(
 		value: TuiEvent,
 	) -> Result<Self, <Self as TryFrom<TuiEvent>>::Error> {
+		const SUGGEST_MIDDLEMAN_MSG: &str =
+			"(dev) consider handlignt his variant directly or refactor. the \
+			 code should already be utilizing `crate::event::TuiAppMiddleman` \
+			 to handle these kinds of events.";
+
 		Ok(match value {
-			TuiEvent::Hello => {
-				return Err(eyre!("cannot convert init tui event to app event"))
-			},
-			TuiEvent::Tick => Self::Tick,
 			TuiEvent::Render => Self::Render,
 			TuiEvent::Focus(change) => Self::ChangeFocus(change),
 			TuiEvent::Paste(text) => Self::PasteText(text),
 			TuiEvent::Resize(w, h) => Self::ResizeTerminal(w, h),
+
+			TuiEvent::Hello => {
+				return Err(eyre!(
+					"the tui said hi! unfortunately this is a language \
+					 incomprehensible to `AppEvent` speakers."
+				))
+				.note("goodbye... i guess")
+			},
+			TuiEvent::Tick => {
+				return Err(eyre!("cannot convert tick event to app event"))
+					.suggestion(SUGGEST_MIDDLEMAN_MSG)
+			},
 			input @ TuiEvent::Input(_) => {
 				return Err(eyre!(
 					"cannot convert individual input event to app event"
 				))
-				.suggestion(
-					"consider handling this variant directly. input events \
-					 should be buffered instead of sent directly to the \
-					 active screen.",
-				)
+				.suggestion(SUGGEST_MIDDLEMAN_MSG)
 				.with_note(|| format!("input event sent: {input:?}"))
 			},
 		})

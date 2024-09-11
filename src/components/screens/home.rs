@@ -17,10 +17,13 @@ use crate::{
 		AppEvent,
 		Event,
 	},
-	ui::{screens::{
-		Screen,
-		ScreenState,
-	}, UiRunState},
+	ui::{
+		screens::{
+			Screen,
+			ScreenState,
+		},
+		UiRunState,
+	},
 };
 
 #[derive(Debug, Serialize, Deserialize)]

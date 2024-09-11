@@ -21,13 +21,10 @@ use crate::{
 	components::screens::home::HomeScreen,
 	config::Config,
 	events::{
-		tui::{
-			FocusChange,
-			InputEvent,
-		},
+		tui::FocusChange,
 		AppEvent,
 		Event,
-		TuiEvent,
+		TuiAppMiddleman,
 	},
 	tui::Tui,
 	ui::{
@@ -72,9 +69,9 @@ pub struct App {
 	/// send their own events to the app.
 	event_channel: UnboundedChannel<Event>,
 
-	/// Buffer for accumulating input events per tick.
+	/// [`Tui`]-to-[`App`] event middleman.
 	#[serde(skip)]
-	input_buffer: Vec<InputEvent>,
+	tui_app_middleman: TuiAppMiddleman,
 }
 
 impl Default for App {
@@ -84,7 +81,7 @@ impl Default for App {
 			AppRunState::default(),
 			ScreenHandler::new(event_channel.get_sender().clone()),
 			event_channel,
-			Vec::default(),
+			TuiAppMiddleman::default(),
 		)
 	}
 }
@@ -106,7 +103,7 @@ impl App {
 	fn event_loop(&mut self, mut tui: Tui) -> crate::Result<()> {
 		loop {
 			self.relay_tui_event(&mut tui)?;
-			self.process_app_events(&mut tui)?;
+			self.process_all_events(&mut tui)?;
 			self.update()?;
 			if self.run_state == AppRunState::Finished {
 				break;
@@ -115,14 +112,20 @@ impl App {
 		Ok(())
 	}
 
-	/// Handles an event received from from the provided [`Tui`], then
-	/// sends that event through the [channel].
+	/// Handles an event received from from the provided [`Tui`], transforms the
+	/// event with the [middleman](TuiAppMiddleman), then sends the resulting
+	/// [`AppEvent`] through the [channel], if there is any.
 	fn relay_tui_event(&mut self, tui: &mut Tui) -> crate::Result<()> {
-		let event = match tui.try_recv_event() {
+		let tui_event = match tui.try_recv_event() {
 			Ok(event) => event,
 			Err(err) => return Self::handle_try_recv_err(err, "tui"),
 		};
-		self.handle_tui_event(event)
+		if let Some(app_event) =
+			self.tui_app_middleman.handle_tui_event(tui_event)
+		{
+			self.event_channel.send(Event::App(app_event))?;
+		}
+		Ok(())
 	}
 
 	/// Handles an error encountered while
@@ -146,29 +149,9 @@ impl App {
 		}
 	}
 
-	/// Handles a given [`TuiEvent`].
-	fn handle_tui_event(&mut self, event: TuiEvent) -> crate::Result<()> {
-		match event {
-			TuiEvent::Hello => {
-				info!("received init event! very considerate of you, kind tui");
-			},
-			TuiEvent::Tick if !self.input_buffer.is_empty() => {
-				let events = self.input_buffer.drain(..).collect();
-				self.event_channel
-					.send(Event::App(AppEvent::UserInputs(events)))?;
-			},
-			TuiEvent::Input(input) => self.input_buffer.push(input),
-			event => {
-				self.event_channel
-					.send(Event::App(event.try_into().unwrap()))?;
-			},
-		}
-		Ok(())
-	}
-
 	/// Receives and handles all incoming events from the [event
 	/// channel](Self::event_channel).
-	fn process_app_events(&mut self, tui: &mut Tui) -> crate::Result<()> {
+	fn process_all_events(&mut self, tui: &mut Tui) -> crate::Result<()> {
 		loop {
 			match self.event_channel.try_recv() {
 				Ok(event) => self.event(tui, &event)?,
@@ -219,7 +202,6 @@ impl App {
 		app_event: &AppEvent,
 	) -> crate::Result<()> {
 		match app_event {
-			AppEvent::Tick => self.tick(),
 			AppEvent::Render => self.render(tui),
 			AppEvent::CloseApp => {
 				self.close_app();
@@ -238,18 +220,6 @@ impl App {
 			AppEvent::ResizeTerminal(w, h) => self.resize_terminal(tui, *w, *h),
 			AppEvent::PasteText(_) | AppEvent::UserInputs(_) => Ok(()),
 		}
-	}
-
-	/// Advances through one tick. The function sends a [`Keys`]
-	/// (`AppEvent::Keys`) event with the [`KeyEvent`]s [`drain`](Vec::drain)ed
-	/// from [`Self::tick_key_events`].
-	fn tick(&mut self) -> crate::Result<()> {
-		if !self.input_buffer.is_empty() {
-			let events = self.input_buffer.drain(..).collect();
-			self.event_channel
-				.send(Event::App(AppEvent::UserInputs(events)))?;
-		}
-		Ok(())
 	}
 
 	/// Renders the active screen.

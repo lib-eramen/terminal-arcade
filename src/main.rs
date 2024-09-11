@@ -6,7 +6,12 @@
 //! to-be-debugged spaghetti code guaranteed.
 
 #![forbid(unsafe_code)]
-#![deny(missing_docs, clippy::suspicious)]
+#![deny(
+	missing_docs,
+	clippy::suspicious,
+	clippy::unwrap_used,
+	clippy::expect_used
+)]
 #![warn(clippy::complexity, clippy::perf, clippy::style, clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
@@ -15,10 +20,6 @@ use color_eyre::Section;
 use crate::{
 	app::App,
 	config::Config,
-	services::{
-		initialize_services,
-		oops::ERROR_MSG,
-	},
 	tui::Tui,
 };
 
@@ -36,19 +37,20 @@ mod utils;
 type Result<T, E = color_eyre::eyre::Report> = color_eyre::eyre::Result<T, E>;
 
 fn run() -> Result<()> {
-	initialize_services()?;
+	services::initialize_services()?;
 	let config = Config::fetch()?;
 	let tui = Tui::with_specs(&config.game_specs)?;
 	App::default().run(tui, config)
 }
 
 #[tokio::main]
+#[allow(clippy::expect_used)]
 async fn main() -> Result<()> {
 	if let Err(err) = run() {
 		Err(err
 			.wrap_err("oh no! something went unhandled!")
 			.note("someone get me a paper bag PRONTO")
-			.with_section(|| ERROR_MSG.clone()))
+			.with_section(|| services::oops::ERROR_MSG.clone()))
 	} else {
 		println!("See you next time! 🕹️ 👋");
 		Ok(())
