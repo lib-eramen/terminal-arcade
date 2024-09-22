@@ -10,7 +10,10 @@ use std::{
 		Deref,
 		DerefMut,
 	},
-	time::Duration,
+	time::{
+		Duration,
+		TryFromFloatSecsError,
+	},
 };
 
 use color_eyre::{
@@ -113,7 +116,7 @@ pub struct Tui {
 impl Tui {
 	/// Constructs a new terminal interface object with the provided
 	/// [`GameSpecs`].
-	pub fn with_specs(game_specs: &GameSpecs) -> crate::Result<Self> {
+	pub fn with_specs(game_specs: GameSpecs) -> crate::Result<Self> {
 		Ok(Self::new(
 			Terminal::new(CrosstermBackend::new(stdout()))?,
 			tokio::spawn(async move { Ok(()) }),
@@ -320,12 +323,12 @@ pub struct GameSpecs {
 }
 
 impl GameSpecs {
-	pub fn get_tick_rate(&self) -> crate::Result<Duration> {
-		Ok(Duration::try_from_secs_f64(1.0 / self.tps)?)
+	pub fn get_tick_rate(&self) -> Result<Duration, TryFromFloatSecsError> {
+		Duration::try_from_secs_f64(1.0 / self.tps)
 	}
 
-	pub fn get_frame_rate(&self) -> crate::Result<Duration> {
-		Ok(Duration::try_from_secs_f64(1.0 / self.fps)?)
+	pub fn get_frame_rate(&self) -> Result<Duration, TryFromFloatSecsError> {
+		Duration::try_from_secs_f64(1.0 / self.fps)
 	}
 }
 

@@ -1,15 +1,15 @@
 //! Handler to manage screens and rendering them.
 
-use color_eyre::eyre::{
-	eyre,
-	OptionExt,
-};
+use color_eyre::eyre::eyre;
 use ratatui::Frame;
 use serde::Serialize;
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
-	events::Event,
+	events::{
+		Event,
+		ScreenEvent,
+	},
 	ui::{
 		screens::{
 			Screen,
@@ -58,37 +58,31 @@ impl ScreenHandler {
 	}
 
 	/// Updates the screen handler.
-	/// If it encounters a screen that has set its [run state](UiRunState)
-	/// to [`UiRunState::Finished`], it pops that screen.
-	pub fn update(&mut self) -> crate::Result<()> {
-		match self.run_state {
-			UiRunState::Running => {
-				if let Some(handle) = self.get_mut_active_screen() {
-					if handle.state.run_state == UiRunState::Finished {
-						self.pop_active_screen()?;
-					}
-				} else {
-					self.run_state = UiRunState::Finished;
-				}
-			},
-			UiRunState::Closing => {
-				if let Some(handle) = self.get_mut_active_screen() {
-					match handle.state.run_state {
-						UiRunState::Running => {
-							self.pop_active_screen()?;
-						},
-						UiRunState::Finished => {
-							let _ = self.screens.pop();
-						},
-						UiRunState::Closing => {},
-					}
-				} else {
-					self.run_state = UiRunState::Finished;
-				}
-			},
-			UiRunState::Finished => {},
+	///
+	/// This method returns the screen that was closed, if there was one.
+	/// Note that this method closes at most one screen every time it is called.
+	///
+	/// [running]: UiRunState::Running
+	/// [closing]: UiRunState::Closing
+	/// [finished]: UiRunState::Finished
+	#[allow(clippy::unwrap_used, reason = "infallible")]
+	pub fn update(&mut self) -> crate::Result<Option<ScreenHandle>> {
+		if self.is_empty() {
+			self.run_state = UiRunState::Finished;
+			return Ok(None);
 		}
-		Ok(())
+		let handler_run_state = self.run_state;
+		let active_screen = self.get_mut_active_screen().unwrap();
+		match (handler_run_state, active_screen.state.run_state) {
+			(UiRunState::Finished, _) => {},
+			(_, UiRunState::Finished) => return Ok(self.pop_active_screen()),
+			(_, UiRunState::Closing) => todo!(),
+			(UiRunState::Running, UiRunState::Running) => todo!(),
+			(UiRunState::Closing, UiRunState::Running) => {
+				self.event_sender.send(Event::Screen(ScreenEvent::Close))?;
+			},
+		}
+		Ok(None)
 	}
 
 	/// Handles an incoming [`Event`].
@@ -144,9 +138,7 @@ impl ScreenHandler {
 	}
 
 	/// Pops the active screen, returning an error if there is none left.
-	pub fn pop_active_screen(&mut self) -> crate::Result<ScreenHandle> {
-		self.screens
-			.pop()
-			.ok_or_eyre("no screens left in stack to pop")
+	pub fn pop_active_screen(&mut self) -> Option<ScreenHandle> {
+		self.screens.pop()
 	}
 }

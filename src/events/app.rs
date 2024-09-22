@@ -6,14 +6,12 @@ use color_eyre::{
 };
 
 use crate::events::{
-	tui::{
-		FocusChange,
-		InputEvent,
-	},
+	InputEvent,
+	ScreenEvent,
 	TuiEvent,
 };
 
-/// Events sent by [`Tui`].
+/// Events sent by the [`App`](crate::app::App).
 #[derive(Debug, Clone)]
 pub enum AppEvent {
 	/// Updates the application state.
@@ -23,29 +21,19 @@ pub enum AppEvent {
 	Render,
 
 	/// Closes the application (not forcibly).
-	CloseApp,
+	Close,
 
 	/// Quits the application (forcibly).
-	QuitApp,
-
-	/// Closes the current active screen.
-	CloseActiveScreen,
+	Quit,
 
 	/// An error occurred in the application, sent with the provided message.
 	ErrorOccurred(String),
 
-	/// The terminal changed focus.
-	ChangeFocus(FocusChange),
+	/// Input from the user, to be forwarded to screens to handle.
+	UserInput(InputEvent),
 
-	/// Some text was pasted.
-	PasteText(String),
-
-	/// The terminal is resized to `(width, height)`.
-	ResizeTerminal(u16, u16),
-
-	/// Inputs from the user, usually called as a tick finishes and the input
-	/// event buffer is [drained](Vec::drain) and sent through here.
-	UserInputs(Vec<InputEvent>),
+	/// The screen is manipulated.
+	ManipulateScreen(ScreenEvent),
 }
 
 impl AppEvent {
@@ -54,7 +42,7 @@ impl AppEvent {
 	/// and for individual events that should be buffered and released with
 	/// every app tick.
 	pub fn should_be_logged(&self) -> bool {
-		!matches!(self, Self::Render | Self::UserInputs(_))
+		!matches!(self, Self::Render)
 	}
 }
 
@@ -63,34 +51,33 @@ impl TryFrom<TuiEvent> for AppEvent {
 
 	/// Converts a [`TuiEvent`] to an [`AppEvent`]. Panics if the [`TuiEvent`]
 	/// is a [`TuiEvent::Init`] event.
+	#[allow(clippy::expect_used, reason = "infallible")]
 	fn try_from(
 		value: TuiEvent,
 	) -> Result<Self, <Self as TryFrom<TuiEvent>>::Error> {
 		Ok(match value {
 			TuiEvent::Tick => Self::Tick,
 			TuiEvent::Render => Self::Render,
-			TuiEvent::Focus(change) => Self::ChangeFocus(change),
-			TuiEvent::Paste(text) => Self::PasteText(text),
-			TuiEvent::Resize(w, h) => Self::ResizeTerminal(w, h),
+
+			#[rustfmt::skip]
+			input @ (
+				TuiEvent::Resize(..)
+				| TuiEvent::Focus(_)
+				| TuiEvent::Paste(_)
+				| TuiEvent::Key(_)
+				| TuiEvent::Mouse(_)
+			) => Self::UserInput(
+				input
+					.try_into()
+					.expect("could not convert tui event into input event"),
+			),
 
 			TuiEvent::Hello => {
 				return Err(eyre!(
 					"the tui said hi! unfortunately this is a language \
-					 incomprehensible to `AppEvent` speakers."
+					 incomprehensible to the `App`."
 				))
 				.note("goodbye... i guess")
-			},
-			input @ TuiEvent::Input(_) => {
-				return Err(eyre!(
-					"cannot convert individual input event to app event"
-				))
-				.suggestion(
-					"(dev) consider handling his variant directly or \
-					 refactor. the code should already be utilizing \
-					 `crate::event::TuiAppMiddleman` to handle these kinds of \
-					 events.",
-				)
-				.with_note(|| format!("input event sent: {input:?}"))
 			},
 		})
 	}

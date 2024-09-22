@@ -18,13 +18,9 @@ use tracing::{
 };
 
 use crate::{
-	components::screens::home::HomeScreen,
 	config::Config,
 	events::{
-		tui::{
-			FocusChange,
-			InputEvent,
-		},
+		input::InputEvent,
 		AppEvent,
 		Event,
 		TuiEvent,
@@ -71,10 +67,6 @@ pub struct App {
 	/// [`Event`] channel. The sender of this channel is cloned for screens to
 	/// send their own events to the app.
 	event_channel: UnboundedChannel<Event>,
-
-	/// Buffer for accumulating input events per tick.
-	#[serde(skip)]
-	input_buffer: Vec<InputEvent>,
 }
 
 impl Default for App {
@@ -84,7 +76,6 @@ impl Default for App {
 			AppRunState::default(),
 			ScreenHandler::new(event_channel.get_sender().clone()),
 			event_channel,
-			Vec::default(),
 		)
 	}
 }
@@ -97,7 +88,7 @@ impl App {
 		debug!(?config, "using provided config");
 		self.set_run_state(AppRunState::Running);
 		tui.enter()?;
-		self.screen_handler.push_active_screen(HomeScreen);
+		// self.screen_handler.push_active_screen(HomeScreen);
 		self.event_loop(tui)?;
 		Ok(())
 	}
@@ -115,9 +106,9 @@ impl App {
 		Ok(())
 	}
 
-	#[allow(clippy::unwrap_used, reason = "infallible")]
+	#[allow(clippy::expect_used, reason = "infallible")]
 	/// Handles a given [`TuiEvent`], returning an [`AppEvent`] if applicable.
-	pub fn handle_tui_event(&mut self, event: TuiEvent) -> Option<AppEvent> {
+	pub fn handle_tui_event(event: TuiEvent) -> Option<AppEvent> {
 		match event {
 			TuiEvent::Hello => {
 				info!(
@@ -126,11 +117,11 @@ impl App {
 				);
 				None
 			},
-			TuiEvent::Input(input) => {
-				self.input_buffer.push(input);
-				None
-			},
-			event => Some(event.try_into().unwrap()),
+			event => Some(
+				event
+					.try_into()
+					.expect("could not convert tui event into app event"),
+			),
 		}
 	}
 
@@ -142,7 +133,7 @@ impl App {
 			Ok(event) => event,
 			Err(err) => return Self::handle_try_recv_err(err, "tui"),
 		};
-		if let Some(app_event) = self.handle_tui_event(tui_event) {
+		if let Some(app_event) = Self::handle_tui_event(tui_event) {
 			self.event_channel.send(Event::App(app_event))?;
 		}
 		Ok(())
@@ -222,37 +213,23 @@ impl App {
 		app_event: &AppEvent,
 	) -> crate::Result<()> {
 		match app_event {
-			AppEvent::Tick => self.tick(),
-			AppEvent::Render => self.render(tui),
-			AppEvent::CloseApp => {
-				self.close_app();
-				Ok(())
+			AppEvent::Tick => self.tick()?,
+			AppEvent::Render => self.render(tui)?,
+			AppEvent::Close => {
+				self.close();
 			},
-			AppEvent::QuitApp => {
-				self.quit_app();
-				Ok(())
+			AppEvent::Quit => {
+				self.quit();
 			},
-			AppEvent::CloseActiveScreen => self.close_active_screen(),
-			AppEvent::ErrorOccurred(msg) => self.error_occurred(msg),
-			AppEvent::ChangeFocus(change) => {
-				self.change_focus(*change);
-				Ok(())
-			},
-			AppEvent::ResizeTerminal(w, h) => self.resize_terminal(tui, *w, *h),
-			AppEvent::PasteText(_) | AppEvent::UserInputs(_) => Ok(()),
+			AppEvent::ErrorOccurred(msg) => self.error_occurred(msg)?,
+			AppEvent::UserInput(input) => self.user_input(tui, input)?,
+			AppEvent::ManipulateScreen(_) => {},
 		}
+		Ok(())
 	}
 
-	/// Advances through one tick of the application, [`drain`](Vec::drain)ing
-	/// the [input buffer](Self::input_buffer) and sending it through in an
-	/// [`AppEvent::UserInputs`] event.
+	/// Updates the state of the app.
 	fn tick(&mut self) -> crate::Result<()> {
-		if self.input_buffer.is_empty() {
-			return Ok(());
-		}
-		let events = self.input_buffer.drain(..).collect();
-		self.event_channel
-			.send(Event::App(AppEvent::UserInputs(events)))?;
 		Ok(())
 	}
 
@@ -262,21 +239,28 @@ impl App {
 	}
 
 	/// Sets the app's state to closing.
-	fn close_app(&mut self) {
+	fn close(&mut self) {
 		self.set_run_state(AppRunState::Closing);
 		self.screen_handler.close();
 	}
 
 	/// Quits the app.
-	fn quit_app(&mut self) {
+	fn quit(&mut self) {
 		self.set_run_state(AppRunState::Quitting);
 		self.screen_handler.quit();
 	}
 
-	/// Closes the active screen.
-	fn close_active_screen(&mut self) -> crate::Result<()> {
-		self.screen_handler.pop_active_screen()?;
-		Ok(())
+	/// Handles a [`UserInput`](InputEvent).
+	fn user_input(
+		&mut self,
+		tui: &mut Tui,
+		input: &InputEvent,
+	) -> crate::Result<()> {
+		if let InputEvent::ResizeTerminal(w, h) = input {
+			self.resize_terminal(tui, (*w, *h))
+		} else {
+			Ok(())
+		}
 	}
 
 	/// Logs the error and displays it on a popup in the terminal.
@@ -290,14 +274,10 @@ impl App {
 	fn resize_terminal(
 		&mut self,
 		tui: &mut Tui,
-		w: u16,
-		h: u16,
+		(w, h): (u16, u16),
 	) -> crate::Result<()> {
 		tui.resize(Rect::new(0, 0, w, h))?;
 		self.event_channel.send(Event::App(AppEvent::Render))?;
 		Ok(())
 	}
-
-	/// Handles an focus change event.
-	fn change_focus(&mut self, _change: FocusChange) {}
 }

@@ -1,9 +1,5 @@
 //! Terminal events, sent by a [`Tui`](crate::tui::Tui).
 
-use color_eyre::{
-	eyre::eyre,
-	Section,
-};
 use crossterm::event::{
 	Event as CrosstermEvent,
 	KeyEvent,
@@ -16,7 +12,7 @@ pub enum TuiEvent {
 	/// Checks if event transmission works.
 	Hello,
 
-	/// Updates game state.
+	/// Updates the application state.
 	Tick,
 
 	/// Renders the application to the terminal.
@@ -31,8 +27,11 @@ pub enum TuiEvent {
 	/// Some text was pasted.
 	Paste(String),
 
-	/// An input from the user.
-	Input(InputEvent),
+	/// A key is inputted by the user.
+	Key(KeyEvent),
+
+	/// The mouse is manipulated by the user.
+	Mouse(MouseEvent),
 }
 
 impl TuiEvent {
@@ -40,7 +39,7 @@ impl TuiEvent {
 	/// [`Tick`](TuiEvent::Tick) or [`Render`](TuiEvent::Render) since they are
 	/// repetitive and potentially wasteful space-wise in a log file).
 	pub fn should_be_logged(&self) -> bool {
-		!matches!(self, Self::Tick | Self::Render)
+		!matches!(self, Self::Render)
 	}
 }
 
@@ -53,40 +52,14 @@ pub enum FocusChange {
 }
 
 impl From<CrosstermEvent> for TuiEvent {
-	#[allow(clippy::unwrap_used, reason = "infallible")]
 	fn from(value: CrosstermEvent) -> Self {
 		match value {
-			input @ (CrosstermEvent::Key(_) | CrosstermEvent::Mouse(_)) => {
-				Self::Input(input.try_into().unwrap())
-			},
+			CrosstermEvent::Key(key) => Self::Key(key),
+			CrosstermEvent::Mouse(mouse) => Self::Mouse(mouse),
 			CrosstermEvent::Paste(text) => Self::Paste(text),
 			CrosstermEvent::Resize(w, h) => Self::Resize(w, h),
 			CrosstermEvent::FocusLost => Self::Focus(FocusChange::Lost),
 			CrosstermEvent::FocusGained => Self::Focus(FocusChange::Gained),
-		}
-	}
-}
-
-/// Input events that changes the app state and is buffered by the [`App`]
-/// struct.
-#[derive(Debug, Clone, Hash)]
-pub enum InputEvent {
-	/// A key is inputted by the user.
-	Key(KeyEvent),
-
-	/// The mouse is manipulated by the user.
-	Mouse(MouseEvent),
-}
-
-impl TryFrom<CrosstermEvent> for InputEvent {
-	type Error = color_eyre::Report;
-
-	fn try_from(value: CrosstermEvent) -> Result<Self, Self::Error> {
-		match value {
-			CrosstermEvent::Key(key) => Ok(Self::Key(key)),
-			CrosstermEvent::Mouse(mouse) => Ok(Self::Mouse(mouse)),
-			event => Err(eyre!("cannot convert non-input tui event")
-				.with_note(|| format!("trying to convert event: {event:?}"))),
 		}
 	}
 }

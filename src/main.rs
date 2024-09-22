@@ -39,7 +39,7 @@ type Result<T, E = color_eyre::eyre::Report> = color_eyre::eyre::Result<T, E>;
 fn run() -> Result<()> {
 	services::initialize_services()?;
 	let config = Config::fetch()?;
-	let tui = Tui::with_specs(&config.game_specs)?;
+	let tui = Tui::with_specs(config.game_specs)?;
 	App::default().run(tui, config)
 }
 

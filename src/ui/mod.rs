@@ -5,6 +5,8 @@ use serde::{
 	Serialize,
 };
 
+use crate::events::InputEvent;
+
 pub mod screens;
 pub mod widgets;
 
@@ -28,4 +30,12 @@ pub enum UiRunState {
 
 	/// The part has finished closing.
 	Finished,
+}
+
+/// Handles any given [`Event`].
+pub trait HandleEvent {
+	/// Handles an input event.
+	fn input(&mut self, event: InputEvent) -> crate::Result<()> {
+		Ok(())
+	}
 }

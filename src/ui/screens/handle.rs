@@ -5,10 +5,16 @@ use serde::Serialize;
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
-	events::Event,
-	ui::screens::{
-		Screen,
-		ScreenState,
+	events::{
+		Event,
+		ScreenEvent,
+	},
+	ui::{
+		screens::{
+			Screen,
+			ScreenState,
+		},
+		UiRunState,
 	},
 };
 
@@ -41,10 +47,24 @@ impl ScreenHandle {
 		}
 	}
 
+	/// Handles an incoming [`ScreenEvent`].
+	fn handle_screen_event(&mut self, event: &ScreenEvent) {
+		match event {
+			ScreenEvent::Close => self.state.run_state = UiRunState::Closing,
+			ScreenEvent::Finish => self.state.run_state = UiRunState::Finished,
+			ScreenEvent::UpdateTitle(title) => {
+				self.state.title.clone_from(title)
+			},
+		}
+	}
+
 	/// Handles an incoming event.
 	pub fn event(&mut self, event: &Event) -> crate::Result<()> {
+		if let Event::Screen(screen_event) = event {
+			self.handle_screen_event(screen_event);
+		}
 		self.screen
-			.event(&mut self.state, &self.event_sender, event)
+			.handle_event(&self.state, &self.event_sender, event)
 	}
 
 	/// Renders the screen to the terminal.
