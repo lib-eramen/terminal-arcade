@@ -40,7 +40,7 @@ impl Event {
 
 /// Implements [`From`] for [`Event`], converting an underlying event type to a
 /// variant name that holds a single value of that type.
-macro_rules! impl_event_from_variant {
+macro_rules! impl_event_from_wrapped_variant {
 	($source:ident, $variant:ident) => {
 		impl From<$source> for Event {
 			fn from(value: $source) -> Self {
@@ -50,4 +50,16 @@ macro_rules! impl_event_from_variant {
 	};
 }
 
-impl_event_from_variant!(AppEvent, App);
+/// Applies [`impl_event_from_wrapped_variant`] for multiple pairs of events and
+/// variants.
+macro_rules! impl_event_from_variants {
+	($(($source:ident, $variant:ident)),+$(,)*) => {
+		$(impl_event_from_wrapped_variant!($source, $variant);)+
+	};
+}
+
+impl_event_from_variants! {
+	(AppEvent, App),
+	(InputEvent, Input),
+	(ScreenEvent, Screen),
+}

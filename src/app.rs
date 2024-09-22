@@ -134,7 +134,7 @@ impl App {
 			Err(err) => return Self::handle_try_recv_err(err, "tui"),
 		};
 		if let Some(app_event) = Self::handle_tui_event(tui_event) {
-			self.event_channel.send(Event::App(app_event))?;
+			self.event_channel.send(app_event.into())?;
 		}
 		Ok(())
 	}
@@ -277,7 +277,7 @@ impl App {
 		(w, h): (u16, u16),
 	) -> crate::Result<()> {
 		tui.resize(Rect::new(0, 0, w, h))?;
-		self.event_channel.send(Event::App(AppEvent::Render))?;
+		self.event_channel.send(AppEvent::Render.into())?;
 		Ok(())
 	}
 }

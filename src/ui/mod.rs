@@ -111,7 +111,7 @@ impl Ui {
 			(_, UiRunState::Closing) => todo!(),
 			(UiRunState::Running, UiRunState::Running) => todo!(),
 			(UiRunState::Closing, UiRunState::Running) => {
-				self.event_sender.send(Event::Screen(ScreenEvent::Close))?;
+				self.event_sender.send(ScreenEvent::Close.into())?;
 			},
 		}
 		Ok(None)
