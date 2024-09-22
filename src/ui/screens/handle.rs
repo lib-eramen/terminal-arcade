@@ -53,7 +53,7 @@ impl ScreenHandle {
 			ScreenEvent::Close => self.state.run_state = UiRunState::Closing,
 			ScreenEvent::Finish => self.state.run_state = UiRunState::Finished,
 			ScreenEvent::UpdateTitle(title) => {
-				self.state.title.clone_from(title)
+				self.state.title.clone_from(title);
 			},
 		}
 	}

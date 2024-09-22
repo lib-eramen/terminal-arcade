@@ -11,11 +11,9 @@ use crate::{
 };
 
 pub mod handle;
-pub mod handler;
 pub mod state;
 
 pub use handle::ScreenHandle;
-pub use handler::ScreenHandler;
 pub use state::ScreenState;
 
 // FUTURE: When `typetag` supports associated types, switch to an `Either` API

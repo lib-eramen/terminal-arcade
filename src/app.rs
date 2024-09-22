@@ -27,7 +27,7 @@ use crate::{
 	},
 	tui::Tui,
 	ui::{
-		screens::ScreenHandler,
+		Ui,
 		UiRunState,
 	},
 	utils::UnboundedChannel,
@@ -61,8 +61,8 @@ pub struct App {
 	#[serde(skip)]
 	run_state: AppRunState,
 
-	/// Screen handler.
-	screen_handler: ScreenHandler,
+	/// UI of the app.
+	screen_handler: Ui,
 
 	/// [`Event`] channel. The sender of this channel is cloned for screens to
 	/// send their own events to the app.
@@ -74,7 +74,7 @@ impl Default for App {
 		let event_channel = UnboundedChannel::new();
 		Self::new(
 			AppRunState::default(),
-			ScreenHandler::new(event_channel.get_sender().clone()),
+			Ui::new(event_channel.get_sender().clone()),
 			event_channel,
 		)
 	}
