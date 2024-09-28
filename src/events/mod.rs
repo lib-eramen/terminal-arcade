@@ -6,6 +6,7 @@ pub mod app;
 pub mod input;
 pub mod screen;
 pub mod tui;
+pub mod ui;
 
 pub use app::AppEvent;
 pub use input::InputEvent;
@@ -15,7 +16,7 @@ pub use tui::TuiEvent;
 /// Events sent throughout and handled by the [`App`](crate::app::App).
 /// Each variant should be a tuple struct containing a subset of events
 /// sent from a particular source.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Event {
 	/// General events for the [`App`](crate::app::App) to handle.

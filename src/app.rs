@@ -35,7 +35,6 @@ use crate::{
 
 /// Running state of the application.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-#[allow(missing_docs)] // Relatively obvious variant names
 enum AppRunState {
 	/// The app has not started.
 	#[default]
@@ -106,7 +105,7 @@ impl App {
 		Ok(())
 	}
 
-	#[allow(clippy::expect_used, reason = "infallible")]
+	#[expect(clippy::expect_used, reason = "infallible")]
 	/// Handles a given [`TuiEvent`], returning an [`AppEvent`] if applicable.
 	pub fn handle_tui_event(event: TuiEvent) -> Option<AppEvent> {
 		match event {

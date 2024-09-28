@@ -54,7 +54,7 @@ fn log_current_running_mode() {
 	);
 }
 
-/// Initilizes different utilities of the application ([directories](dirs),
+/// Initilizes different services of the application ([directories](dirs),
 /// [logging](log), [panic handling](panic), etc.).
 ///
 /// This function is intended to be called directly at the start of execution in

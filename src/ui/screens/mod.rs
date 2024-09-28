@@ -5,10 +5,7 @@
 use ratatui::Frame;
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::{
-	events::Event,
-	ui::HandleEvent,
-};
+use crate::events::Event;
 
 pub mod handle;
 pub mod state;
@@ -21,7 +18,7 @@ pub use state::ScreenState;
 
 /// A screen that holds state, receives events and renders to the terminal.
 #[typetag::serde(tag = "type")]
-pub trait Screen: HandleEvent + std::fmt::Debug {
+pub trait Screen: std::fmt::Debug {
 	/// Returns the initial state that's associated with the screen.
 	fn get_init_state(&self) -> ScreenState;
 

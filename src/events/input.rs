@@ -12,7 +12,7 @@ use crate::events::{
 };
 
 /// An input from the user.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum InputEvent {
 	/// The terminal is resized to `(width, height)`.
 	ResizeTerminal(u16, u16),
@@ -21,7 +21,7 @@ pub enum InputEvent {
 	ChangeFocus(FocusChange),
 
 	/// Some text was pasted.
-	PasteText(String),
+	Paste(String),
 
 	/// A key event.
 	Key(KeyEvent),
@@ -37,7 +37,7 @@ impl TryFrom<TuiEvent> for InputEvent {
 		Ok(match value {
 			TuiEvent::Resize(w, h) => Self::ResizeTerminal(w, h),
 			TuiEvent::Focus(change) => Self::ChangeFocus(change),
-			TuiEvent::Paste(text) => Self::PasteText(text),
+			TuiEvent::Paste(text) => Self::Paste(text),
 			TuiEvent::Key(key) => Self::Key(key),
 			TuiEvent::Mouse(mouse) => Self::Mouse(mouse),
 

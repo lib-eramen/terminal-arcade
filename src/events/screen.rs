@@ -2,7 +2,7 @@
 //! [state](crate::ui::screens::ScreenState).
 
 /// Screen [state](crate::ui::screens::ScreenState)-manipulating events.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ScreenEvent {
 	/// Sets the screen to [closing](crate::ui::UiRunState::Closing).
 	Close,

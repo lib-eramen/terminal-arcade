@@ -12,7 +12,7 @@ use crate::events::{
 };
 
 /// Events sent by the [`App`](crate::app::App).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AppEvent {
 	/// Updates the application state.
 	Tick,
@@ -51,7 +51,7 @@ impl TryFrom<TuiEvent> for AppEvent {
 
 	/// Converts a [`TuiEvent`] to an [`AppEvent`]. Panics if the [`TuiEvent`]
 	/// is a [`TuiEvent::Init`] event.
-	#[allow(clippy::expect_used, reason = "infallible")]
+	#[expect(clippy::expect_used, reason = "infallible")]
 	fn try_from(
 		value: TuiEvent,
 	) -> Result<Self, <Self as TryFrom<TuiEvent>>::Error> {

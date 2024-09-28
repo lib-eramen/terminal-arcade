@@ -7,7 +7,7 @@ use crossterm::event::{
 };
 
 /// Terminal events sent by [`Tui`](crate::tui::Tui).
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub enum TuiEvent {
 	/// Checks if event transmission works.
 	Hello,
@@ -44,8 +44,7 @@ impl TuiEvent {
 }
 
 /// A change in focus of the terminal.
-#[derive(Debug, Clone, Copy, Hash)]
-#[allow(missing_docs)] // Obvious variant names
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FocusChange {
 	Lost,
 	Gained,

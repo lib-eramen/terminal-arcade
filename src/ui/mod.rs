@@ -11,7 +11,6 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{
 	events::{
 		Event,
-		InputEvent,
 		ScreenEvent,
 	},
 	ui::screens::{
@@ -32,7 +31,6 @@ pub mod widgets;
 #[derive(
 	Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize,
 )]
-#[allow(missing_docs)] // Relatively obvious variant names
 pub enum UiRunState {
 	/// The part is running.
 	#[default]
@@ -43,14 +41,6 @@ pub enum UiRunState {
 
 	/// The part has finished closing.
 	Finished,
-}
-
-/// Handles any given [`Event`].
-pub trait HandleEvent {
-	/// Handles an input event.
-	fn input(&mut self, event: InputEvent) -> crate::Result<()> {
-		Ok(())
-	}
 }
 
 /// The UI of the app. This struct handles the screens
@@ -97,7 +87,7 @@ impl Ui {
 	/// [running]: UiRunState::Running
 	/// [closing]: UiRunState::Closing
 	/// [finished]: UiRunState::Finished
-	#[allow(clippy::unwrap_used, reason = "infallible")]
+	#[expect(clippy::unwrap_used, reason = "infallible")]
 	pub fn update(&mut self) -> crate::Result<Option<ScreenHandle>> {
 		if self.is_empty() {
 			self.run_state = UiRunState::Finished;
@@ -118,12 +108,13 @@ impl Ui {
 	}
 
 	/// Handles an incoming [`Event`].
+	#[expect(clippy::unwrap_used)]
 	pub fn event(&mut self, event: &Event) -> crate::Result<()> {
-		if let Some(screen) = self.get_mut_active_screen() {
-			screen.event(event)
-		} else {
-			Err(eyre!("no screens left in stack to receive events"))
-		}
+		debug_assert!(
+			!self.is_empty(),
+			"no screens left in stack to receive events"
+		);
+		self.get_mut_active_screen().unwrap().event(event)
 	}
 
 	/// Sets the [run state](Self::run_state) to

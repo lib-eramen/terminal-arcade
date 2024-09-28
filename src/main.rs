@@ -44,7 +44,6 @@ fn run() -> Result<()> {
 }
 
 #[tokio::main]
-#[allow(clippy::expect_used)]
 async fn main() -> Result<()> {
 	if let Err(err) = run() {
 		Err(err

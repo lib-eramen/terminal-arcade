@@ -67,7 +67,7 @@ impl<T> UnboundedChannel<T> {
 	/// Receives an event with the receiver channel.
 	/// For more info, see [the delegated method's
 	/// docs](UnboundedReceiver::recv).
-	#[allow(unused, reason = "completeness")]
+	#[expect(unused, reason = "api completeness")]
 	pub async fn recv(&mut self) -> Option<T> {
 		self.get_mut_receiver().recv().await
 	}
@@ -78,13 +78,13 @@ impl<T> UnboundedChannel<T> {
 	}
 
 	/// Gets a mutable reference to the sender channel.
-	#[allow(unused)]
+	#[expect(unused, reason = "api completeness")]
 	pub fn get_mut_sender(&mut self) -> &mut UnboundedSender<T> {
 		&mut self.channel.0
 	}
 
 	/// Gets a reference to the receiver channel.
-	#[allow(unused, reason = "completeness")]
+	#[expect(unused, reason = "api completeness")]
 	pub fn get_receiver(&self) -> &UnboundedReceiver<T> {
 		&self.channel.1
 	}
