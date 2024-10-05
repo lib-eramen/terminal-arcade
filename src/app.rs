@@ -101,6 +101,7 @@ impl App {
 		self.tui.borrow_mut().enter()?;
 		self.ui.push_active_screen(HomeScreen)?;
 		self.event_loop()?;
+		println!("See you next time! 🕹️ 👋");
 		Ok(())
 	}
 

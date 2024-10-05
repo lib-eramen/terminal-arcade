@@ -15,8 +15,6 @@
 #![warn(clippy::complexity, clippy::perf, clippy::style, clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
-use color_eyre::Section;
-
 use crate::{
 	app::App,
 	config::Config,
@@ -35,21 +33,8 @@ mod utils;
 /// [Result](color_eyre::eyre::Result) type.
 type Result<T, E = color_eyre::eyre::Report> = color_eyre::eyre::Result<T, E>;
 
-fn run() -> Result<()> {
-	services::initialize_services()?;
-	let config = Config::fetch()?;
-	App::with_config(config)?.run()
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
-	if let Err(err) = run() {
-		Err(err
-			.wrap_err("oh no! something went unhandled!")
-			.note("someone get me a paper bag PRONTO")
-			.with_section(|| services::oops::ERROR_MSG.clone()))
-	} else {
-		println!("See you next time! 🕹️ 👋");
-		Ok(())
-	}
+	services::initialize_services()?;
+	App::with_config(Config::fetch()?)?.run()
 }
