@@ -5,10 +5,13 @@
 //! here - "quitting" implies that the exits immediately (in other words,
 //! force-quit), while "closing" doesn't.
 
+use std::{
+	cell::RefCell,
+	rc::Rc,
+};
+
 use color_eyre::eyre::eyre;
 use derive_new::new;
-use ratatui::layout::Rect;
-use serde::Serialize;
 use tokio::sync::mpsc::error::TryRecvError;
 use tracing::{
 	debug,
@@ -18,12 +21,12 @@ use tracing::{
 };
 
 use crate::{
+	components::screens::home::HomeScreen,
 	config::Config,
 	events::{
-		input::InputEvent,
 		AppEvent,
 		Event,
-		TuiEvent,
+		TuiAppMiddleman,
 	},
 	tui::Tui,
 	ui::{
@@ -54,86 +57,66 @@ enum AppRunState {
 }
 
 /// Handler for application state and rendering.
-#[derive(Debug, Serialize, new)]
+#[derive(Debug, new)]
 pub struct App {
-	/// Running state of the application.
-	#[serde(skip)]
+	/// Running state of the app.
 	run_state: AppRunState,
 
+	/// Tui backing the app.
+	tui: Rc<RefCell<Tui>>,
+
+	/// Middleman processing events between the [`Tui`] and [itself](App).
+	middleman: TuiAppMiddleman,
+
 	/// UI of the app.
-	screen_handler: Ui,
+	ui: Ui,
+
+	/// App config.
+	config: Rc<RefCell<Config>>,
 
 	/// [`Event`] channel. The sender of this channel is cloned for screens to
 	/// send their own events to the app.
 	event_channel: UnboundedChannel<Event>,
 }
 
-impl Default for App {
-	fn default() -> Self {
-		let event_channel = UnboundedChannel::new();
-		Self::new(
-			AppRunState::default(),
-			Ui::new(event_channel.get_sender().clone()),
-			event_channel,
-		)
-	}
-}
-
 impl App {
+	/// Constructs a new app witht the provided [`Config`].
+	pub fn with_config(config: Config) -> crate::Result<Self> {
+		let tui = Tui::with_specs(&config.game_specs)?;
+		let terminal = tui.terminal.clone();
+		let event_channel = UnboundedChannel::new();
+		let event_sender = event_channel.get_sender().clone();
+
+		Ok(Self {
+			run_state: AppRunState::Pending,
+			tui: Rc::new(RefCell::new(tui)),
+			middleman: TuiAppMiddleman::new(event_sender.clone()),
+			ui: Ui::new(terminal, event_sender),
+			config: Rc::new(RefCell::new(config)),
+			event_channel,
+		})
+	}
+
 	/// Starts the app with the provided terminal interface and with a landing
 	/// [`HomeScreen`].
 	#[instrument(name = "run-app", skip_all)]
-	pub fn run(mut self, mut tui: Tui, config: Config) -> crate::Result<()> {
-		debug!(?config, "using provided config");
+	pub fn run(&mut self) -> crate::Result<()> {
+		debug!(?self.config, "using provided config");
 		self.set_run_state(AppRunState::Running);
-		tui.enter()?;
-		// self.screen_handler.push_active_screen(HomeScreen);
-		self.event_loop(tui)?;
+		self.tui.borrow_mut().enter()?;
+		self.ui.push_active_screen(HomeScreen)?;
+		self.event_loop()?;
 		Ok(())
 	}
 
 	/// App event loop.
-	fn event_loop(&mut self, mut tui: Tui) -> crate::Result<()> {
+	fn event_loop(&mut self) -> crate::Result<()> {
 		loop {
-			self.relay_tui_event(&mut tui)?;
-			self.process_all_events(&mut tui)?;
-			self.update()?;
+			self.relay_tui_event()?;
+			self.process_all_events()?;
 			if self.run_state == AppRunState::Finished {
 				break;
 			}
-		}
-		Ok(())
-	}
-
-	#[expect(clippy::expect_used, reason = "infallible")]
-	/// Handles a given [`TuiEvent`], returning an [`AppEvent`] if applicable.
-	pub fn handle_tui_event(event: TuiEvent) -> Option<AppEvent> {
-		match event {
-			TuiEvent::Hello => {
-				info!(
-					"i don't know what ur saying but hello to you! very \
-					 considerate of you, kind tui"
-				);
-				None
-			},
-			event => Some(
-				event
-					.try_into()
-					.expect("could not convert tui event into app event"),
-			),
-		}
-	}
-
-	/// Handles an event received from from the provided [`Tui`], transforms the
-	/// event with the [middleman](TuiAppMiddleman), then sends the resulting
-	/// [`AppEvent`] through the [channel], if there is any.
-	fn relay_tui_event(&mut self, tui: &mut Tui) -> crate::Result<()> {
-		let tui_event = match tui.try_recv_event() {
-			Ok(event) => event,
-			Err(err) => return Self::handle_try_recv_err(err, "tui"),
-		};
-		if let Some(app_event) = Self::handle_tui_event(tui_event) {
-			self.event_channel.send(app_event.into())?;
 		}
 		Ok(())
 	}
@@ -159,12 +142,24 @@ impl App {
 		}
 	}
 
+	/// Handles an event received from from the provided [`Tui`], transforms the
+	/// event with the [middleman](TuiAppMiddleman), then sends the resulting
+	/// [`AppEvent`] through the [channel], if there is any.
+	fn relay_tui_event(&mut self) -> crate::Result<()> {
+		let tui_event = match self.tui.borrow_mut().try_recv_event() {
+			Ok(event) => event,
+			Err(err) => return Self::handle_try_recv_err(err, "tui"),
+		};
+		self.middleman.handle_tui_event(tui_event)?;
+		Ok(())
+	}
+
 	/// Receives and handles all incoming events from the [event
 	/// channel](Self::event_channel).
-	fn process_all_events(&mut self, tui: &mut Tui) -> crate::Result<()> {
+	fn process_all_events(&mut self) -> crate::Result<()> {
 		loop {
 			match self.event_channel.try_recv() {
-				Ok(event) => self.event(tui, &event)?,
+				Ok(event) => self.event(event)?,
 				Err(err) => return Self::handle_try_recv_err(err, "app"),
 			}
 		}
@@ -174,7 +169,7 @@ impl App {
 	/// [finished](AppRunState::Finished).
 	fn can_be_finished(&self) -> bool {
 		self.run_state == AppRunState::Quitting
-			|| self.screen_handler.get_run_state() == UiRunState::Finished
+			|| self.ui.get_run_state() == UiRunState::Finished
 	}
 
 	/// Sets the run state of the app.
@@ -183,10 +178,21 @@ impl App {
 		self.run_state = run_state;
 	}
 
-	/// Updates the app. Note that this has nothing to do with the tick of the
-	/// app.
+	/// Handles an [`AppEvent`].
+	fn handle_app_event(&mut self, event: &AppEvent) -> crate::Result<()> {
+		match event {
+			AppEvent::Render => self.render()?,
+			AppEvent::Close => self.close(),
+			AppEvent::Quit => self.quit(),
+			AppEvent::Error(msg) => self.error(msg)?,
+			AppEvent::Tick(_) => self.update()?,
+		}
+		Ok(())
+	}
+
+	/// Updates the app.
 	fn update(&mut self) -> crate::Result<()> {
-		self.screen_handler.update()?;
+		self.ui.update()?;
 		if self.can_be_finished() {
 			self.set_run_state(AppRunState::Finished);
 		}
@@ -194,89 +200,39 @@ impl App {
 	}
 
 	/// Handles a given event.
-	fn event(&mut self, tui: &mut Tui, event: &Event) -> crate::Result<()> {
+	fn event(&mut self, event: Event) -> crate::Result<()> {
 		if event.should_be_logged() {
 			info!(?event, "receiving event");
 		}
 		if let Event::App(ref app_event) = event {
-			self.prehandle_app_event(tui, app_event)?;
+			self.handle_app_event(app_event)?;
 		}
-		self.screen_handler.event(event)
+		self.ui.event(event)?;
+		self.update()
 	}
 
-	/// Handles an app event before forwarding it to the active screen for
-	/// handling.
-	fn prehandle_app_event(
-		&mut self,
-		tui: &mut Tui,
-		app_event: &AppEvent,
-	) -> crate::Result<()> {
-		match app_event {
-			AppEvent::Tick => self.tick()?,
-			AppEvent::Render => self.render(tui)?,
-			AppEvent::Close => {
-				self.close();
-			},
-			AppEvent::Quit => {
-				self.quit();
-			},
-			AppEvent::ErrorOccurred(msg) => self.error_occurred(msg)?,
-			AppEvent::UserInput(input) => self.user_input(tui, input)?,
-			AppEvent::ManipulateScreen(_) => {},
-		}
-		Ok(())
-	}
-
-	/// Updates the state of the app.
-	fn tick(&mut self) -> crate::Result<()> {
-		Ok(())
-	}
-
-	/// Renders the active screen.
-	fn render(&mut self, tui: &mut Tui) -> crate::Result<()> {
-		self.screen_handler.render(&mut tui.get_frame())
+	/// Renders the app.
+	fn render(&mut self) -> crate::Result<()> {
+		self.ui.render(
+			&mut self.tui.borrow_mut().terminal.borrow_mut().get_frame(),
+		)
 	}
 
 	/// Sets the app's state to closing.
 	fn close(&mut self) {
 		self.set_run_state(AppRunState::Closing);
-		self.screen_handler.close();
+		self.ui.close();
 	}
 
 	/// Quits the app.
 	fn quit(&mut self) {
 		self.set_run_state(AppRunState::Quitting);
-		self.screen_handler.quit();
-	}
-
-	/// Handles a [`UserInput`](InputEvent).
-	fn user_input(
-		&mut self,
-		tui: &mut Tui,
-		input: &InputEvent,
-	) -> crate::Result<()> {
-		if let InputEvent::ResizeTerminal(w, h) = input {
-			self.resize_terminal(tui, (*w, *h))
-		} else {
-			Ok(())
-		}
+		self.ui.quit();
 	}
 
 	/// Logs the error and displays it on a popup in the terminal.
-	fn error_occurred(&mut self, msg: &str) -> crate::Result<()> {
+	fn error(&mut self, msg: &str) -> crate::Result<()> {
 		error!(msg, "an error event occurred");
 		todo!();
-	}
-
-	/// Resizes the terminal and sends a [render](AppEvent::Render) event to
-	/// re-render.
-	fn resize_terminal(
-		&mut self,
-		tui: &mut Tui,
-		(w, h): (u16, u16),
-	) -> crate::Result<()> {
-		tui.resize(Rect::new(0, 0, w, h))?;
-		self.event_channel.send(AppEvent::Render.into())?;
-		Ok(())
 	}
 }

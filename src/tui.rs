@@ -2,14 +2,12 @@
 //! [`crossterm`] and [`ratatui`] internally.
 
 use std::{
+	cell::RefCell,
 	io::{
 		stdout,
 		Stdout,
 	},
-	ops::{
-		Deref,
-		DerefMut,
-	},
+	rc::Rc,
 	time::{
 		Duration,
 		TryFromFloatSecsError,
@@ -75,7 +73,33 @@ use crate::{
 };
 
 /// Terminal type used by Terminal Arcade.
-type Terminal = ratatui::Terminal<CrosstermBackend<Stdout>>;
+pub type Terminal = ratatui::Terminal<CrosstermBackend<Stdout>>;
+
+/// Game specifications.
+#[derive(Debug, Clone, Serialize, Deserialize, new)]
+pub struct GameSpecs {
+	/// Ticks per second.
+	pub tps: f64,
+
+	/// Frames per second.
+	pub fps: f64,
+}
+
+impl GameSpecs {
+	pub fn get_tick_rate(&self) -> Result<Duration, TryFromFloatSecsError> {
+		Duration::try_from_secs_f64(1.0 / self.tps)
+	}
+
+	pub fn get_frame_rate(&self) -> Result<Duration, TryFromFloatSecsError> {
+		Duration::try_from_secs_f64(1.0 / self.fps)
+	}
+}
+
+impl Default for GameSpecs {
+	fn default() -> Self {
+		Self::new(16.0, 60.0)
+	}
+}
 
 /// Handler for processing terminal-related events and producing application
 /// events. This struct also has [`Deref`] and [`DerefMut`] implementations to
@@ -95,7 +119,7 @@ type Terminal = ratatui::Terminal<CrosstermBackend<Stdout>>;
 #[derive(Debug, new)]
 pub struct Tui {
 	/// Terminal interface to interact with.
-	terminal: Terminal,
+	pub terminal: Rc<RefCell<Terminal>>,
 
 	/// Handle for event task.
 	event_task: JoinHandle<crate::Result<()>>,
@@ -116,15 +140,20 @@ pub struct Tui {
 impl Tui {
 	/// Constructs a new terminal interface object with the provided
 	/// [`GameSpecs`].
-	pub fn with_specs(game_specs: GameSpecs) -> crate::Result<Self> {
+	pub fn with_specs(game_specs: &GameSpecs) -> crate::Result<Self> {
 		Ok(Self::new(
-			Terminal::new(CrosstermBackend::new(stdout()))?,
+			Rc::new(RefCell::new(Self::get_terminal()?)),
 			tokio::spawn(async move { Ok(()) }),
 			CancellationToken::new(),
 			UnboundedChannel::new(),
 			game_specs.get_tick_rate()?,
 			game_specs.get_frame_rate()?,
 		))
+	}
+
+	/// Returns an instance of [`Terminal`] this app uses.
+	fn get_terminal() -> std::io::Result<Terminal> {
+		Terminal::new(CrosstermBackend::new(std::io::stdout()))
 	}
 
 	/// Tries to receive the next [TUI event](TuiEvent).
@@ -289,51 +318,10 @@ impl Tui {
 	}
 }
 
-impl Deref for Tui {
-	type Target = Terminal;
-
-	fn deref(&self) -> &Self::Target {
-		&self.terminal
-	}
-}
-
-impl DerefMut for Tui {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.terminal
-	}
-}
-
 impl Drop for Tui {
 	fn drop(&mut self) {
 		if let Err(err) = self.exit() {
 			panic!("could not exit the tui (when dropping): {err}");
 		}
-	}
-}
-
-/// Wrapper struct around two [`f64`]s for the ticks per second and the frames
-/// per second numbers.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, new)]
-pub struct GameSpecs {
-	/// Ticks per second.
-	pub tps: f64,
-
-	/// Frames per second.
-	pub fps: f64,
-}
-
-impl GameSpecs {
-	pub fn get_tick_rate(&self) -> Result<Duration, TryFromFloatSecsError> {
-		Duration::try_from_secs_f64(1.0 / self.tps)
-	}
-
-	pub fn get_frame_rate(&self) -> Result<Duration, TryFromFloatSecsError> {
-		Duration::try_from_secs_f64(1.0 / self.fps)
-	}
-}
-
-impl Default for GameSpecs {
-	fn default() -> Self {
-		Self::new(16.0, 60.0)
 	}
 }

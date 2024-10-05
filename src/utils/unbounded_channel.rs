@@ -50,6 +50,7 @@ impl<T> UnboundedChannel<T> {
 	}
 
 	/// Sends something with the sender channel.
+	#[expect(unused, reason = "api completeness")]
 	pub fn send(&self, thing: T) -> Result<(), SendError<T>>
 	where
 		T: Send + Sync + 'static,

@@ -6,11 +6,16 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
 	events::{
+		AppEvent,
 		Event,
 		ScreenEvent,
 	},
 	ui::{
 		screens::{
+			state::{
+				ScreenStateBuilder,
+				ScreenStateBuilderError,
+			},
 			Screen,
 			ScreenState,
 		},
@@ -29,42 +34,67 @@ pub struct ScreenHandle {
 
 	/// Event sender to the [`App`] layer.
 	#[serde(skip)]
-	event_sender: UnboundedSender<Event>,
+	pub event_sender: UnboundedSender<Event>,
 }
 
 impl ScreenHandle {
 	/// Constructs a new handle from a screen and initializes state from
 	/// [`Screen::get_init_state`].
-	pub fn new<S>(screen: S, event_sender: UnboundedSender<Event>) -> Self
+	pub fn new<S>(
+		screen: S,
+		event_sender: UnboundedSender<Event>,
+	) -> Result<Self, ScreenStateBuilderError>
 	where
 		S: Screen + 'static,
 	{
-		let state = screen.get_init_state();
-		Self {
+		let mut state_builder = ScreenStateBuilder::default();
+		let state = screen.get_init_state(&mut state_builder).build()?;
+		Ok(Self {
 			screen: Box::new(screen),
 			state,
 			event_sender,
-		}
+		})
 	}
 
 	/// Handles an incoming [`ScreenEvent`].
-	fn handle_screen_event(&mut self, event: &ScreenEvent) {
+	fn handle_screen_event(
+		&mut self,
+		event: &ScreenEvent,
+	) -> crate::Result<()> {
 		match event {
-			ScreenEvent::Close => self.state.run_state = UiRunState::Closing,
+			ScreenEvent::Close => {
+				self.state.run_state = UiRunState::Closing;
+				self.screen.close(&self.state, &self.event_sender)?;
+			},
 			ScreenEvent::Finish => self.state.run_state = UiRunState::Finished,
-			ScreenEvent::UpdateTitle(title) => {
+			ScreenEvent::Rename(title) => {
 				self.state.title.clone_from(title);
 			},
 		}
+		Ok(())
+	}
+
+	/// Updates the screen.
+	pub fn update(&mut self) -> crate::Result<()> {
+		self.screen.update(&self.state, &self.event_sender)
 	}
 
 	/// Handles an incoming event.
-	pub fn event(&mut self, event: &Event) -> crate::Result<()> {
-		if let Event::Screen(screen_event) = event {
-			self.handle_screen_event(screen_event);
+	pub fn event(&mut self, event: Event) -> crate::Result<()> {
+		let events = match event {
+			Event::Screen(screen_event) => {
+				self.handle_screen_event(&screen_event)?;
+				vec![screen_event.clone().into()]
+			},
+			Event::App(AppEvent::Tick(input_events)) => {
+				input_events.into_iter().map(Event::Input).collect()
+			},
+			_ => vec![event],
+		};
+		for event in events {
+			self.screen.event(&self.state, &self.event_sender, event)?;
 		}
-		self.screen
-			.handle_event(&self.state, &self.event_sender, event)
+		self.update()
 	}
 
 	/// Renders the screen to the terminal.

@@ -20,7 +20,6 @@ use color_eyre::Section;
 use crate::{
 	app::App,
 	config::Config,
-	tui::Tui,
 };
 
 mod app;
@@ -39,8 +38,7 @@ type Result<T, E = color_eyre::eyre::Report> = color_eyre::eyre::Result<T, E>;
 fn run() -> Result<()> {
 	services::initialize_services()?;
 	let config = Config::fetch()?;
-	let tui = Tui::with_specs(config.game_specs)?;
-	App::default().run(tui, config)
+	App::with_config(config)?.run()
 }
 
 #[tokio::main]

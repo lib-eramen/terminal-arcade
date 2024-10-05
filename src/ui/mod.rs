@@ -1,6 +1,10 @@
 //! User interface structures in Terminal Arcade.
 
-use color_eyre::eyre::eyre;
+use std::{
+	cell::RefCell,
+	rc::Rc,
+};
+
 use ratatui::Frame;
 use serde::{
 	Deserialize,
@@ -11,9 +15,12 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{
 	events::{
 		Event,
+		InputEvent,
 		ScreenEvent,
 	},
+	tui::Terminal,
 	ui::screens::{
+		state::ScreenStateBuilderError,
 		Screen,
 		ScreenHandle,
 	},
@@ -37,6 +44,7 @@ pub enum UiRunState {
 	Running,
 
 	/// The part is closing and is not forced to immediately quit.
+	/// The associated boolean indicates whether the
 	Closing,
 
 	/// The part has finished closing.
@@ -50,6 +58,10 @@ pub struct Ui {
 	#[serde(skip)]
 	run_state: UiRunState,
 
+	/// Terminal handle.
+	#[serde(skip)]
+	terminal: Rc<RefCell<Terminal>>,
+
 	/// Screens that this UI handles.
 	/// The top most screen (last element) is named the "active" screen.
 	/// It gets to render and receive events.
@@ -62,10 +74,14 @@ pub struct Ui {
 
 impl Ui {
 	/// Constructs an empty UI.
-	pub fn new(event_sender: UnboundedSender<Event>) -> Self {
+	pub fn new(
+		terminal: Rc<RefCell<Terminal>>,
+		event_sender: UnboundedSender<Event>,
+	) -> Self {
 		Self {
 			run_state: UiRunState::Running,
 			screens: Vec::new(),
+			terminal,
 			event_sender,
 		}
 	}
@@ -79,6 +95,16 @@ impl Ui {
 		Ok(())
 	}
 
+	/// Sets the UI's run state to [`UiRunState::Finished`] if there
+	/// are no more screens. Also returns the result of said predicate.
+	fn finish_if_empty(&mut self) -> bool {
+		let emptiness = self.is_empty();
+		if emptiness {
+			self.run_state = UiRunState::Finished;
+		}
+		emptiness
+	}
+
 	/// Updates the UI.
 	///
 	/// This method returns the screen that was closed, if there was one.
@@ -89,32 +115,42 @@ impl Ui {
 	/// [finished]: UiRunState::Finished
 	#[expect(clippy::unwrap_used, reason = "infallible")]
 	pub fn update(&mut self) -> crate::Result<Option<ScreenHandle>> {
-		if self.is_empty() {
-			self.run_state = UiRunState::Finished;
+		if self.finish_if_empty() {
 			return Ok(None);
 		}
-		let handler_run_state = self.run_state;
+		let ui_run_state = self.run_state;
 		let active_screen = self.get_mut_active_screen().unwrap();
-		match (handler_run_state, active_screen.state.run_state) {
-			(UiRunState::Finished, _) => {},
-			(_, UiRunState::Finished) => return Ok(self.pop_active_screen()),
-			(_, UiRunState::Closing) => todo!(),
-			(UiRunState::Running, UiRunState::Running) => todo!(),
+		match (ui_run_state, active_screen.state.run_state) {
+			(_, UiRunState::Finished) => {
+				let finished_screen = self.pop_active_screen();
+				self.finish_if_empty();
+				return Ok(finished_screen);
+			},
+			(_, UiRunState::Closing)
+			| (UiRunState::Running, UiRunState::Running) => {
+				active_screen.update()?;
+			},
 			(UiRunState::Closing, UiRunState::Running) => {
 				self.event_sender.send(ScreenEvent::Close.into())?;
 			},
+			(UiRunState::Finished, _) => {},
 		}
 		Ok(None)
 	}
 
 	/// Handles an incoming [`Event`].
 	#[expect(clippy::unwrap_used)]
-	pub fn event(&mut self, event: &Event) -> crate::Result<()> {
+	pub fn event(&mut self, event: Event) -> crate::Result<()> {
 		debug_assert!(
 			!self.is_empty(),
 			"no screens left in stack to receive events"
 		);
-		self.get_mut_active_screen().unwrap().event(event)
+		if let Event::Input(InputEvent::ResizeTerminal(..)) = event {
+			self.terminal.borrow_mut().autoresize()?;
+		}
+		self.get_mut_active_screen().unwrap().event(event)?;
+		let _ = self.update()?; // TODO: figure out something to do
+		Ok(())
 	}
 
 	/// Sets the [run state](Self::run_state) to
@@ -150,14 +186,18 @@ impl Ui {
 		self.screens.last_mut()
 	}
 
-	/// Creates a new screen as active and clones the UI's own sender for
+	/// Constructs a new screen as active and clones the UI's own sender for
 	/// the new screen's use.
-	pub fn push_active_screen<S>(&mut self, screen: S)
+	pub fn push_active_screen<S>(
+		&mut self,
+		screen: S,
+	) -> Result<(), ScreenStateBuilderError>
 	where
 		S: Screen + 'static,
 	{
 		self.screens
-			.push(ScreenHandle::new(screen, self.event_sender.clone()));
+			.push(ScreenHandle::new(screen, self.event_sender.clone())?);
+		Ok(())
 	}
 
 	/// Pops the active screen, returning an error if there is none left.

@@ -11,5 +11,5 @@ pub enum ScreenEvent {
 	Finish,
 
 	/// Updates the title of the screen.
-	UpdateTitle(String),
+	Rename(String),
 }

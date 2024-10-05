@@ -5,7 +5,13 @@
 use ratatui::Frame;
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::events::Event;
+use crate::{
+	events::{
+		Event,
+		ScreenEvent,
+	},
+	ui::screens::state::ScreenStateBuilder,
+};
 
 pub mod handle;
 pub mod state;
@@ -20,14 +26,37 @@ pub use state::ScreenState;
 #[typetag::serde(tag = "type")]
 pub trait Screen: std::fmt::Debug {
 	/// Returns the initial state that's associated with the screen.
-	fn get_init_state(&self) -> ScreenState;
+	fn get_init_state<'a>(
+		&self,
+		builder: &'a mut ScreenStateBuilder,
+	) -> &'a mut ScreenStateBuilder;
+
+	/// Performs closing actions for the screen.
+	/// The default behavior is just to send an event to finish the screen.
+	fn close(
+		&mut self,
+		_state: &ScreenState,
+		event_sender: &UnboundedSender<Event>,
+	) -> crate::Result<()> {
+		event_sender.send(ScreenEvent::Finish.into())?;
+		Ok(())
+	}
+
+	/// Updates the screen's state.
+	fn update(
+		&mut self,
+		_state: &ScreenState,
+		_event_sender: &UnboundedSender<Event>,
+	) -> crate::Result<()> {
+		Ok(())
+	}
 
 	/// Handles an incoming [`Event`].
-	fn handle_event(
+	fn event(
 		&mut self,
 		state: &ScreenState,
 		event_sender: &UnboundedSender<Event>,
-		event: &Event,
+		event: Event,
 	) -> crate::Result<()>;
 
 	/// Renders this screen.
