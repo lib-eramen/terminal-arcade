@@ -59,13 +59,7 @@ use tokio::{
 	time::interval,
 };
 use tokio_util::sync::CancellationToken;
-use tracing::{
-	debug,
-	error,
-	info,
-	instrument,
-	warn,
-};
+use tracing::instrument;
 
 use crate::{
 	events::TuiEvent,
@@ -168,7 +162,7 @@ impl Tui {
 		tui_event: TuiEvent,
 	) -> crate::Result<()> {
 		if tui_event.should_be_logged() {
-			debug!(?tui_event, "sending tui event");
+			tracing::debug!(?tui_event, "sending tui event");
 		}
 		event_sender.send(tui_event)?;
 		Ok(())
@@ -193,11 +187,11 @@ impl Tui {
 		loop {
 			let tui_event = tokio::select! {
 				() = cancel_token.cancelled() => {
-					info!("tui's cancel token cancelled");
+					tracing::info!("tui's cancel token cancelled");
 					break;
 				},
 				() = event_sender.closed() => {
-					info!("event sender closed");
+					tracing::info!("event sender closed");
 					break;
 				},
 				_ = tick_interval.tick() => TuiEvent::Tick,
@@ -210,7 +204,7 @@ impl Tui {
 						return Err(eyre!("while receiving from event stream: {err}"));
 					},
 					None => {
-						warn!("event stream closed; no more events are to be consumed");
+						tracing::warn!("event stream closed; no more events are to be consumed");
 						break;
 					}
 				},
@@ -223,14 +217,14 @@ impl Tui {
 				));
 			}
 		}
-		info!("tui event loop is finished");
+		tracing::info!("tui event loop is finished");
 		Ok(())
 	}
 
 	/// Begins event reception and enters the terminal.
 	#[instrument(skip(self))]
 	pub fn enter(&mut self) -> crate::Result<()> {
-		info!("entering the tui");
+		tracing::info!("entering the tui");
 		Self::set_terminal_rules()?;
 		self.start();
 		Ok(())
@@ -239,7 +233,7 @@ impl Tui {
 	/// Exits the terminal interface.
 	#[instrument(skip(self))]
 	pub fn exit(&mut self) -> crate::Result<()> {
-		info!("exiting the tui");
+		tracing::info!("exiting the tui");
 		self.stop()?;
 		Self::reset_terminal_rules()?;
 		Ok(())
@@ -274,7 +268,7 @@ impl Tui {
 			cancel_timer += one_ms;
 
 			if cancel_timer > Duration::from_millis(100) && !aborting {
-				warn!(
+				tracing::warn!(
 					"could not cancel event task thread after 100ms; aborting \
 					 it"
 				);
@@ -282,7 +276,7 @@ impl Tui {
 				self.event_task.abort();
 			} else if cancel_timer > Duration::from_millis(200) {
 				let message = "could not abort event task thread after 200ms";
-				error!("{message}; exiting");
+				tracing::error!("{message}; exiting");
 				return Err(eyre!(message));
 			}
 		}

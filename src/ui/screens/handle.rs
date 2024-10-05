@@ -94,7 +94,7 @@ impl ScreenHandle {
 		for event in events {
 			self.screen.event(&self.state, &self.event_sender, event)?;
 		}
-		self.update()
+		Ok(())
 	}
 
 	/// Renders the screen to the terminal.

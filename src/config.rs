@@ -19,7 +19,6 @@ use serde::{
 	Deserialize,
 	Serialize,
 };
-use tracing::info;
 
 use crate::{
 	services::dirs::{
@@ -54,7 +53,7 @@ impl Config {
 
 		let config_path = config_dir.join("config.toml");
 		if !config_path.exists() {
-			info!(
+			tracing::info!(
 				expected_path = config_path.clone().display().to_string(),
 				"no config exists; using default config"
 			);
@@ -92,7 +91,7 @@ impl Config {
 
 	/// Saves the current config to the provided path.
 	pub fn save(&self, path: PathBuf) -> crate::Result<()> {
-		info!(
+		tracing::info!(
 			config = ?self,
 			path = path.clone().display().to_string(),
 			"writing config to file"

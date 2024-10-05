@@ -52,14 +52,12 @@ pub enum UiRunState {
 }
 
 /// The UI of the app. This struct handles the screens
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub struct Ui {
 	/// Running state.
-	#[serde(skip)]
 	run_state: UiRunState,
 
-	/// Terminal handle.
-	#[serde(skip)]
+	/// Handle to the terminal.
 	terminal: Rc<RefCell<Terminal>>,
 
 	/// Screens that this UI handles.
@@ -68,7 +66,6 @@ pub struct Ui {
 	screens: Vec<ScreenHandle>,
 
 	/// Event channel.
-	#[serde(skip)]
 	event_sender: UnboundedSender<Event>,
 }
 
@@ -148,9 +145,7 @@ impl Ui {
 		if let Event::Input(InputEvent::ResizeTerminal(..)) = event {
 			self.terminal.borrow_mut().autoresize()?;
 		}
-		self.get_mut_active_screen().unwrap().event(event)?;
-		let _ = self.update()?; // TODO: figure out something to do
-		Ok(())
+		self.get_mut_active_screen().unwrap().event(event)
 	}
 
 	/// Sets the [run state](Self::run_state) to

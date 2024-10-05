@@ -4,7 +4,6 @@ use tokio::sync::mpsc::{
 	error::SendError,
 	UnboundedSender,
 };
-use tracing::info;
 
 use crate::events::{
 	AppEvent,
@@ -42,7 +41,7 @@ impl TuiAppMiddleman {
 	) -> Result<(), SendError<Event>> {
 		match event {
 			TuiEvent::Hello => {
-				info!(
+				tracing::info!(
 					"the middleman does not get paid enough to translate. yes \
 					 i can hear you, tui."
 				);

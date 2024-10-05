@@ -6,11 +6,7 @@ use time::{
 	format_description::well_known::Iso8601,
 	OffsetDateTime,
 };
-use tracing::{
-	debug,
-	info,
-	instrument,
-};
+use tracing::instrument;
 
 pub mod dirs;
 pub mod log;
@@ -44,7 +40,7 @@ fn fmt_run_timestamp() -> crate::Result<String> {
 
 /// Logs the current running mode.
 fn log_current_running_mode() {
-	info!(
+	tracing::info!(
 		"current running mode: {}",
 		if cfg!(debug_assertions) {
 			"debug"
@@ -65,7 +61,7 @@ pub fn initialize_services() -> crate::Result<()> {
 	log::init_logging()?;
 	log_current_running_mode();
 
-	debug!("initialized run timestamp: {}", fmt_run_timestamp()?);
+	tracing::debug!("initialized run timestamp: {}", fmt_run_timestamp()?);
 
 	oops::init_panic_handling()?;
 	dirs::init_project_dirs()?;

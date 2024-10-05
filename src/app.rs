@@ -13,12 +13,7 @@ use std::{
 use color_eyre::eyre::eyre;
 use derive_new::new;
 use tokio::sync::mpsc::error::TryRecvError;
-use tracing::{
-	debug,
-	error,
-	info,
-	instrument,
-};
+use tracing::instrument;
 
 use crate::{
 	components::screens::home::HomeScreen,
@@ -101,7 +96,7 @@ impl App {
 	/// [`HomeScreen`].
 	#[instrument(name = "run-app", skip_all)]
 	pub fn run(&mut self) -> crate::Result<()> {
-		debug!(?self.config, "using provided config");
+		tracing::debug!(?self.config, "using provided config");
 		self.set_run_state(AppRunState::Running);
 		self.tui.borrow_mut().enter()?;
 		self.ui.push_active_screen(HomeScreen)?;
@@ -114,6 +109,7 @@ impl App {
 		loop {
 			self.relay_tui_event()?;
 			self.process_all_events()?;
+			self.update()?;
 			if self.run_state == AppRunState::Finished {
 				break;
 			}
@@ -174,7 +170,7 @@ impl App {
 
 	/// Sets the run state of the app.
 	fn set_run_state(&mut self, run_state: AppRunState) {
-		info!(?run_state, "setting app run state");
+		tracing::info!(?run_state, "setting app run state");
 		self.run_state = run_state;
 	}
 
@@ -185,7 +181,7 @@ impl App {
 			AppEvent::Close => self.close(),
 			AppEvent::Quit => self.quit(),
 			AppEvent::Error(msg) => self.error(msg)?,
-			AppEvent::Tick(_) => self.update()?,
+			AppEvent::Tick(_) => {},
 		}
 		Ok(())
 	}
@@ -202,13 +198,12 @@ impl App {
 	/// Handles a given event.
 	fn event(&mut self, event: Event) -> crate::Result<()> {
 		if event.should_be_logged() {
-			info!(?event, "receiving event");
+			tracing::info!(?event, "receiving event");
 		}
 		if let Event::App(ref app_event) = event {
 			self.handle_app_event(app_event)?;
 		}
-		self.ui.event(event)?;
-		self.update()
+		self.ui.event(event)
 	}
 
 	/// Renders the app.
@@ -232,7 +227,7 @@ impl App {
 
 	/// Logs the error and displays it on a popup in the terminal.
 	fn error(&mut self, msg: &str) -> crate::Result<()> {
-		error!(msg, "an error event occurred");
+		tracing::error!(msg, "an error event occurred");
 		todo!();
 	}
 }

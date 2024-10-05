@@ -2386,7 +2386,6 @@ dependencies = [
  "derive-new",
  "derive_builder",
  "directories",
- "either",
  "futures",
  "human-panic",
  "lazy_static",

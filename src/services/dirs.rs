@@ -12,7 +12,6 @@ use serde::{
 	Deserialize,
 	Serialize,
 };
-use tracing::info;
 
 use crate::services::PROJECT_NAME;
 
@@ -98,7 +97,7 @@ pub fn get_config_dir() -> PathBuf {
 	} else {
 		(PathBuf::from(".").join(".config"), PathSource::Default)
 	};
-	info!(%source, path = path.display().to_string(), "found config dir");
+	tracing::info!(%source, path = path.display().to_string(), "found config dir");
 	path
 }
 
@@ -114,14 +113,14 @@ pub fn get_data_dir() -> PathBuf {
 	} else {
 		(PathBuf::from(".").join(".data"), PathSource::Default)
 	};
-	info!(%source, path = path.display().to_string(), "found data dir");
+	tracing::info!(%source, path = path.display().to_string(), "found data dir");
 	path
 }
 
 /// Initializes directories that are used in Terminal Arcade.
 pub fn init_project_dirs() -> crate::Result<()> {
 	use std::fs::create_dir_all;
-	info!("initializing project dirs");
+	tracing::info!("initializing project dirs");
 	create_dir_all(get_config_dir())?;
 	create_dir_all(get_data_dir())?;
 	Ok(())
