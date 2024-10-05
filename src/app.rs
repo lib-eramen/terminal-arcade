@@ -58,7 +58,7 @@ pub struct App {
 	run_state: AppRunState,
 
 	/// Tui backing the app.
-	tui: Rc<RefCell<Tui>>,
+	tui: Tui,
 
 	/// Middleman processing events between the [`Tui`] and [itself](App).
 	middleman: TuiAppMiddleman,
@@ -84,7 +84,7 @@ impl App {
 
 		Ok(Self {
 			run_state: AppRunState::Pending,
-			tui: Rc::new(RefCell::new(tui)),
+			tui,
 			middleman: TuiAppMiddleman::new(event_sender.clone()),
 			ui: Ui::new(terminal, event_sender),
 			config: Rc::new(RefCell::new(config)),
@@ -98,7 +98,7 @@ impl App {
 	pub fn run(&mut self) -> crate::Result<()> {
 		tracing::debug!(?self.config, "using provided config");
 		self.set_run_state(AppRunState::Running);
-		self.tui.borrow_mut().enter()?;
+		self.tui.enter()?;
 		self.ui.push_active_screen(HomeScreen)?;
 		self.event_loop()?;
 		println!("See you next time! 🕹️ 👋");
@@ -143,7 +143,7 @@ impl App {
 	/// event with the [middleman](TuiAppMiddleman), then sends the resulting
 	/// [`AppEvent`] through the [channel], if there is any.
 	fn relay_tui_event(&mut self) -> crate::Result<()> {
-		let tui_event = match self.tui.borrow_mut().try_recv_event() {
+		let tui_event = match self.tui.try_recv_event() {
 			Ok(event) => event,
 			Err(err) => return Self::handle_try_recv_err(err, "tui"),
 		};
@@ -209,9 +209,8 @@ impl App {
 
 	/// Renders the app.
 	fn render(&mut self) -> crate::Result<()> {
-		self.ui.render(
-			&mut self.tui.borrow_mut().terminal.borrow_mut().get_frame(),
-		)
+		self.ui
+			.render(&mut self.tui.terminal.borrow_mut().get_frame())
 	}
 
 	/// Sets the app's state to closing.
