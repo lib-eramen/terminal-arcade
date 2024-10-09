@@ -1,11 +1,9 @@
 //! Home screen.
 
-use ratatui::Frame;
-use serde::{
-	Deserialize,
-	Serialize,
+use ratatui::{
+	layout::Rect,
+	Frame,
 };
-use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
 	events::{
@@ -13,42 +11,42 @@ use crate::{
 		InputEvent,
 		ScreenEvent,
 	},
-	ui::screens::{
-		state::ScreenStateBuilder,
-		Screen,
-		ScreenState,
+	ui::{
+		screens::{
+			handle::ScreenHandleData,
+			state::ScreenDataBuilder,
+			Screen,
+		},
+		UiElement,
 	},
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct HomeScreen;
 
-#[typetag::serde]
-impl Screen for HomeScreen {
-	fn get_init_state<'a>(
-		&self,
-		builder: &'a mut ScreenStateBuilder,
-	) -> &'a mut ScreenStateBuilder {
-		builder.title("welcome home!")
-	}
+impl UiElement for HomeScreen {
+	type State = ScreenHandleData;
 
 	fn event(
 		&mut self,
-		_state: &ScreenState,
-		event_sender: &UnboundedSender<Event>,
+		handle: Self::State,
 		event: Event,
 	) -> crate::Result<()> {
 		if let Event::Input(InputEvent::Key(_)) = event {
-			event_sender.send(ScreenEvent::Close.into())?;
+			handle.event_sender.send(ScreenEvent::Close.into())?;
 		}
 		Ok(())
 	}
 
-	fn render(
-		&mut self,
-		_state: &mut ScreenState,
-		_frame: &mut Frame,
-	) -> crate::Result<()> {
-		Ok(())
+	#[rustfmt::skip]
+	fn render(&self, _state: Self::State, _frame: &mut Frame<'_>, _size: Rect) {}
+}
+
+impl Screen for HomeScreen {
+	fn get_init_state<'a>(
+		&self,
+		builder: &'a mut ScreenDataBuilder,
+	) -> &'a mut ScreenDataBuilder {
+		builder.title("Welcome home!")
 	}
 }

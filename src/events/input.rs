@@ -8,7 +8,7 @@ use crossterm::event::{
 use crate::events::tui::FocusChange;
 
 /// An input from the user.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 pub enum InputEvent {
 	/// The terminal is resized to `(width, height)`.
 	ResizeTerminal(u16, u16),

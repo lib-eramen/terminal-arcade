@@ -5,9 +5,7 @@ use crossterm::event::Event as CrosstermEvent;
 use crate::events::InputEvent;
 
 /// Terminal events sent by [`Tui`](crate::tui::Tui).
-///
-/// Note that the inpu.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 pub enum TuiEvent {
 	/// Checks if event transmission works.
 	Hello,

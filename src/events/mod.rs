@@ -2,6 +2,8 @@
 //! the terminal (usually via [`Event::Tui`]) or more abstract and resemble a
 //! command, coming from [`Screen`](crate::ui::screen::Screen)s.
 
+#![expect(dead_code, reason = "in development; events aren't all used yet")]
+
 pub mod app;
 pub mod input;
 pub mod screen;
@@ -18,7 +20,7 @@ pub use util::*;
 /// Events sent throughout and handled by the [`App`](crate::app::App).
 /// Each variant should be a tuple struct containing a subset of events
 /// sent from a particular source.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum Event {
 	/// General events for the [`App`](crate::app::App) to handle.

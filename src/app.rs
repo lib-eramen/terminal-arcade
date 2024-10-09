@@ -78,7 +78,6 @@ impl App {
 	/// Constructs a new app witht the provided [`Config`].
 	pub fn with_config(config: Config) -> crate::Result<Self> {
 		let tui = Tui::with_specs(&config.game_specs)?;
-		let terminal = tui.terminal.clone();
 		let event_channel = UnboundedChannel::new();
 		let event_sender = event_channel.get_sender().clone();
 
@@ -86,7 +85,7 @@ impl App {
 			run_state: AppRunState::Pending,
 			tui,
 			middleman: TuiAppMiddleman::new(event_sender.clone()),
-			ui: Ui::new(terminal, event_sender),
+			ui: Ui::new(event_sender),
 			config: Rc::new(RefCell::new(config)),
 			event_channel,
 		})
@@ -176,15 +175,12 @@ impl App {
 	}
 
 	/// Handles an [`AppEvent`].
-	fn handle_app_event(&mut self, event: &AppEvent) -> crate::Result<()> {
+	fn handle_app_event(&mut self, event: &AppEvent) {
 		match event {
-			AppEvent::Render => self.render()?,
 			AppEvent::Close => self.close(),
 			AppEvent::Quit => self.quit(),
-			AppEvent::Error(msg) => self.error(msg)?,
-			AppEvent::Tick(_) => {},
+			AppEvent::Render | AppEvent::Tick(_) => {},
 		}
-		Ok(())
 	}
 
 	/// Updates the app.
@@ -202,15 +198,9 @@ impl App {
 			tracing::info!(?event, "receiving event");
 		}
 		if let Event::App(ref app_event) = event {
-			self.handle_app_event(app_event)?;
+			self.handle_app_event(app_event);
 		}
-		self.ui.event(event)
-	}
-
-	/// Renders the app.
-	fn render(&mut self) -> crate::Result<()> {
-		self.ui
-			.render(&mut self.tui.terminal.borrow_mut().get_frame())
+		self.ui.event(&mut self.tui.terminal, event)
 	}
 
 	/// Sets the app's state to closing.
@@ -223,11 +213,5 @@ impl App {
 	fn quit(&mut self) {
 		self.set_run_state(AppRunState::Quitting);
 		self.ui.quit();
-	}
-
-	/// Logs the error and displays it on a popup in the terminal.
-	fn error(&mut self, msg: &str) -> crate::Result<()> {
-		tracing::error!(msg, "an error event occurred");
-		todo!();
 	}
 }

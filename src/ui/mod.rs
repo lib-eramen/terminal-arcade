@@ -1,11 +1,16 @@
 //! User interface structures in Terminal Arcade.
 
-use std::{
-	cell::RefCell,
-	rc::Rc,
+use crossterm::{
+	event::{
+		DisableMouseCapture,
+		EnableMouseCapture,
+	},
+	execute,
 };
-
-use ratatui::Frame;
+use ratatui::{
+	layout::Rect,
+	Frame,
+};
 use serde::{
 	Deserialize,
 	Serialize,
@@ -14,13 +19,13 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
 	events::{
+		AppEvent,
 		Event,
 		InputEvent,
 		ScreenEvent,
 	},
 	tui::Terminal,
 	ui::screens::{
-		state::ScreenStateBuilderError,
 		Screen,
 		ScreenHandle,
 	},
@@ -28,6 +33,17 @@ use crate::{
 
 pub mod screens;
 pub mod widgets;
+
+/// A UI element that renders and receives events.
+pub trait UiElement {
+	type State;
+
+	/// Handles an incoming [`Event`].
+	fn event(&mut self, state: Self::State, event: Event) -> crate::Result<()>;
+
+	/// Renders this element.
+	fn render(&self, state: Self::State, frame: &mut Frame<'_>, size: Rect);
+}
 
 /// Running state of any given UI moving part (a screen, widget) that runs and
 /// closes.
@@ -57,9 +73,6 @@ pub struct Ui {
 	/// Running state.
 	run_state: UiRunState,
 
-	/// Handle to the terminal.
-	terminal: Rc<RefCell<Terminal>>,
-
 	/// Screens that this UI handles.
 	/// The top most screen (last element) is named the "active" screen.
 	/// It gets to render and receive events.
@@ -71,25 +84,17 @@ pub struct Ui {
 
 impl Ui {
 	/// Constructs an empty UI.
-	pub fn new(
-		terminal: Rc<RefCell<Terminal>>,
-		event_sender: UnboundedSender<Event>,
-	) -> Self {
+	pub fn new(event_sender: UnboundedSender<Event>) -> Self {
 		Self {
 			run_state: UiRunState::Running,
 			screens: Vec::new(),
-			terminal,
 			event_sender,
 		}
 	}
 
-	/// Renders the screens this UI is holding to the terminal.
-	/// If there are no active screens, nothing is rendered.
-	pub fn render(&mut self, frame: &mut Frame) -> crate::Result<()> {
-		if let Some(handle) = self.get_mut_active_screen() {
-			handle.render(frame)?;
-		}
-		Ok(())
+	/// [`debug_assert`]s that there are screens.
+	fn assert_screens_nonemptiness(&self) {
+		debug_assert!(!self.is_empty(), "no screens left in stack");
 	}
 
 	/// Sets the UI's run state to [`UiRunState::Finished`] if there
@@ -135,16 +140,40 @@ impl Ui {
 		Ok(None)
 	}
 
+	/// Handles a [`Terminal`]-related [`Event`]. On an [`AppEvent::Render`]
+	/// event, a [`CompletedFrame`] is returned.
+	#[expect(clippy::unwrap_used)]
+	pub fn handle_terminal_event(
+		&mut self,
+		terminal: &mut Terminal,
+		event: &Event,
+	) -> std::io::Result<()> {
+		self.assert_screens_nonemptiness();
+		match event {
+			Event::Input(InputEvent::ResizeTerminal(w, h)) => {
+				terminal.resize(Rect::new(0, 0, *w, *h))
+			},
+			Event::App(AppEvent::Render) => {
+				let _completed_frame = terminal.draw(|frame| {
+					self.get_active_screen()
+						.unwrap()
+						.render(frame, frame.size());
+				})?;
+				Ok(())
+			},
+			_ => Ok(()),
+		}
+	}
+
 	/// Handles an incoming [`Event`].
 	#[expect(clippy::unwrap_used)]
-	pub fn event(&mut self, event: Event) -> crate::Result<()> {
-		debug_assert!(
-			!self.is_empty(),
-			"no screens left in stack to receive events"
-		);
-		if let Event::Input(InputEvent::ResizeTerminal(..)) = event {
-			self.terminal.borrow_mut().autoresize()?;
-		}
+	pub fn event(
+		&mut self,
+		terminal: &mut Terminal,
+		event: Event,
+	) -> crate::Result<()> {
+		self.assert_screens_nonemptiness();
+		self.handle_terminal_event(terminal, &event)?;
 		self.get_mut_active_screen().unwrap().event(event)
 	}
 
@@ -175,24 +204,37 @@ impl Ui {
 		self.screens.clear();
 	}
 
-	/// Gets the current active screen (the final one on the
-	/// [stack](Self::stack)) mutably.
+	/// Gets a reference to the current active screen.
+	pub fn get_active_screen(&mut self) -> Option<&ScreenHandle> {
+		self.screens.last()
+	}
+
+	/// Gets a mutable reference to the current active screen.
 	pub fn get_mut_active_screen(&mut self) -> Option<&mut ScreenHandle> {
 		self.screens.last_mut()
 	}
 
 	/// Constructs a new screen as active and clones the UI's own sender for
 	/// the new screen's use.
-	pub fn push_active_screen<S>(
-		&mut self,
-		screen: S,
-	) -> Result<(), ScreenStateBuilderError>
+	pub fn push_active_screen<S>(&mut self, screen: S) -> crate::Result<()>
 	where
 		S: Screen + 'static,
 	{
-		self.screens
-			.push(ScreenHandle::new(screen, self.event_sender.clone())?);
+		let handle = ScreenHandle::new(screen, self.event_sender.clone())?;
+		Self::enable_mouse_conditionally(handle.state.captures_mouse)?;
+		self.screens.push(handle);
 		Ok(())
+	}
+
+	/// Enables mouse capture on condition.
+	fn enable_mouse_conditionally(
+		captures_mouse: bool,
+	) -> Result<(), std::io::Error> {
+		if captures_mouse {
+			execute!(std::io::stdout(), EnableMouseCapture)
+		} else {
+			execute!(std::io::stdout(), DisableMouseCapture)
+		}
 	}
 
 	/// Pops the active screen, returning an error if there is none left.

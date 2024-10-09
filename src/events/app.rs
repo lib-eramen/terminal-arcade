@@ -3,7 +3,7 @@
 use crate::events::InputEvent;
 
 /// Events sent by the [`App`](crate::app::App).
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug)]
 pub enum AppEvent {
 	/// Updates the application state. This variant contains the inputs
 	/// accumulated in that one tick.
@@ -17,9 +17,6 @@ pub enum AppEvent {
 
 	/// Quits the application (forcibly).
 	Quit,
-
-	/// An error occurred in the application, sent with the provided message.
-	Error(String),
 }
 
 impl AppEvent {

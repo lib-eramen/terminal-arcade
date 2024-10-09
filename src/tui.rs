@@ -2,12 +2,10 @@
 //! [`crossterm`] and [`ratatui`] internally.
 
 use std::{
-	cell::RefCell,
 	io::{
 		stdout,
 		Stdout,
 	},
-	rc::Rc,
 	time::{
 		Duration,
 		TryFromFloatSecsError,
@@ -113,7 +111,7 @@ impl Default for GameSpecs {
 #[derive(Debug, new)]
 pub struct Tui {
 	/// Terminal interface to interact with.
-	pub terminal: Rc<RefCell<Terminal>>,
+	pub terminal: Terminal,
 
 	/// Handle for event task.
 	event_task: JoinHandle<crate::Result<()>>,
@@ -136,7 +134,7 @@ impl Tui {
 	/// [`GameSpecs`].
 	pub fn with_specs(game_specs: &GameSpecs) -> crate::Result<Self> {
 		Ok(Self::new(
-			Rc::new(RefCell::new(Self::get_terminal()?)),
+			Self::get_terminal()?,
 			tokio::spawn(async move { Ok(()) }),
 			CancellationToken::new(),
 			UnboundedChannel::new(),
