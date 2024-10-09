@@ -21,7 +21,6 @@ use crate::{
 	events::{
 		AppEvent,
 		Event,
-		InputEvent,
 		ScreenEvent,
 	},
 	tui::Terminal,
@@ -149,20 +148,14 @@ impl Ui {
 		event: &Event,
 	) -> std::io::Result<()> {
 		self.assert_screens_nonemptiness();
-		match event {
-			Event::Input(InputEvent::ResizeTerminal(w, h)) => {
-				terminal.resize(Rect::new(0, 0, *w, *h))
-			},
-			Event::App(AppEvent::Render) => {
-				let _completed_frame = terminal.draw(|frame| {
-					self.get_active_screen()
-						.unwrap()
-						.render(frame, frame.size());
-				})?;
-				Ok(())
-			},
-			_ => Ok(()),
+		if let Event::App(AppEvent::Render) = event {
+			let _completed_frame = terminal.draw(|frame| {
+				self.get_active_screen()
+					.unwrap()
+					.render(frame, frame.size());
+			})?;
 		}
+		Ok(())
 	}
 
 	/// Handles an incoming [`Event`].
