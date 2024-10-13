@@ -29,8 +29,8 @@ pub struct ScreenHandle {
 	/// Inner screen trait object.
 	pub screen: Box<dyn Screen>,
 
-	/// State associated with the screen.
-	pub state: ScreenData,
+	/// Data associated with the screen.
+	pub data: ScreenData,
 
 	/// Event sender to the [`App`] layer.
 	pub event_sender: UnboundedSender<Event>,
@@ -50,7 +50,7 @@ impl ScreenHandle {
 		let state = screen.get_init_state(&mut state_builder).build()?;
 		Ok(Self {
 			screen: Box::new(screen),
-			state,
+			data: state,
 			event_sender,
 		})
 	}
@@ -62,12 +62,12 @@ impl ScreenHandle {
 	) -> crate::Result<()> {
 		match event {
 			ScreenEvent::Close => {
-				self.state.run_state = UiRunState::Closing;
+				self.data.run_state = UiRunState::Closing;
 				self.screen.close(self.clone_handle_state())?;
 			},
-			ScreenEvent::Finish => self.state.run_state = UiRunState::Finished,
+			ScreenEvent::Finish => self.data.run_state = UiRunState::Finished,
 			ScreenEvent::Rename(title) => {
-				self.state.title.clone_from(title);
+				self.data.title.clone_from(title);
 			},
 			ScreenEvent::Error(_error) => todo!(),
 			ScreenEvent::Create(_screen_handle) => todo!(),
@@ -106,7 +106,7 @@ impl ScreenHandle {
 	}
 
 	pub fn clone_handle_state(&self) -> ScreenHandleData {
-		ScreenHandleData::new(self.state.clone(), self.event_sender.clone())
+		ScreenHandleData::new(self.data.clone(), self.event_sender.clone())
 	}
 }
 

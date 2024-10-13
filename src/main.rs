@@ -18,6 +18,7 @@
 use crate::{
 	app::App,
 	config::Config,
+	services::dirs::AppDirs,
 };
 
 mod app;
@@ -35,6 +36,8 @@ type Result<T, E = color_eyre::eyre::Report> = color_eyre::eyre::Result<T, E>;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-	services::initialize_services()?;
-	App::with_config(Config::fetch()?)?.run()
+	let app_dirs = AppDirs::default();
+	services::initialize_services(&app_dirs)?;
+	let config = Config::fetch(app_dirs)?;
+	App::with_config(config)?.run()
 }

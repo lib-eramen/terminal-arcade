@@ -30,6 +30,7 @@ impl ScreenData {
 
 	/// Returns a title padded with `padding` on both sides. `padding`
 	/// gets reversed on the right side.
+	#[expect(unused, reason = "just a fun thing")]
 	pub fn get_padded_title<T: ToString>(&self, padding: &T) -> String {
 		let padding = padding.to_string();
 		let left_pad = padding.clone();

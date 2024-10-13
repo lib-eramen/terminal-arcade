@@ -1,4 +1,4 @@
-//! Home screen.
+//! Home screen to greet a user on running.
 
 use ratatui::{
 	layout::Rect,
@@ -38,8 +38,8 @@ impl UiElement for HomeScreen {
 		Ok(())
 	}
 
-	#[rustfmt::skip]
-	fn render(&self, _state: Self::State, _frame: &mut Frame<'_>, _size: Rect) {}
+	fn render(&self, _state: Self::State, _frame: &mut Frame<'_>, _size: Rect) {
+	}
 }
 
 impl Screen for HomeScreen {
@@ -47,6 +47,6 @@ impl Screen for HomeScreen {
 		&self,
 		builder: &'a mut ScreenDataBuilder,
 	) -> &'a mut ScreenDataBuilder {
-		builder.title("Welcome home!")
+		builder.title("Terminal Arcade 🕹️")
 	}
 }

@@ -93,17 +93,15 @@ impl Ui {
 
 	/// [`debug_assert`]s that there are screens.
 	fn assert_screens_nonemptiness(&self) {
-		debug_assert!(!self.is_empty(), "no screens left in stack");
+		debug_assert!(!self.is_empty(), "no screens left");
 	}
 
 	/// Sets the UI's run state to [`UiRunState::Finished`] if there
 	/// are no more screens. Also returns the result of said predicate.
 	fn finish_if_empty(&mut self) -> bool {
-		let emptiness = self.is_empty();
-		if emptiness {
-			self.run_state = UiRunState::Finished;
-		}
-		emptiness
+		self.is_empty()
+			.then(|| self.run_state = UiRunState::Finished)
+			.is_some()
 	}
 
 	/// Updates the UI.
@@ -121,7 +119,7 @@ impl Ui {
 		}
 		let ui_run_state = self.run_state;
 		let active_screen = self.get_mut_active_screen().unwrap();
-		match (ui_run_state, active_screen.state.run_state) {
+		match (ui_run_state, active_screen.data.run_state) {
 			(_, UiRunState::Finished) => {
 				let finished_screen = self.pop_active_screen();
 				self.finish_if_empty();
@@ -214,7 +212,7 @@ impl Ui {
 		S: Screen + 'static,
 	{
 		let handle = ScreenHandle::new(screen, self.event_sender.clone())?;
-		Self::enable_mouse_conditionally(handle.state.captures_mouse)?;
+		Self::enable_mouse_conditionally(handle.data.captures_mouse)?;
 		self.screens.push(handle);
 		Ok(())
 	}

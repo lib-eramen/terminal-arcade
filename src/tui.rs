@@ -64,7 +64,7 @@ use crate::{
 	utils::UnboundedChannel,
 };
 
-/// Terminal type used by Terminal Arcade.
+/// App terminal type.
 pub type Terminal = ratatui::Terminal<CrosstermBackend<Stdout>>;
 
 /// Game specifications.

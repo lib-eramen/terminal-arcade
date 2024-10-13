@@ -87,8 +87,7 @@ pub trait Screen:
 		frame: &mut Frame<'_>,
 		size: Rect,
 	) {
-		let base_screen_block =
-			base_screen_block(handle.state.get_padded_title(&" "));
+		let base_screen_block = base_screen_block(handle.state.title.clone());
 		frame.render_widget(base_screen_block, size);
 		UiElement::render(self, handle, frame, size);
 	}

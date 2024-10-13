@@ -8,14 +8,19 @@ use time::{
 };
 use tracing::instrument;
 
+use crate::services::dirs::AppDirs;
+
 pub mod dirs;
 pub mod log;
 pub mod oops;
 
 lazy_static::lazy_static! {
-	/// This crate/app/project's name in lowercase.
+	/// This package's name.
+	pub static ref CARGO_PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
+
+	/// This crate/app/project's name in `SCREAMING_SNAKE_CASE`.
 	pub static ref PROJECT_NAME: String =
-		env!("CARGO_PKG_NAME").to_lowercase().to_string();
+		CARGO_PKG_NAME.replace('-', "_").to_uppercase();
 
 	/// The timestamp of when Terminal Arcade was run.
 	pub static ref RUN_TIMESTAMP: OffsetDateTime = OffsetDateTime::now_utc();
@@ -56,14 +61,15 @@ fn log_current_running_mode() {
 /// This function is intended to be called directly at the start of execution in
 /// order to [RUN_TIMESTAMP] to be (lazily) evaluated right away.
 #[instrument]
-pub fn initialize_services() -> crate::Result<()> {
-	let _ = RUN_TIMESTAMP; // Immediately access and evaluate `RUN_TIMESTAMP`.
-	log::init_logging()?;
-	log_current_running_mode();
+pub fn initialize_services(app_dirs: &AppDirs) -> crate::Result<()> {
+	oops::init_panic_handling()?;
+	dirs::init_project_dirs(app_dirs)?; // The logs won't make it in the first time.
 
+	let _ = RUN_TIMESTAMP; // Immediately access and evaluate `RUN_TIMESTAMP`.
+	log::init_logging(app_dirs)?;
+	log_current_running_mode();
 	tracing::debug!("initialized run timestamp: {}", fmt_run_timestamp()?);
 
-	oops::init_panic_handling()?;
-	dirs::init_project_dirs()?;
+	dirs::init_project_dirs(app_dirs)?;
 	Ok(())
 }

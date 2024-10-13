@@ -1,7 +1,4 @@
-//! Configuration in Terminal Arcade.
-//!
-//! Under the [config folder](crate::util::dirs::get_config_dir) will be a list
-//! of configuration files, defaulting to `config.toml`.
+//! Configuration for the app.
 
 use std::path::PathBuf;
 
@@ -21,10 +18,9 @@ use serde::{
 };
 
 use crate::{
-	services::dirs::{
-		get_config_dir,
-		get_data_dir,
-		AppDirs,
+	services::{
+		dirs::AppDirs,
+		CARGO_PKG_NAME,
 	},
 	tui::GameSpecs,
 };
@@ -32,24 +28,22 @@ use crate::{
 #[derive(Debug, Clone, Default, Serialize, Deserialize, new)]
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
-	/// Directories that Terminal Arcade depends on.
+	/// App directories.
+	#[serde(skip)]
 	pub app_dirs: AppDirs,
 
-	/// Terminal Arcade's game specifications.
+	/// Game specifications.
 	pub game_specs: GameSpecs,
 }
 
 impl Config {
-	/// Fetches a new configuration object for Terminal Arcade.
+	/// Fetches a new configuration object for the app.
 	/// If none is found, a default one will be created at the config folder and
 	/// returned. If one is found, the function tries to deserialize it and
 	/// returns the resulting config.
-	pub fn fetch() -> crate::Result<Self> {
-		let config_dir = get_config_dir();
-		let data_dir = get_data_dir();
-		let mut config_builder = ConfigBuilder::<DefaultState>::default()
-			.set_default("config_dir", config_dir.to_str())?
-			.set_default("data_dir", data_dir.to_str())?;
+	pub fn fetch(app_dirs: AppDirs) -> crate::Result<Self> {
+		let (config_dir, _) = app_dirs.get_config_dir("config", None)?;
+		let mut config_builder = ConfigBuilder::<DefaultState>::default();
 
 		let config_path = config_dir.join("config.toml");
 		if !config_path.exists() {
@@ -66,11 +60,11 @@ impl Config {
 					.format(FileFormat::Toml)
 					.required(true),
 			)
-			.add_source(config::Environment::with_prefix("TA"));
+			.add_source(config::Environment::with_prefix(&CARGO_PKG_NAME));
 
-		config_builder
+		let mut config = config_builder
 			.build()?
-			.try_deserialize()
+			.try_deserialize::<Self>()
 			.wrap_err("unable to parse & deserialize config")
 			.warning(
 				"your config might have been modified - it is missing fields, \
@@ -78,7 +72,9 @@ impl Config {
 			)
 			.with_suggestion(|| {
 				format!("check your config at {}!", config_path.display())
-			})
+			})?;
+		config.app_dirs = app_dirs;
+		Ok(config)
 	}
 
 	/// Constructs a new default config with the provided path,
