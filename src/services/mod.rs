@@ -8,9 +8,9 @@ use time::{
 };
 use tracing::instrument;
 
-use crate::services::dirs::AppDirs;
+use crate::services::files::AppFiles;
 
-pub mod dirs;
+pub mod files;
 pub mod log;
 pub mod oops;
 
@@ -61,15 +61,15 @@ fn log_current_running_mode() {
 /// This function is intended to be called directly at the start of execution in
 /// order to [RUN_TIMESTAMP] to be (lazily) evaluated right away.
 #[instrument]
-pub fn initialize_services(app_dirs: &AppDirs) -> crate::Result<()> {
+pub fn initialize_services(app_files: &AppFiles) -> crate::Result<()> {
 	oops::init_panic_handling()?;
-	dirs::init_project_dirs(app_dirs)?; // The logs won't make it in the first time.
+	files::init_project_files(app_files)?; // The logs won't make it in the first time.
 
 	let _ = RUN_TIMESTAMP; // Immediately access and evaluate `RUN_TIMESTAMP`.
-	log::init_logging(app_dirs)?;
+	log::init_logging(app_files)?;
 	log_current_running_mode();
 	tracing::debug!("initialized run timestamp: {}", fmt_run_timestamp()?);
 
-	dirs::init_project_dirs(app_dirs)?;
+	files::init_project_files(app_files)?;
 	Ok(())
 }

@@ -19,7 +19,7 @@ use serde::{
 
 use crate::{
 	services::{
-		dirs::AppDirs,
+		files::AppFiles,
 		CARGO_PKG_NAME,
 	},
 	tui::GameSpecs,
@@ -28,9 +28,9 @@ use crate::{
 #[derive(Debug, Clone, Default, Serialize, Deserialize, new)]
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
-	/// App directories.
+	/// App files.
 	#[serde(skip)]
-	pub app_dirs: AppDirs,
+	pub app_files: AppFiles,
 
 	/// Game specifications.
 	pub game_specs: GameSpecs,
@@ -41,8 +41,8 @@ impl Config {
 	/// If none is found, a default one will be created at the config folder and
 	/// returned. If one is found, the function tries to deserialize it and
 	/// returns the resulting config.
-	pub fn fetch(app_dirs: AppDirs) -> crate::Result<Self> {
-		let (config_dir, _) = app_dirs.get_config_dir("config", None)?;
+	pub fn fetch(app_files: AppFiles) -> crate::Result<Self> {
+		let config_dir = app_files.get_config_path(None)?;
 		let mut config_builder = ConfigBuilder::<DefaultState>::default();
 
 		let config_path = config_dir.join("config.toml");
@@ -73,7 +73,7 @@ impl Config {
 			.with_suggestion(|| {
 				format!("check your config at {}!", config_path.display())
 			})?;
-		config.app_dirs = app_dirs;
+		config.app_files = app_files;
 		Ok(config)
 	}
 

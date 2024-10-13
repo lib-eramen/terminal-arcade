@@ -62,11 +62,11 @@ impl Display for PathSource {
 		)
 	}
 }
-/// Project directories for Terminal Arcade.
+/// Project files for Terminal Arcade.
 #[derive(Debug, Clone)]
-pub struct AppDirs(Option<ProjectDirs>);
+pub struct AppFiles(Option<ProjectDirs>);
 
-impl AppDirs {
+impl AppFiles {
 	/// Constructs a new [`ProjectDirs`] object with [`CARGO_PKG_NAME`] as the
 	/// name.
 	pub fn new(name: &str) -> Self {
@@ -76,11 +76,11 @@ impl AppDirs {
 	}
 
 	/// Returns the path if it [exists](PathBuf::exists), and errors otherwise.
-	fn get_existing_path(path: PathBuf) -> crate::Result<PathBuf> {
+	pub fn get_existing_path(path: PathBuf) -> crate::Result<PathBuf> {
 		if path.exists() {
 			Ok(path)
 		} else {
-			Err(eyre!("env path {} does not exist!", path.display()))
+			Err(eyre!("path {} does not exist!", path.display()))
 		}
 	}
 
@@ -97,7 +97,7 @@ impl AppDirs {
 	/// based on three criteria with descending prioirity: the environment
 	/// variable, the "local" (location in a user folder) folder, and the
 	/// fallback being the current working directory.
-	pub fn get_dir_from_sources<F>(
+	pub fn get_path_from_sources<F>(
 		&self,
 		env_folder_var: &str,
 		get_project_dir_path: F,
@@ -128,7 +128,7 @@ impl AppDirs {
 		name = "get-app-dir",
 		skip(self, get_project_dir_path)
 	)]
-	pub fn get_app_dir<F>(
+	pub fn get_app_path<F>(
 		&self,
 		env_folder_var: &str,
 		get_project_dir_path: F,
@@ -138,17 +138,17 @@ impl AppDirs {
 		F: Fn(&ProjectDirs) -> &Path,
 	{
 		let (mut path, source) =
-			self.get_dir_from_sources(env_folder_var, get_project_dir_path)?;
+			self.get_path_from_sources(env_folder_var, get_project_dir_path)?;
 		if let Some(subdir) = subdir {
 			path = path.join(subdir);
 		}
 		Ok((path, source))
 	}
 
-	/// [Gets an app directory](`Self::get_app_dir`) and checks if the resulting
-	/// path exists.
-	#[expect(unused, reason = "maybe one day this is helpful? idk")]
-	pub fn get_existing_app_dir<F>(
+	/// [Gets an app path](`Self::get_app_path`), erroring if the app path does
+	/// not exist.
+	#[expect(unused, reason = "api completeness")]
+	pub fn get_existing_app_path<F>(
 		&self,
 		env_folder_var: &str,
 		get_project_dir_path: F,
@@ -157,20 +157,56 @@ impl AppDirs {
 	where
 		F: Fn(&ProjectDirs) -> &Path,
 	{
-		self.get_app_dir(env_folder_var, get_project_dir_path, subdir)
+		self.get_app_path(env_folder_var, get_project_dir_path, subdir)
 			.wrap_err("io error while retrieving app dir")
 			.and_then(|(path, source)| {
 				Ok((Self::get_existing_path(path)?, source))
 			})
 	}
 
-	/// [Gets an app directory](`Self::get_app_dir`) or creates the directory.
-	/// The `purpose` parameter is interpolated in a log message as follows:
-	/// `"found {purpose} dir"`.
+	/// Checks if the path exists (and creating directories for it if not), and
+	/// returns the path directly. Included in the returned [`Result`] is
+	/// potential errors from [`std::fs::create_dir_all`]. Is basically
+	/// [`std::fs::create_dir_all`] with logging.
+	fn create_dirs_if_nonexistent(path: PathBuf) -> std::io::Result<PathBuf> {
+		if path.exists() {
+			return Ok(path);
+		}
+		let path_display = path.display().to_string();
+		tracing::info!(
+			path = path_display,
+			"{path_display} does not exist; creating now"
+		);
+		std::fs::create_dir_all(&path).map(|()| path)
+	}
+
+	/// [Gets an app path](`Self::get_app_path`) or creates the directory.
 	///
 	/// Error information from [`std::fs::create_dir_all`] is discarded. Sorry.
 	/// I couldn't bother.
-	pub fn get_or_create_app_dir<F>(
+	pub fn get_or_create_app_path<F>(
+		&self,
+		env_folder_var: &str,
+		get_project_dir_path: F,
+		subdir: Option<PathBuf>,
+	) -> crate::Result<(PathBuf, PathSource)>
+	where
+		F: Fn(&ProjectDirs) -> &Path,
+	{
+		self.get_app_path(env_folder_var, get_project_dir_path, subdir)
+			.wrap_err("io error while retrieving app dir")
+			.and_then(|(path, source)| {
+				Ok((Self::create_dirs_if_nonexistent(path)?, source))
+			})
+	}
+
+	/// Finds an app path and returns it, creating folders in that path.
+	/// Basically what [`Self::get_or_create_app_path`] does. Recommended
+	/// to call during initialization.
+	///
+	/// The `purpose` parameter is interpolated in a log message as follows:
+	/// `"found {purpose} dir"`.
+	pub fn find_app_path<F>(
 		&self,
 		purpose: &str,
 		env_folder_var: &str,
@@ -180,62 +216,65 @@ impl AppDirs {
 	where
 		F: Fn(&ProjectDirs) -> &Path,
 	{
-		let (path, source) =
-			self.get_app_dir(env_folder_var, get_project_dir_path, subdir)?;
+		let (path, source) = self.get_or_create_app_path(
+			env_folder_var,
+			get_project_dir_path,
+			subdir,
+		)?;
 		let path_display = path.display().to_string();
 		tracing::info!(
 			%source,
 			path = path_display,
 			"finding {purpose} dir"
 		);
-		if !path.exists() {
-			tracing::info!(
-				path = path_display,
-				"{path_display} does not exist; creating now"
-			);
-			let _ = std::fs::create_dir_all(&path);
-		}
 		Ok((path, source))
 	}
 
-	/// Gets a directory from the app's [config
-	/// directory](ProjectDirs::config_dir).
-	pub fn get_config_dir(
+	/// [Gets or creates](Self::get_or_create_app_path) a path from the app's
+	/// [config directory](ProjectDirs::config_dir).
+	pub fn get_config_path(
 		&self,
-		purpose: &str,
 		subdir: Option<PathBuf>,
-	) -> crate::Result<(PathBuf, PathSource)> {
-		self.get_or_create_app_dir(
-			purpose,
+	) -> crate::Result<PathBuf> {
+		self.get_or_create_app_path(
 			&CONFIG_FOLDER_ENV_VAR,
 			|dirs| dirs.config_dir(),
 			subdir,
 		)
+		.map(|(path, _)| path)
 	}
 
-	/// Gets a directory from the app's [data directory](ProjectDirs::data_dir).
-	pub fn get_data_dir(
+	/// [Gets or creates](Self::get_or_create_app_path) a path from the app's
+	/// [data directory](ProjectDirs::data_dir).
+	pub fn get_data_path(
 		&self,
-		purpose: &str,
 		subdir: Option<PathBuf>,
-	) -> crate::Result<(PathBuf, PathSource)> {
-		self.get_or_create_app_dir(
-			purpose,
+	) -> crate::Result<PathBuf> {
+		self.get_or_create_app_path(
 			&DATA_FOLDER_ENV_VAR,
 			|dirs| dirs.data_dir(),
 			subdir,
 		)
+		.map(|(path, _)| path)
+	}
+
+	/// Gets an asset at [`Self::get_data_dir`]`/.assets`, erroring if the path
+	/// does not exist. [data directory](ProjectDirs::data_dir).
+	pub fn get_asset_path(&self, path: PathBuf) -> crate::Result<PathBuf> {
+		Self::get_existing_path(
+			self.get_config_path(Some(".assets".into()))?.join(path),
+		)
 	}
 }
 
-impl Default for AppDirs {
+impl Default for AppFiles {
 	/// Constructs a set of project directories with [`CARGO_PKG_NAME`].
 	fn default() -> Self {
 		Self::new(&CARGO_PKG_NAME)
 	}
 }
 
-impl Deref for AppDirs {
+impl Deref for AppFiles {
 	type Target = Option<ProjectDirs>;
 
 	fn deref(&self) -> &Self::Target {
@@ -243,22 +282,22 @@ impl Deref for AppDirs {
 	}
 }
 
-impl DerefMut for AppDirs {
+impl DerefMut for AppFiles {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		&mut self.0
 	}
 }
 
-/// Initializes directories that are used in Terminal Arcade.
-pub fn init_project_dirs(app_dirs: &AppDirs) -> crate::Result<()> {
+/// Initializes directories & files that are used in Terminal Arcade.
+pub fn init_project_files(app_files: &AppFiles) -> crate::Result<()> {
 	tracing::info!("initializing project dirs");
-	app_dirs.get_or_create_app_dir(
+	app_files.find_app_path(
 		"config",
 		&CONFIG_FOLDER_ENV_VAR,
 		|dirs| dirs.config_dir(),
 		None,
 	)?;
-	app_dirs.get_or_create_app_dir(
+	app_files.find_app_path(
 		"data",
 		&DATA_FOLDER_ENV_VAR,
 		|dirs| dirs.data_dir(),

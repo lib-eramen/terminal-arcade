@@ -12,7 +12,7 @@ use tracing_subscriber::{
 
 use crate::services::{
 	debug_either,
-	dirs::AppDirs,
+	files::AppFiles,
 	fmt_run_timestamp,
 	PROJECT_NAME,
 };
@@ -35,11 +35,10 @@ fn get_log_file_name() -> crate::Result<String> {
 /// The default [`EnvFilter`] behavior is to use the `RUST_LOG` environment
 /// variable - when that is invalid, the [`LOG_ENV_VAR`] variable is used
 /// instead. When even that is invalid, an error is returned.
-pub fn init_logging(app_dirs: &AppDirs) -> crate::Result<()> {
+pub fn init_logging(app_files: &AppFiles) -> crate::Result<()> {
 	tracing::info!("initializing logging");
-	let (log_dir, _) = app_dirs.get_data_dir("log", Some("logs".into()))?;
+	let log_dir = app_files.get_data_path(Some("logs".into()))?;
 
-	std::fs::create_dir_all(log_dir.clone())?;
 	let log_file_path = log_dir.join(get_log_file_name()?);
 	let log_file = std::fs::File::create(log_file_path)?;
 

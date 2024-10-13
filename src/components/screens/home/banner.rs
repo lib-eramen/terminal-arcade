@@ -1,7 +1,12 @@
 //! Banner showing the Terminal Arcade ASCII art logo.
 
-use lazy_static::lazy_static;
+use std::path::PathBuf;
 
-lazy_static! {
-	static ref BANNER: String = std::fs::read_to_string("path");
+use crate::services::files::AppFiles;
+
+/// Gets the banner logo.
+fn get_logo_banner_text(files: &AppFiles) -> crate::Result<String> {
+	Ok(std::fs::read_to_string(files.get_asset_path(
+		PathBuf::from("banners").join("logo.txt"),
+	)?)?)
 }

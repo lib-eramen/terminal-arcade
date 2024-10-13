@@ -21,6 +21,8 @@ use crate::{
 	},
 };
 
+mod banner;
+
 #[derive(Debug)]
 pub struct HomeScreen;
 
