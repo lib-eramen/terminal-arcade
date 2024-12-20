@@ -1,20 +1,20 @@
 //! [`Event`]s sent throughout the app. An event can be low-level and come from
-//! the terminal (usually via [`Event::Tui`]) or more abstract and resemble a
-//! command, coming from [`Screen`](crate::ui::screen::Screen)s.
+//! the terminal (usually via [`Event::station`]) or more abstract and resemble
+//! a command, coming from [`Screen`](crate::ui::screen::Screen)s.
 
 #![expect(dead_code, reason = "in development; events aren't all used yet")]
 
 pub mod app;
 pub mod input;
 pub mod screen;
-pub mod tui;
+pub mod station;
 pub mod ui;
 pub mod util;
 
 pub use app::AppEvent;
 pub use input::InputEvent;
 pub use screen::ScreenEvent;
-pub use tui::TuiEvent;
+pub use station::StationEvent;
 
 /// Events sent throughout and handled by the [`App`](crate::app::App).
 /// Each variant should be a tuple struct containing a subset of events

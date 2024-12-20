@@ -45,7 +45,7 @@ fn prod_panic_hook(panic_hook: &PanicHook, panic_info: &PanicHookInfo) {
 /// Custom panic hook. Also resets the terminal to the original state in
 /// addition to previous panic handling.
 fn custom_panic_hook(panic_hook: &PanicHook, panic_info: &PanicHookInfo) {
-	if let Err(err) = crate::tui::Tui::reset_terminal_rules() {
+	if let Err(err) = crate::station::Station::reset_terminal_rules() {
 		tracing::error!(%err, "could not reset terminal rules");
 	}
 	let msg = format!("{}", panic_hook.panic_report(panic_info));

@@ -33,7 +33,7 @@ use crate::{
 		Event,
 		ScreenEvent,
 	},
-	tui::Terminal,
+	station::Terminal,
 	ui::screen::Screen,
 };
 

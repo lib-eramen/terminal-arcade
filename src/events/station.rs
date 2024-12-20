@@ -1,12 +1,12 @@
-//! Terminal events, sent by a [`Tui`](crate::tui::Tui).
+//! Terminal events, sent by a [`Station`](crate::station::Station).
 
 use crossterm::event::Event as CrosstermEvent;
 
 use crate::events::InputEvent;
 
-/// Terminal events sent by [`Tui`](crate::tui::Tui).
+/// Terminal events sent by [`Station`](crate::station::Station).
 #[derive(Debug, Clone)]
-pub enum TuiEvent {
+pub enum StationEvent {
 	/// Checks if event transmission works.
 	Hello,
 
@@ -20,10 +20,10 @@ pub enum TuiEvent {
 	Input(InputEvent),
 }
 
-impl TuiEvent {
-	/// Returns whether this TUI event should be logged (e.g. not
-	/// [`Tick`](TuiEvent::Tick) or [`Render`](TuiEvent::Render) since they are
-	/// repetitive and potentially wasteful space-wise in a log file).
+impl StationEvent {
+	/// Returns whether this station event should be logged (e.g. not
+	/// [`Tick`](StationEvent::Tick) or [`Render`](StationEvent::Render) since
+	/// they are repetitive and potentially wasteful space-wise in a log file).
 	pub fn should_be_logged(&self) -> bool {
 		!matches!(self, Self::Render | Self::Tick)
 	}
@@ -51,7 +51,7 @@ impl From<CrosstermEvent> for InputEvent {
 	}
 }
 
-impl From<CrosstermEvent> for TuiEvent {
+impl From<CrosstermEvent> for StationEvent {
 	fn from(value: CrosstermEvent) -> Self {
 		Self::Input(value.into())
 	}

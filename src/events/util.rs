@@ -9,14 +9,14 @@ use crate::events::{
 	AppEvent,
 	Event,
 	InputEvent,
-	TuiEvent,
+	StationEvent,
 };
 
-/// A middleman that receives events from the [`Tui`], and buffers the
+/// A middleman that receives events from the [`Station`], and buffers the
 /// [`InputEvent`]s to be sent every [`AppEvent::Tick`] and sends back
 /// [`AppEvent`]s through a cloned [`UnboundedSender`].
 #[derive(Debug)]
-pub struct TuiAppMiddleman {
+pub struct Turnstile {
 	/// Buffer for [`InputEvent`]s.
 	input_buffer: Vec<InputEvent>,
 
@@ -24,8 +24,8 @@ pub struct TuiAppMiddleman {
 	event_sender: UnboundedSender<Event>,
 }
 
-impl TuiAppMiddleman {
-	/// Constructs a new [`Tui`]-[`App`] middleman.
+impl Turnstile {
+	/// Constructs a new [`Station`]-[`App`] middleman.
 	pub fn new(event_sender: UnboundedSender<Event>) -> Self {
 		Self {
 			input_buffer: Vec::new(),
@@ -33,29 +33,29 @@ impl TuiAppMiddleman {
 		}
 	}
 
-	/// Takes a [`Tui`] event and either buffers it or passes it on to the
+	/// Takes a [`Station`] event and either buffers it or passes it on to the
 	/// [`Self::event_channel`].
-	pub fn handle_tui_event(
+	pub fn handle_station_event(
 		&mut self,
-		event: TuiEvent,
+		event: StationEvent,
 	) -> Result<(), SendError<Event>> {
 		match event {
-			TuiEvent::Hello => {
+			StationEvent::Hello => {
 				tracing::info!(
 					"the middleman does not get paid enough to translate. yes \
-					 i can hear you, tui."
+					 i can hear you, station."
 				);
 			},
-			TuiEvent::Tick => {
+			StationEvent::Tick => {
 				self.event_sender.send(
 					AppEvent::Tick(self.input_buffer.drain(..).collect())
 						.into(),
 				)?;
 			},
-			TuiEvent::Render => {
+			StationEvent::Render => {
 				self.event_sender.send(AppEvent::Render.into())?;
 			},
-			TuiEvent::Input(input_event) => {
+			StationEvent::Input(input_event) => {
 				self.input_buffer.push(input_event);
 			},
 		}

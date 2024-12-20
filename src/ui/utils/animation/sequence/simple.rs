@@ -3,27 +3,33 @@
 
 use std::time::Duration;
 
-use super::{
-	linear::LinearSequencing,
-	Sequencing,
-};
+use super::Sequencing;
 use crate::ui::utils::animation::AnimationDuration;
 
 /// A simple sequencing that runs through the frames, one by one, showing one
-/// after another. This struct wraps a basic [`LinearSequencing`] object.
+/// after another.
 #[derive(Debug, Clone)]
-pub struct SimpleSequencing(LinearSequencing);
+pub struct SimpleSequencing {
+	/// Duration of this animation (runs until the anchor reaches the end of
+	/// the sequence).
+	duration: AnimationDuration,
+
+	/// Index of the frame this sequence is currently at.
+	anchor: usize,
+
+	/// Length of the sequence.
+	length: usize,
+}
 
 impl SimpleSequencing {
 	/// Constructs a new simple sequencing object.
 	pub fn new(duration: AnimationDuration, length: usize) -> Self {
-		let sequencing = LinearSequencing::builder()
-			.duration(duration)
-			.length(length)
-			.interval(1)
-			.build()
-			.unwrap();
-		Self(sequencing)
+		debug_assert_ne!(length, 0, "length should not be zero");
+		Self {
+			duration,
+			anchor: 0,
+			length,
+		}
 	}
 }
 
@@ -34,19 +40,30 @@ where
 	type Data = Vec<F>;
 
 	fn get_displayed_frame(&self, frames: &Self::Data) -> F {
-		let index = self.0.get_frame_indices().drain().collect::<Vec<_>>()[0];
-		frames[index].clone()
+		frames[self.anchor].clone()
 	}
 
 	fn step(&mut self) {
-		self.0.step();
+		self.anchor = if self.anchor == self.length - 1 {
+			0
+		} else {
+			self.anchor + 1
+		};
 	}
 
 	fn step_back(&mut self) {
-		self.0.step_back();
+		self.anchor = if self.anchor == 0 {
+			self.length - 1
+		} else {
+			self.anchor - 1
+		};
 	}
 
 	fn should_step(&self, elapsed: Duration) -> bool {
-		self.0.should_step(elapsed)
+		let length =
+			u32::try_from(self.length).expect("length does not fit in `u32`");
+		let index = isize::try_from(self.anchor)
+			.expect("anchor does not fit in `isize`");
+		elapsed >= self.duration.get_frame_duration(Some(length), Some(index))
 	}
 }

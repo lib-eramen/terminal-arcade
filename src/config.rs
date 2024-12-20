@@ -21,7 +21,7 @@ use crate::{
 		files::AppFiles,
 		CARGO_PKG_NAME,
 	},
-	tui::GameSpecs,
+	station::GameSpecs,
 };
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

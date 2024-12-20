@@ -1,6 +1,7 @@
 //! Banner showing the Terminal Arcade ASCII art logo.
 
 use std::{
+	collections::HashSet,
 	path::PathBuf,
 	time::Duration,
 };
@@ -19,11 +20,13 @@ use crate::{
 	events::Event,
 	ui::{
 		utils::animation::{
-			sequence::SimpleSequencing,
+			sequence::LinearSequencing,
 			state::AnimationState,
 			Animation,
 			AnimationDuration,
+			FrameCombinator,
 			FrameRender,
+			MismatchCombineMethod,
 		},
 		UiElement,
 	},
@@ -87,26 +90,30 @@ impl BannerState {
 	}
 
 	/// Gets the sequencing of the banner animation.
-	fn get_banner_anim_sequencing(frames_len: usize) -> SimpleSequencing {
-		SimpleSequencing::new(
-			AnimationDuration::Total(Duration::from_secs(3)),
-			frames_len,
-		)
+	fn get_banner_anim_sequencing(frames_len: usize) -> LinearSequencing {
+		// SimpleSequencing::new(
+		// 	AnimationDuration::Total(Duration::from_secs(5)),
+		// 	frames_len,
+		// )
 
 		// it took a while to tinker w/ this but below is a linear sequencing
-		// that works! make sure to keep the combinator the same.
-		//
-		// LinearSequencing::builder()
-		// 	.combinator(FrameCombinator::new(
-		// 		MismatchCombineMethod::EnforceDiscard,
-		// 		vec![vec![' '], vec!['_', '‾']],
-		// 	))
-		// 	.duration(AnimationDuration::Total(Duration::from_secs(5)))
-		// 	.length(frames_len)
-		// 	.interval(_)
-		// 	.offsets(HashSet::from([0, _]))
-		// 	.build()
-		// 	.unwrap()
+		// that works! make sure to keep the combinator the same as it accounts
+		// for how the letter frames were constructed.
+
+		// please i spent far too much time on this animation bs it better be
+		// put to good use
+
+		LinearSequencing::builder()
+			.combinator(FrameCombinator::new(
+				MismatchCombineMethod::EnforceDiscard,
+				vec![vec![' '], vec!['_', '‾']],
+			))
+			.duration(AnimationDuration::Total(Duration::from_secs(5)))
+			.length(frames_len)
+			.interval(1)
+			.offsets(HashSet::from([0, 7]))
+			.build()
+			.unwrap()
 	}
 }
 
@@ -130,7 +137,7 @@ impl UiElement for Banner<'_> {
 			&state.0,
 			buffer,
 			area.inner(ratatui::prelude::Margin {
-				horizontal: 3,
+				horizontal: 4,
 				vertical: 2,
 			}),
 		);

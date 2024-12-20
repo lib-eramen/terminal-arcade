@@ -58,7 +58,7 @@ use tokio::{
 use tokio_util::sync::CancellationToken;
 
 use crate::{
-	events::TuiEvent,
+	events::StationEvent,
 	utils::UnboundedChannel,
 };
 
@@ -96,21 +96,21 @@ impl Default for GameSpecs {
 
 /// Handler for processing terminal-related events and producing application
 /// events. This struct also has [`Deref`] and [`DerefMut`] implementations to
-/// the contained [`Tui::terminal`]. When this struct is [`Drop`]ped,
-/// [`Tui::exit`] will be called.
+/// the contained [`Station::terminal`]. When this struct is [`Drop`]ped,
+/// [`Station::exit`] will be called.
 ///
 /// Note that by default, mouse capture is not enabled.
 ///
 /// This struct provides two methods to influence its control flow:
-/// [`Tui::start`] and [`Tui::stop`] (which gets called when dropping this
-/// struct).
+/// [`Station::start`] and [`Station::stop`] (which gets called when dropping
+/// this struct).
 ///
-/// To begin, see [`Tui::enter`] and [`Tui::exit`] for the recommended ways
-/// to start the terminal interface. Typically, only [`Tui::enter`] will need
-/// to be called after [creating](Tui::new) a TUI object, as dropping it will
-/// automatically make it [exit](Tui::exit).
+/// To begin, see [`Station::enter`] and [`Station::exit`] for the recommended
+/// ways to start the terminal interface. Typically, only [`Station::enter`]
+/// will need to be called after [creating](Station::new) a station object, as
+/// dropping it will automatically make it [exit](Station::exit).
 #[derive(Debug)]
-pub struct Tui {
+pub struct Station {
 	/// Terminal interface to interact with.
 	pub terminal: Terminal,
 
@@ -120,8 +120,8 @@ pub struct Tui {
 	/// This handler's cancellation token.
 	pub cancel_token: CancellationToken,
 
-	/// [`TuiEvent`] channel.
-	pub event_channel: UnboundedChannel<TuiEvent>,
+	/// [`StationEvent`] channel.
+	pub event_channel: UnboundedChannel<StationEvent>,
 
 	/// Tick rate - how rapidly to update state.
 	tick_rate: Duration,
@@ -130,7 +130,7 @@ pub struct Tui {
 	frame_rate: Duration,
 }
 
-impl Tui {
+impl Station {
 	/// Constructs a new terminal interface object with the provided
 	/// [`GameSpecs`].
 	pub fn new(game_specs: &GameSpecs) -> crate::Result<Self> {
@@ -149,21 +149,21 @@ impl Tui {
 		Terminal::new(CrosstermBackend::new(std::io::stdout()))
 	}
 
-	/// Tries to receive the next [TUI event](TuiEvent).
-	pub fn try_recv_event(&mut self) -> Result<TuiEvent, TryRecvError> {
+	/// Tries to receive the next [station event](StationEvent).
+	pub fn try_recv_event(&mut self) -> Result<StationEvent, TryRecvError> {
 		self.event_channel.try_recv()
 	}
 
-	/// Sends one [TUI event](TuiEvent) to the [event
+	/// Sends one [station event](StationEvent) to the [event
 	/// channel](Self::event_channel).
-	fn send_tui_event(
-		event_sender: &UnboundedSender<TuiEvent>,
-		tui_event: TuiEvent,
+	fn send_station_event(
+		event_sender: &UnboundedSender<StationEvent>,
+		station_event: StationEvent,
 	) -> crate::Result<()> {
-		if tui_event.should_be_logged() {
-			tracing::debug!(?tui_event, "sending tui event");
+		if station_event.should_be_logged() {
+			tracing::debug!(?station_event, "sending station event");
 		}
-		event_sender.send(tui_event)?;
+		event_sender.send(station_event)?;
 		Ok(())
 	}
 
@@ -174,7 +174,7 @@ impl Tui {
 		skip_all
 	)]
 	async fn event_loop(
-		event_sender: UnboundedSender<TuiEvent>,
+		event_sender: UnboundedSender<StationEvent>,
 		cancel_token: CancellationToken,
 		tick_rate: Duration,
 		frame_rate: Duration,
@@ -183,22 +183,22 @@ impl Tui {
 		let mut tick_interval = interval(tick_rate);
 		let mut render_interval = interval(frame_rate);
 
-		if let Err(err) = event_sender.send(TuiEvent::Hello) {
+		if let Err(err) = event_sender.send(StationEvent::Hello) {
 			return Err(eyre!("while sending greetings! how rude: {err}"));
 		}
 
 		loop {
-			let tui_event = tokio::select! {
+			let station_event = tokio::select! {
 				() = cancel_token.cancelled() => {
-					tracing::info!("tui's cancel token cancelled");
+					tracing::info!("station's cancel token cancelled");
 					break;
 				},
 				() = event_sender.closed() => {
 					tracing::info!("event sender closed");
 					break;
 				},
-				_ = tick_interval.tick() => TuiEvent::Tick,
-				_ = render_interval.tick() => TuiEvent::Render,
+				_ = tick_interval.tick() => StationEvent::Tick,
+				_ = render_interval.tick() => StationEvent::Render,
 				crossterm_event = event_stream.next().fuse() => match crossterm_event {
 					Some(Ok(event)) => {
 						event.into()
@@ -213,21 +213,22 @@ impl Tui {
 				},
 			};
 			if let Err(err) =
-				Self::send_tui_event(&event_sender, tui_event.clone())
+				Self::send_station_event(&event_sender, station_event.clone())
 			{
-				return Err(eyre!("while sending tui event: {err}").with_note(
-					|| format!("trying to send event: {tui_event:?}"),
-				));
+				return Err(eyre!("while sending station event: {err}")
+					.with_note(|| {
+						format!("trying to send event: {station_event:?}")
+					}));
 			}
 		}
-		tracing::info!("tui event loop is finished");
+		tracing::info!("station event loop is finished");
 		Ok(())
 	}
 
 	/// Begins event reception and enters the terminal.
 	#[tracing::instrument(skip(self))]
 	pub fn enter(&mut self) -> crate::Result<()> {
-		tracing::info!("entering the tui");
+		tracing::info!("entering the station");
 		Self::set_terminal_rules()?;
 		self.start();
 		Ok(())
@@ -236,7 +237,7 @@ impl Tui {
 	/// Exits the terminal interface.
 	#[tracing::instrument(skip(self))]
 	pub fn exit(&mut self) -> crate::Result<()> {
-		tracing::info!("exiting the tui");
+		tracing::info!("exiting the station");
 		self.stop()?;
 		Self::reset_terminal_rules()?;
 		Ok(())
@@ -315,10 +316,10 @@ impl Tui {
 	}
 }
 
-impl Drop for Tui {
+impl Drop for Station {
 	fn drop(&mut self) {
 		if let Err(err) = self.exit() {
-			panic!("could not exit the tui (when dropping): {err}");
+			panic!("could not exit the station (when dropping): {err}");
 		}
 	}
 }

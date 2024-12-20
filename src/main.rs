@@ -18,7 +18,7 @@ mod app;
 mod config;
 mod events;
 mod services;
-mod tui;
+mod station;
 mod ui;
 mod utils;
 

@@ -5,7 +5,7 @@ use crossterm::event::{
 	MouseEvent,
 };
 
-use crate::events::tui::FocusChange;
+use crate::events::station::FocusChange;
 
 /// An input from the user.
 #[derive(Debug, Clone)]

@@ -16,11 +16,11 @@ use tokio::sync::mpsc::error::TryRecvError;
 use crate::{
 	config::Config,
 	events::{
-		util::TuiAppMiddleman,
+		util::Turnstile,
 		AppEvent,
 		Event,
 	},
-	tui::Tui,
+	station::Station,
 	ui::{
 		components::screens::HomeScreen,
 		Ui,
@@ -54,11 +54,11 @@ pub struct App {
 	/// Running state of the app.
 	run_state: AppRunState,
 
-	/// Tui backing the app.
-	tui: Tui,
+	/// Station backing the app.
+	station: Station,
 
-	/// Middleman processing events between the [`Tui`] and [itself](App).
-	middleman: TuiAppMiddleman,
+	/// Middleman processing events between the [`Station`] and [itself](App).
+	turnstile: Turnstile,
 
 	/// UI of the app.
 	ui: Ui,
@@ -74,14 +74,14 @@ pub struct App {
 impl App {
 	/// Constructs a new app witht the provided [`Config`].
 	pub fn new(config: Config) -> crate::Result<Self> {
-		let tui = Tui::new(&config.game_specs)?;
+		let station = Station::new(&config.game_specs)?;
 		let event_channel = UnboundedChannel::new();
 		let event_sender = event_channel.get_sender().clone();
 
 		Ok(Self {
 			run_state: AppRunState::Pending,
-			tui,
-			middleman: TuiAppMiddleman::new(event_sender.clone()),
+			station,
+			turnstile: Turnstile::new(event_sender.clone()),
 			ui: Ui::new(event_sender),
 			config: Rc::new(RefCell::new(config)),
 			event_channel,
@@ -94,7 +94,7 @@ impl App {
 	pub fn run(&mut self) -> crate::Result<()> {
 		tracing::debug!(config = ?self.config, "using provided config");
 		self.set_run_state(AppRunState::Running);
-		self.tui.enter()?;
+		self.station.enter()?;
 		self.ui.push_active_screen(HomeScreen::new(
 			&self.config.borrow().app_files,
 		)?)?;
@@ -106,7 +106,7 @@ impl App {
 	/// App event loop.
 	fn event_loop(&mut self) -> crate::Result<()> {
 		loop {
-			self.relay_tui_event()?;
+			self.relay_station_event()?;
 			self.process_all_events()?;
 			self.tick()?;
 			if self.run_state == AppRunState::Finished {
@@ -137,15 +137,15 @@ impl App {
 		}
 	}
 
-	/// Handles an event received from from the provided [`Tui`], transforms the
-	/// event with the [middleman](TuiAppMiddleman), then sends the resulting
-	/// [`AppEvent`] through the [channel], if there is any.
-	fn relay_tui_event(&mut self) -> crate::Result<()> {
-		let tui_event = match self.tui.try_recv_event() {
+	/// Handles an event received from from the provided [`Station`], transforms
+	/// the event with the [middleman](Turnstile), then sends the
+	/// resulting [`AppEvent`] through the [channel], if there is any.
+	fn relay_station_event(&mut self) -> crate::Result<()> {
+		let station_event = match self.station.try_recv_event() {
 			Ok(event) => event,
-			Err(err) => return Self::handle_try_recv_err(err, "tui"),
+			Err(err) => return Self::handle_try_recv_err(err, "Station"),
 		};
-		self.middleman.handle_tui_event(tui_event)?;
+		self.turnstile.handle_station_event(station_event)?;
 		Ok(())
 	}
 
@@ -199,7 +199,7 @@ impl App {
 		if let Event::App(ref app_event) = event {
 			self.handle_app_event(app_event);
 		}
-		self.ui.event(&mut self.tui.terminal, event)
+		self.ui.event(&mut self.station.terminal, event)
 	}
 
 	/// Sets the app's state to closing.
