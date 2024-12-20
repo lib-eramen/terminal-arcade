@@ -1,14 +1,13 @@
 //! Metadata for a [screen](Screens).
 
-use derive_builder::Builder;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::ui::UiRunState;
 
 /// A set of properties that always goes with every instance of a [`Screen`].
-#[derive(Debug, Clone, Builder)]
+#[derive(Debug, Clone, derive_builder::Builder)]
 #[builder(setter(into))]
-pub struct ScreenData {
+pub struct ScreenMetadata {
 	/// Run state of the screen.
 	#[builder(field(private))]
 	#[builder(default)]
@@ -22,10 +21,10 @@ pub struct ScreenData {
 	pub captures_mouse: bool,
 }
 
-impl ScreenData {
+impl ScreenMetadata {
 	/// Returns a new default [`ScreenDataBuilder`].
-	pub fn builder() -> ScreenDataBuilder {
-		ScreenDataBuilder::default()
+	pub fn builder() -> ScreenMetadataBuilder {
+		ScreenMetadataBuilder::default()
 	}
 
 	/// Returns a title padded with `padding` on both sides. `padding`

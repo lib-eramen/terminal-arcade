@@ -1,0 +1,29 @@
+[tasks.format]
+toolchain = "nightly"
+
+[tasks.copy-assets]
+script = { file = "copy-assets.sh" }
+
+[tasks.pre-build]
+dependencies = ["copy-assets"]
+
+[tasks.test]
+args = [
+  "nextest",
+  "run",
+  "@@remove-empty(CARGO_MAKE_CARGO_VERBOSE_FLAGS)",
+  "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )",
+]
+
+[tasks.dev]
+run_task = { name = "dev-test-flow" }
+watch = true
+
+[tasks.release]
+alias = "build-release"
+
+[tasks.updeps]
+alias = "upgrade-dependencies"
+
+[tasks.sanity-test]
+alias = "build-flow"

@@ -49,5 +49,6 @@ fn init_assets() -> Result<()> {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 	init_vergen()?;
 	init_assets()?;
+	println!("initialized vergen & assets");
 	Ok(())
 }

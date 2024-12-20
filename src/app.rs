@@ -11,20 +11,18 @@ use std::{
 };
 
 use color_eyre::eyre::eyre;
-use derive_new::new;
 use tokio::sync::mpsc::error::TryRecvError;
-use tracing::instrument;
 
 use crate::{
-	components::screens::home::HomeScreen,
 	config::Config,
 	events::{
+		util::TuiAppMiddleman,
 		AppEvent,
 		Event,
-		TuiAppMiddleman,
 	},
 	tui::Tui,
 	ui::{
+		components::screens::HomeScreen,
 		Ui,
 		UiRunState,
 	},
@@ -52,7 +50,6 @@ enum AppRunState {
 }
 
 /// Handler for application state and rendering.
-#[derive(Debug, new)]
 pub struct App {
 	/// Running state of the app.
 	run_state: AppRunState,
@@ -76,8 +73,8 @@ pub struct App {
 
 impl App {
 	/// Constructs a new app witht the provided [`Config`].
-	pub fn with_config(config: Config) -> crate::Result<Self> {
-		let tui = Tui::with_specs(&config.game_specs)?;
+	pub fn new(config: Config) -> crate::Result<Self> {
+		let tui = Tui::new(&config.game_specs)?;
 		let event_channel = UnboundedChannel::new();
 		let event_sender = event_channel.get_sender().clone();
 
@@ -93,12 +90,14 @@ impl App {
 
 	/// Starts the app with the provided terminal interface and with a landing
 	/// [`HomeScreen`].
-	#[instrument(name = "run-app", skip_all)]
+	#[tracing::instrument(name = "run-app", skip_all)]
 	pub fn run(&mut self) -> crate::Result<()> {
-		tracing::debug!(?self.config, "using provided config");
+		tracing::debug!(config = ?self.config, "using provided config");
 		self.set_run_state(AppRunState::Running);
 		self.tui.enter()?;
-		self.ui.push_active_screen(HomeScreen)?;
+		self.ui.push_active_screen(HomeScreen::new(
+			&self.config.borrow().app_files,
+		)?)?;
 		self.event_loop()?;
 		println!("See you next time! 🕹️ 👋");
 		Ok(())
@@ -109,7 +108,7 @@ impl App {
 		loop {
 			self.relay_tui_event()?;
 			self.process_all_events()?;
-			self.update()?;
+			self.tick()?;
 			if self.run_state == AppRunState::Finished {
 				break;
 			}
@@ -183,9 +182,9 @@ impl App {
 		}
 	}
 
-	/// Updates the app.
-	fn update(&mut self) -> crate::Result<()> {
-		self.ui.update()?;
+	/// Runs the app through one tick.
+	fn tick(&mut self) -> crate::Result<()> {
+		self.ui.tick()?;
 		if self.can_be_finished() {
 			self.set_run_state(AppRunState::Finished);
 		}

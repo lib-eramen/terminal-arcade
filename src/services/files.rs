@@ -69,9 +69,9 @@ pub struct AppFiles(Option<ProjectDirs>);
 impl AppFiles {
 	/// Constructs a new [`ProjectDirs`] object with [`CARGO_PKG_NAME`] as the
 	/// name.
+	#[must_use]
 	pub fn new(name: &str) -> Self {
 		let project_dirs = ProjectDirs::from("", "", name);
-		tracing::info!(dirs = ?project_dirs, "constructed app-project-dirs");
 		Self(project_dirs)
 	}
 
@@ -147,7 +147,10 @@ impl AppFiles {
 
 	/// [Gets an app path](`Self::get_app_path`), erroring if the app path does
 	/// not exist.
-	#[expect(unused, reason = "api completeness")]
+	#[expect(
+		unused,
+		reason = "really thought this would be used somewhere lol"
+	)]
 	pub fn get_existing_app_path<F>(
 		&self,
 		env_folder_var: &str,
@@ -259,11 +262,34 @@ impl AppFiles {
 	}
 
 	/// Gets an asset at [`Self::get_data_dir`]`/.assets`, erroring if the path
-	/// does not exist. [data directory](ProjectDirs::data_dir).
+	/// does not exist.
 	pub fn get_asset_path(&self, path: PathBuf) -> crate::Result<PathBuf> {
 		Self::get_existing_path(
-			self.get_config_path(Some(".assets".into()))?.join(path),
+			self.get_data_path(Some(".assets".into()))?.join(path),
 		)
+	}
+
+	/// Reads [an asset path](Self::get_asset_path) to string.
+	pub fn read_string_asset(&self, path: PathBuf) -> crate::Result<String> {
+		Ok(std::fs::read_to_string(self.get_asset_path(path)?)?)
+	}
+
+	/// Logs project dirs as part of initialization.
+	pub fn log_project_dirs(&self) -> crate::Result<()> {
+		tracing::info!(dirs = ?self, "constructed app-project-dirs");
+		self.find_app_path(
+			"config",
+			&CONFIG_FOLDER_ENV_VAR,
+			|dirs| dirs.config_dir(),
+			None,
+		)?;
+		self.find_app_path(
+			"data",
+			&DATA_FOLDER_ENV_VAR,
+			|dirs| dirs.data_dir(),
+			None,
+		)?;
+		Ok(())
 	}
 }
 
@@ -286,22 +312,4 @@ impl DerefMut for AppFiles {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		&mut self.0
 	}
-}
-
-/// Initializes directories & files that are used in Terminal Arcade.
-pub fn init_project_files(app_files: &AppFiles) -> crate::Result<()> {
-	tracing::info!("initializing project dirs");
-	app_files.find_app_path(
-		"config",
-		&CONFIG_FOLDER_ENV_VAR,
-		|dirs| dirs.config_dir(),
-		None,
-	)?;
-	app_files.find_app_path(
-		"data",
-		&DATA_FOLDER_ENV_VAR,
-		|dirs| dirs.data_dir(),
-		None,
-	)?;
-	Ok(())
 }

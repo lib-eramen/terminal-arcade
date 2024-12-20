@@ -6,29 +6,25 @@
 //! to-be-debugged spaghetti code guaranteed.
 
 #![forbid(unsafe_code)]
-#![deny(
-	missing_docs,
-	clippy::suspicious,
-	clippy::unwrap_used,
-	clippy::expect_used
-)]
+#![deny(missing_docs, clippy::suspicious, clippy::todo)]
 #![warn(clippy::complexity, clippy::perf, clippy::style, clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
-
-use crate::{
-	app::App,
-	config::Config,
-	services::files::AppFiles,
-};
+#![allow(
+	clippy::module_name_repetitions,
+	clippy::missing_errors_doc,
+	clippy::missing_panics_doc
+)]
 
 mod app;
-mod components;
 mod config;
 mod events;
 mod services;
 mod tui;
 mod ui;
 mod utils;
+
+use app::App;
+use config::Config;
+use services::files::AppFiles;
 
 /// Result type for the entire crate. Uses [`color_eyre`]'s
 /// [Result](color_eyre::eyre::Result) type.
@@ -39,5 +35,5 @@ async fn main() -> Result<()> {
 	let app_files = AppFiles::default();
 	services::initialize_services(&app_files)?;
 	let config = Config::fetch(app_files)?;
-	App::with_config(config)?.run()
+	App::new(config)?.run()
 }

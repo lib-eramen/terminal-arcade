@@ -1,12 +1,20 @@
 //! Wrapper struct for a [screen](Screens) and its [state](ScreenState).
 
-use derive_new::new;
+use std::sync::{
+	Arc,
+	Mutex,
+};
+
 use ratatui::{
 	layout::Rect,
 	Frame,
 };
 use tokio::sync::mpsc::UnboundedSender;
 
+use super::metadata::{
+	ScreenMetadata,
+	ScreenMetadataBuilderError,
+};
 use crate::{
 	events::{
 		AppEvent,
@@ -14,11 +22,7 @@ use crate::{
 		ScreenEvent,
 	},
 	ui::{
-		screens::{
-			state::ScreenDataBuilderError,
-			Screen,
-			ScreenData,
-		},
+		screen::Screen,
 		UiRunState,
 	},
 };
@@ -29,8 +33,8 @@ pub struct ScreenHandle {
 	/// Inner screen trait object.
 	pub screen: Box<dyn Screen>,
 
-	/// Data associated with the screen.
-	pub data: ScreenData,
+	/// Metadata associated with the screen.
+	pub metadata: Arc<Mutex<ScreenMetadata>>,
 
 	/// Event sender to the [`App`] layer.
 	pub event_sender: UnboundedSender<Event>,
@@ -42,15 +46,15 @@ impl ScreenHandle {
 	pub fn new<S>(
 		screen: S,
 		event_sender: UnboundedSender<Event>,
-	) -> Result<Self, ScreenDataBuilderError>
+	) -> Result<Self, ScreenMetadataBuilderError>
 	where
 		S: Screen + 'static,
 	{
-		let mut state_builder = ScreenData::builder();
-		let state = screen.get_init_state(&mut state_builder).build()?;
+		let mut metadata_builder = ScreenMetadata::builder();
+		let metadata = screen.get_init_state(&mut metadata_builder).build()?;
 		Ok(Self {
 			screen: Box::new(screen),
-			data: state,
+			metadata: Arc::new(Mutex::new(metadata)),
 			event_sender,
 		})
 	}
@@ -60,24 +64,25 @@ impl ScreenHandle {
 		&mut self,
 		event: &ScreenEvent,
 	) -> crate::Result<()> {
+		let mut metadata = self.metadata.lock().unwrap();
 		match event {
 			ScreenEvent::Close => {
-				self.data.run_state = UiRunState::Closing;
-				self.screen.close(self.clone_handle_state())?;
+				metadata.run_state = UiRunState::Closing;
+				self.screen.close(&mut self.clone_handle_state())?;
 			},
-			ScreenEvent::Finish => self.data.run_state = UiRunState::Finished,
+			ScreenEvent::Finish => metadata.run_state = UiRunState::Finished,
 			ScreenEvent::Rename(title) => {
-				self.data.title.clone_from(title);
+				metadata.title.clone_from(title);
 			},
-			ScreenEvent::Error(_error) => todo!(),
-			ScreenEvent::Create(_screen_handle) => todo!(),
+			ScreenEvent::Error(_) | ScreenEvent::Create(_) => {},
 		}
 		Ok(())
 	}
 
-	/// Updates the screen.
-	pub fn update(&mut self) -> crate::Result<()> {
-		self.screen.update(self.clone_handle_state())
+	/// Updates the screen with one tick.
+	pub fn tick(&mut self) -> crate::Result<()> {
+		let mut state = self.clone_handle_state();
+		Screen::tick(self.screen.as_mut(), &mut state)
 	}
 
 	/// Handles an incoming event.
@@ -93,28 +98,30 @@ impl ScreenHandle {
 			_ => vec![event],
 		};
 		for event in events {
-			let state = self.clone_handle_state();
-			Screen::event(self.screen.as_mut(), state, event)?;
+			let mut state = self.clone_handle_state();
+			Screen::event(self.screen.as_mut(), &mut state, &event)?;
 		}
 		Ok(())
 	}
 
 	/// Renders the screen to the terminal.
-	pub fn render(&self, frame: &mut Frame<'_>, size: Rect) {
-		let state = self.clone_handle_state();
-		Screen::render(self.screen.as_ref(), state, frame, size);
+	pub fn render(&self, frame: &mut Frame<'_>, area: Rect) {
+		let mut state = self.clone_handle_state();
+		Screen::render(self.screen.as_ref(), &mut state, frame, area);
 	}
 
 	pub fn clone_handle_state(&self) -> ScreenHandleData {
-		ScreenHandleData::new(self.data.clone(), self.event_sender.clone())
+		ScreenHandleData {
+			metadata: self.metadata.clone(),
+			event_sender: self.event_sender.clone(),
+		}
 	}
 }
 
 /// Cloned fields from [`ScreenHandle`].
 ///
 /// The DRY pastors are fuming.
-#[derive(new)]
 pub struct ScreenHandleData {
-	pub state: ScreenData,
+	pub metadata: Arc<Mutex<ScreenMetadata>>,
 	pub event_sender: UnboundedSender<Event>,
 }

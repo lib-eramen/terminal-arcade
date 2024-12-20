@@ -1,4 +1,12 @@
 //! User interface structures in Terminal Arcade.
+//!
+//! The user interface can update via one of two methods:
+//! 1. Via a tick, constantly firing every certain duration, with no extra
+//!    information from the user.
+//! 2. Via an event, fired from the user's end or by the code.
+//!
+//! Note that to respond, [`UiElement::update`] is for the tick, and
+//! [`UiElement::event`] is for the event.
 
 use crossterm::{
 	event::{
@@ -9,7 +17,8 @@ use crossterm::{
 };
 use ratatui::{
 	layout::Rect,
-	Frame,
+	prelude::Buffer,
+	widgets::StatefulWidgetRef,
 };
 use serde::{
 	Deserialize,
@@ -17,6 +26,7 @@ use serde::{
 };
 use tokio::sync::mpsc::UnboundedSender;
 
+use self::screen::handle::ScreenHandle;
 use crate::{
 	events::{
 		AppEvent,
@@ -24,24 +34,46 @@ use crate::{
 		ScreenEvent,
 	},
 	tui::Terminal,
-	ui::screens::{
-		Screen,
-		ScreenHandle,
-	},
+	ui::screen::Screen,
 };
 
-pub mod screens;
-pub mod widgets;
+pub mod components;
+pub mod screen;
+pub mod utils;
+pub mod widget;
 
 /// A UI element that renders and receives events.
 pub trait UiElement {
 	type State;
 
+	/// Updates itself as one tick advances.
+	fn tick(&mut self, state: &mut Self::State) -> crate::Result<()>;
+
 	/// Handles an incoming [`Event`].
-	fn event(&mut self, state: Self::State, event: Event) -> crate::Result<()>;
+	fn event(
+		&mut self,
+		state: &mut Self::State,
+		event: &Event,
+	) -> crate::Result<()>;
 
 	/// Renders this element.
-	fn render(&self, state: Self::State, frame: &mut Frame<'_>, size: Rect);
+	fn render(&self, state: &Self::State, buffer: &mut Buffer, area: Rect);
+}
+
+impl<T> StatefulWidgetRef for dyn UiElement<State = T> {
+	type State = T;
+
+	/// Draws the current state of the widget in the given buffer. That is the
+	/// only method required
+	/// to implement a custom stateful widget.
+	fn render_ref(
+		&self,
+		area: Rect,
+		buffer: &mut Buffer,
+		state: &mut Self::State,
+	) {
+		self.render(state, buffer, area);
+	}
 }
 
 /// Running state of any given UI moving part (a screen, widget) that runs and
@@ -66,8 +98,7 @@ pub enum UiRunState {
 	Finished,
 }
 
-/// The UI of the app. This struct handles the screens
-#[derive(Debug)]
+/// The UI of the app.
 pub struct Ui {
 	/// Running state.
 	run_state: UiRunState,
@@ -92,7 +123,7 @@ impl Ui {
 	}
 
 	/// [`debug_assert`]s that there are screens.
-	fn assert_screens_nonemptiness(&self) {
+	fn assert_there_are_screens(&self) {
 		debug_assert!(!self.is_empty(), "no screens left");
 	}
 
@@ -104,7 +135,7 @@ impl Ui {
 			.is_some()
 	}
 
-	/// Updates the UI.
+	/// Updates the UI through one tick.
 	///
 	/// This method returns the screen that was closed, if there was one.
 	/// Note that this method closes at most one screen every time it is called.
@@ -112,14 +143,21 @@ impl Ui {
 	/// [running]: UiRunState::Running
 	/// [closing]: UiRunState::Closing
 	/// [finished]: UiRunState::Finished
-	#[expect(clippy::unwrap_used, reason = "infallible")]
-	pub fn update(&mut self) -> crate::Result<Option<ScreenHandle>> {
+	pub fn tick(&mut self) -> crate::Result<Option<ScreenHandle>> {
 		if self.finish_if_empty() {
 			return Ok(None);
 		}
+
 		let ui_run_state = self.run_state;
-		let active_screen = self.get_mut_active_screen().unwrap();
-		match (ui_run_state, active_screen.data.run_state) {
+		let active_screen_run_state = self
+			.get_active_screen()
+			.unwrap()
+			.metadata
+			.lock()
+			.unwrap()
+			.run_state;
+
+		match (ui_run_state, active_screen_run_state) {
 			(_, UiRunState::Finished) => {
 				let finished_screen = self.pop_active_screen();
 				self.finish_if_empty();
@@ -127,7 +165,7 @@ impl Ui {
 			},
 			(_, UiRunState::Closing)
 			| (UiRunState::Running, UiRunState::Running) => {
-				active_screen.update()?;
+				self.get_mut_active_screen().unwrap().tick()?;
 			},
 			(UiRunState::Closing, UiRunState::Running) => {
 				self.event_sender.send(ScreenEvent::Close.into())?;
@@ -139,13 +177,12 @@ impl Ui {
 
 	/// Handles a [`Terminal`]-related [`Event`]. On an [`AppEvent::Render`]
 	/// event, a [`CompletedFrame`] is returned.
-	#[expect(clippy::unwrap_used)]
 	pub fn handle_terminal_event(
 		&mut self,
 		terminal: &mut Terminal,
 		event: &Event,
 	) -> std::io::Result<()> {
-		self.assert_screens_nonemptiness();
+		self.assert_there_are_screens();
 		if let Event::App(AppEvent::Render) = event {
 			let _completed_frame = terminal.draw(|frame| {
 				self.get_active_screen()
@@ -157,13 +194,12 @@ impl Ui {
 	}
 
 	/// Handles an incoming [`Event`].
-	#[expect(clippy::unwrap_used)]
 	pub fn event(
 		&mut self,
 		terminal: &mut Terminal,
 		event: Event,
 	) -> crate::Result<()> {
-		self.assert_screens_nonemptiness();
+		self.assert_there_are_screens();
 		self.handle_terminal_event(terminal, &event)?;
 		self.get_mut_active_screen().unwrap().event(event)
 	}
@@ -212,7 +248,9 @@ impl Ui {
 		S: Screen + 'static,
 	{
 		let handle = ScreenHandle::new(screen, self.event_sender.clone())?;
-		Self::enable_mouse_conditionally(handle.data.captures_mouse)?;
+		Self::enable_mouse_conditionally(
+			handle.metadata.lock().unwrap().captures_mouse,
+		)?;
 		self.screens.push(handle);
 		Ok(())
 	}

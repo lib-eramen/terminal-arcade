@@ -38,7 +38,6 @@ use crossterm::{
 		LeaveAlternateScreen,
 	},
 };
-use derive_new::new;
 use futures::{
 	FutureExt,
 	StreamExt,
@@ -57,7 +56,6 @@ use tokio::{
 	time::interval,
 };
 use tokio_util::sync::CancellationToken;
-use tracing::instrument;
 
 use crate::{
 	events::TuiEvent,
@@ -68,7 +66,7 @@ use crate::{
 pub type Terminal = ratatui::Terminal<CrosstermBackend<Stdout>>;
 
 /// Game specifications.
-#[derive(Debug, Clone, Serialize, Deserialize, new)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameSpecs {
 	/// Ticks per second.
 	pub tps: f64,
@@ -89,7 +87,10 @@ impl GameSpecs {
 
 impl Default for GameSpecs {
 	fn default() -> Self {
-		Self::new(16.0, 60.0)
+		Self {
+			tps: 16.0,
+			fps: 60.0,
+		}
 	}
 }
 
@@ -108,7 +109,7 @@ impl Default for GameSpecs {
 /// to start the terminal interface. Typically, only [`Tui::enter`] will need
 /// to be called after [creating](Tui::new) a TUI object, as dropping it will
 /// automatically make it [exit](Tui::exit).
-#[derive(Debug, new)]
+#[derive(Debug)]
 pub struct Tui {
 	/// Terminal interface to interact with.
 	pub terminal: Terminal,
@@ -132,15 +133,15 @@ pub struct Tui {
 impl Tui {
 	/// Constructs a new terminal interface object with the provided
 	/// [`GameSpecs`].
-	pub fn with_specs(game_specs: &GameSpecs) -> crate::Result<Self> {
-		Ok(Self::new(
-			Self::get_terminal()?,
-			tokio::spawn(async move { Ok(()) }),
-			CancellationToken::new(),
-			UnboundedChannel::new(),
-			game_specs.get_tick_rate()?,
-			game_specs.get_frame_rate()?,
-		))
+	pub fn new(game_specs: &GameSpecs) -> crate::Result<Self> {
+		Ok(Self {
+			terminal: Self::get_terminal()?,
+			event_task: tokio::spawn(async move { Ok(()) }),
+			cancel_token: CancellationToken::new(),
+			event_channel: UnboundedChannel::new(),
+			tick_rate: game_specs.get_tick_rate()?,
+			frame_rate: game_specs.get_frame_rate()?,
+		})
 	}
 
 	/// Returns an instance of [`Terminal`] this app uses.
@@ -167,7 +168,11 @@ impl Tui {
 	}
 
 	/// Event loop to interact with the terminal.
-	#[instrument(level = "info", name = "terminal-event-loop", skip_all)]
+	#[tracing::instrument(
+		level = "info",
+		name = "terminal-event-loop",
+		skip_all
+	)]
 	async fn event_loop(
 		event_sender: UnboundedSender<TuiEvent>,
 		cancel_token: CancellationToken,
@@ -220,7 +225,7 @@ impl Tui {
 	}
 
 	/// Begins event reception and enters the terminal.
-	#[instrument(skip(self))]
+	#[tracing::instrument(skip(self))]
 	pub fn enter(&mut self) -> crate::Result<()> {
 		tracing::info!("entering the tui");
 		Self::set_terminal_rules()?;
@@ -229,7 +234,7 @@ impl Tui {
 	}
 
 	/// Exits the terminal interface.
-	#[instrument(skip(self))]
+	#[tracing::instrument(skip(self))]
 	pub fn exit(&mut self) -> crate::Result<()> {
 		tracing::info!("exiting the tui");
 		self.stop()?;
@@ -238,7 +243,7 @@ impl Tui {
 	}
 
 	/// (Re-)starts the terminal interface layer.
-	#[instrument(skip(self))]
+	#[tracing::instrument(skip(self))]
 	pub fn start(&mut self) {
 		self.cancel_token.cancel(); // To cancel any existing tasks.
 		self.cancel_token = CancellationToken::new();
@@ -254,7 +259,7 @@ impl Tui {
 
 	/// Stops the terminal interface layer. After 100ms, forcefully aborts
 	/// [`Self::event_task`] and returns if that is unsuccessful after 200ms.
-	#[instrument(skip(self))]
+	#[tracing::instrument(skip(self))]
 	pub fn stop(&mut self) -> crate::Result<()> {
 		self.cancel_token.cancel();
 		let one_ms = Duration::from_millis(1);

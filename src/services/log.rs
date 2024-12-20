@@ -57,5 +57,11 @@ pub fn init_logging(app_files: &AppFiles) -> crate::Result<()> {
 		.with(file_subscriber)
 		.with(ErrorLayer::default())
 		.try_init()?;
+
+	tracing::info!(
+		"current running mode: {}",
+		debug_either("debug", "release"),
+	);
+	tracing::info!("run timestamp: {}", fmt_run_timestamp()?);
 	Ok(())
 }

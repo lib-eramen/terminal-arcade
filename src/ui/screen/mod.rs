@@ -9,10 +9,8 @@ use ratatui::{
 		Alignment,
 		Rect,
 	},
-	style::{
-		Color,
-		Style,
-	},
+	prelude::Stylize,
+	style::Style,
 	widgets::{
 		block::Title,
 		Block,
@@ -21,28 +19,28 @@ use ratatui::{
 };
 
 use crate::{
-	components::widgets::{
-		blocks::titled_block,
-		HIGHLIGHTED,
-	},
 	events::{
 		Event,
 		ScreenEvent,
 	},
 	ui::{
-		screens::{
-			handle::ScreenHandleData,
-			state::ScreenDataBuilder,
+		components::widgets::{
+			blocks::titled_block,
+			HIGHLIGHTED,
+		},
+		screen::{
+			ScreenHandleData,
+			ScreenMetadataBuilder,
 		},
 		UiElement,
 	},
 };
 
 pub mod handle;
-pub mod state;
+pub mod metadata;
 
-pub use handle::ScreenHandle;
-pub use state::ScreenData;
+pub use handle::*;
+pub use metadata::*;
 
 // FUTURE: When `typetag` supports associated types, switch to an `Either` API
 // or the sorts with the events.
@@ -56,26 +54,26 @@ pub trait Screen:
 	/// Returns the initial state that's associated with the screen.
 	fn get_init_state<'a>(
 		&self,
-		builder: &'a mut ScreenDataBuilder,
-	) -> &'a mut ScreenDataBuilder;
+		builder: &'a mut ScreenMetadataBuilder,
+	) -> &'a mut ScreenMetadataBuilder;
 
 	/// Performs closing actions for the screen.
 	/// The default behavior is just to send an event to finish the screen.
-	fn close(&mut self, handle: ScreenHandleData) -> crate::Result<()> {
+	fn close(&mut self, handle: &mut ScreenHandleData) -> crate::Result<()> {
 		handle.event_sender.send(ScreenEvent::Finish.into())?;
 		Ok(())
 	}
 
-	/// Updates the screen's state.
-	fn update(&mut self, _handle: ScreenHandleData) -> crate::Result<()> {
-		Ok(())
+	/// Runs the screen's state through one tick.
+	fn tick(&mut self, handle: &mut ScreenHandleData) -> crate::Result<()> {
+		UiElement::tick(self, handle)
 	}
 
 	/// Handles an incoming [`Event`].
 	fn event(
 		&mut self,
-		handle: ScreenHandleData,
-		event: Event,
+		handle: &mut ScreenHandleData,
+		event: &Event,
 	) -> crate::Result<()> {
 		UiElement::event(self, handle, event)
 	}
@@ -83,13 +81,14 @@ pub trait Screen:
 	/// Renders this screen.
 	fn render(
 		&self,
-		handle: ScreenHandleData,
+		handle: &mut ScreenHandleData,
 		frame: &mut Frame<'_>,
-		size: Rect,
+		area: Rect,
 	) {
-		let base_screen_block = base_screen_block(handle.state.title.clone());
-		frame.render_widget(base_screen_block, size);
-		UiElement::render(self, handle, frame, size);
+		let base_screen_block =
+			base_screen_block(handle.metadata.lock().unwrap().title.clone());
+		frame.render_widget(base_screen_block, area);
+		UiElement::render(self, handle, frame.buffer_mut(), area);
 	}
 }
 
@@ -97,7 +96,7 @@ pub trait Screen:
 /// colorred border and [`HIGHLIGHTED`] title.
 fn base_screen_block<'a, T: Into<Title<'a>>>(title: T) -> Block<'a> {
 	titled_block(title)
-		.border_style(Style::default().fg(Color::Blue))
+		.border_style(Style::default().blue())
 		.title_style(HIGHLIGHTED)
 		.title_alignment(Alignment::Center)
 }

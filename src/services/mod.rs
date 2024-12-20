@@ -6,7 +6,6 @@ use time::{
 	format_description::well_known::Iso8601,
 	OffsetDateTime,
 };
-use tracing::instrument;
 
 use crate::services::files::AppFiles;
 
@@ -43,33 +42,16 @@ fn fmt_run_timestamp() -> crate::Result<String> {
 		.wrap_err("unable to format run timestamp")
 }
 
-/// Logs the current running mode.
-fn log_current_running_mode() {
-	tracing::info!(
-		"current running mode: {}",
-		if cfg!(debug_assertions) {
-			"debug"
-		} else {
-			"release"
-		}
-	);
-}
-
 /// Initilizes different services of the application ([directories](dirs),
 /// [logging](log), [panic handling](panic), etc.).
 ///
 /// This function is intended to be called directly at the start of execution in
 /// order to [RUN_TIMESTAMP] to be (lazily) evaluated right away.
-#[instrument]
+#[tracing::instrument(skip_all)]
 pub fn initialize_services(app_files: &AppFiles) -> crate::Result<()> {
-	oops::init_panic_handling()?;
-	files::init_project_files(app_files)?; // The logs won't make it in the first time.
-
 	let _ = RUN_TIMESTAMP; // Immediately access and evaluate `RUN_TIMESTAMP`.
+	oops::init_panic_handling()?;
 	log::init_logging(app_files)?;
-	log_current_running_mode();
-	tracing::debug!("initialized run timestamp: {}", fmt_run_timestamp()?);
-
-	files::init_project_files(app_files)?;
+	app_files.log_project_dirs()?;
 	Ok(())
 }

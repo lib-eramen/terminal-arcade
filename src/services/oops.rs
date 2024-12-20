@@ -3,7 +3,7 @@
 //! * [`better_panic`] in debug builds
 //! * [`human_panic`]
 
-use std::panic::PanicInfo;
+use std::panic::PanicHookInfo;
 
 use color_eyre::config::PanicHook;
 
@@ -20,7 +20,7 @@ lazy_static::lazy_static! {
 
 /// Panic hook for debugging, using [`better_panic`]'s backtrace.
 #[cfg(debug_assertions)]
-fn debug_panic_hook(panic_info: &PanicInfo) {
+fn debug_panic_hook(panic_info: &PanicHookInfo) {
 	better_panic::Settings::auto()
 		.most_recent_first(false)
 		.lineno_suffix(true)
@@ -30,7 +30,7 @@ fn debug_panic_hook(panic_info: &PanicInfo) {
 
 /// Panic hook for production, using [human_panic]'s reports.
 #[cfg(not(debug_assertions))]
-fn prod_panic_hook(panic_hook: &PanicHook, panic_info: &PanicInfo) {
+fn prod_panic_hook(panic_hook: &PanicHook, panic_info: &PanicHookInfo) {
 	let meta = human_panic::Metadata::new(
 		env!("CARGO_PKG_NAME"),
 		env!("CARGO_PKG_VERSION"),
@@ -44,7 +44,7 @@ fn prod_panic_hook(panic_hook: &PanicHook, panic_info: &PanicInfo) {
 
 /// Custom panic hook. Also resets the terminal to the original state in
 /// addition to previous panic handling.
-fn custom_panic_hook(panic_hook: &PanicHook, panic_info: &PanicInfo) {
+fn custom_panic_hook(panic_hook: &PanicHook, panic_info: &PanicHookInfo) {
 	if let Err(err) = crate::tui::Tui::reset_terminal_rules() {
 		tracing::error!(%err, "could not reset terminal rules");
 	}

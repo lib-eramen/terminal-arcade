@@ -11,7 +11,6 @@ use config::{
 	ConfigBuilder,
 	FileFormat,
 };
-use derive_new::new;
 use serde::{
 	Deserialize,
 	Serialize,
@@ -25,8 +24,9 @@ use crate::{
 	tui::GameSpecs,
 };
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, new)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+/// Congifuration for the app.
 pub struct Config {
 	/// App files.
 	#[serde(skip)]
@@ -37,7 +37,7 @@ pub struct Config {
 }
 
 impl Config {
-	/// Fetches a new configuration object for the app.
+	/// Fetches a configuration object for the app.
 	/// If none is found, a default one will be created at the config folder and
 	/// returned. If one is found, the function tries to deserialize it and
 	/// returns the resulting config.

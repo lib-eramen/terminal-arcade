@@ -1,7 +1,7 @@
 //! Events that manipulate the screen's
 //! [state](crate::ui::screens::ScreenState).
 
-use crate::ui::screens::ScreenHandle;
+use crate::ui::screen::handle::ScreenHandle;
 
 /// Screen [state](crate::ui::screens::ScreenState)-manipulating events.
 #[derive(Debug)]
